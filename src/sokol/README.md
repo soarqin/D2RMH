@@ -194,7 +194,7 @@ to split the Objective-C code from the C code of the sample):
 
 sg_pass_action pass_action;
 
-void init(void) {
+void d2MapInit(void) {
     sg_setup(&(sg_desc){
         .context = sapp_sgcontext()
     });
@@ -217,7 +217,7 @@ void cleanup(void) {
 
 sapp_desc sokol_main(int argc, char* argv[]) {
     return (sapp_desc){
-        .init_cb = init,
+        .init_cb = d2MapInit,
         .frame_cb = frame,
         .cleanup_cb = cleanup,
         .width = 400,
@@ -255,7 +255,7 @@ static void stream_cb(float* buffer, int num_frames, int num_channels) {
 }
 
 int main() {
-    // init sokol-audio with default params
+    // d2MapInit sokol-audio with default params
     saudio_setup(&(saudio_desc){
         .stream_cb = stream_cb
     });
@@ -273,7 +273,7 @@ The same code using the push-model
 ```c
 #define BUF_SIZE (32)
 int main() {
-    // init sokol-audio with default params, no callback
+    // d2MapInit sokol-audio with default params, no callback
     saudio_setup(&(saudio_desc){0});
     assert(saudio_channels() == 1);
 
@@ -321,8 +321,8 @@ static void response_callback(const sfetch_response*);
 #define MAX_FILE_SIZE (1024*1024)
 static uint8_t buffer[MAX_FILE_SIZE];
 
-// application init
-static void init(void) {
+// application d2MapInit
+static void d2MapInit(void) {
     ...
     // setup sokol-fetch with default config:
     sfetch_setup(&(sfetch_desc_t){0});

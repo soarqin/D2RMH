@@ -1,6 +1,8 @@
 #include "d2map.h"
 #include "session.h"
 #include "d2rprocess.h"
+#include "d2txt.h"
+#include "jsonlng.h"
 
 #include "sokol/HandmadeMath.h"
 
@@ -20,6 +22,10 @@
 #include <fstream>
 #include <vector>
 
+static struct {
+    std::vector<std::array<std::string, JsonLng::LNG_MAX>> levelNames, objNames;
+} d2data;
+
 static sg_pass_action pass_action = {};
 static struct {
     bool enable = false;
@@ -28,13 +34,14 @@ static struct {
     int count = 0;
 } drawstate[2];
 
-enum {
-    WindowSize = 500,
-};
-
-struct MapExit {
+struct MapObject {
+    /* Rendering coord */
     float x, y;
-    const char *str;
+    /* Rendering color */
+    float r, g, b;
+    /* Text drawing coord */
+    float tx, ty;
+    std::string str;
 };
 
 static struct {
@@ -44,7 +51,7 @@ static struct {
     unsigned char *fontBuf = nullptr;
     size_t fontBufSize = 0;
     int font = FONS_INVALID;
-    std::vector<MapExit> mapExits;
+    std::vector<MapObject> mapObjs;
 
     uint16_t *indices = nullptr;
     float *vertices = nullptr;
@@ -130,18 +137,45 @@ unsigned char *loadFromFile(const char *filename, size_t &size) {
 static void init() {
     mapstate.d2rProcess = new D2RProcess;
     HWND hwnd = (HWND)sapp_win32_get_hwnd();
+    ShowWindow(hwnd, SW_HIDE);
+
     DWORD style = WS_POPUP;
     DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(hwnd, GWL_STYLE, style);
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
     SetLayeredWindowAttributes(hwnd, 0, 185, LWA_COLORKEY | LWA_ALPHA);
 
-    HMONITOR hm = MonitorFromPoint(POINT {1, 1}, MONITOR_DEFAULTTONEAREST);
-    MONITORINFO mi;
-    mi.cbSize = sizeof(MONITORINFO);
-    GetMonitorInfo(hm, &mi);
-    ShowWindow(hwnd, SW_SHOW);
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    d2MapInit(".");
+    {
+        JsonLng lng;
+        lng.load("lng/levels.json");
+        lng.load("lng/objects.json");
+        D2TXT levelTxt, objTxt;
+        levelTxt.load("txt/levels.txt");
+        auto idx0 = levelTxt.colIndexByName("Id");
+        auto idx1 = levelTxt.colIndexByName("LevelName");
+        auto rows = levelTxt.rows();
+        for (size_t i = 0; i < rows; ++i) {
+            auto id = levelTxt.value(i, idx0).second;
+            if (id >= d2data.levelNames.size()) {
+                d2data.levelNames.resize(id + 1);
+            }
+            auto *arr = lng.get(levelTxt.value(i, idx1).first);
+            if (arr != nullptr) { d2data.levelNames[id] = *arr; }
+        }
+        objTxt.load("txt/objects.txt");
+        idx0 = objTxt.colIndexByName("*ID");
+        idx1 = objTxt.colIndexByName("Name");
+        rows = objTxt.rows();
+        for (size_t i = 0; i < rows; ++i) {
+            auto id = objTxt.value(i, idx0).second;
+            if (id >= d2data.objNames.size()) {
+                d2data.objNames.resize(id + 1);
+            }
+            auto *arr = lng.get(objTxt.value(i, idx1).first);
+            if (arr != nullptr) { d2data.objNames[id] = *arr; }
+        }
+    }
 
     sg_setup(sg_desc {
         .context = sapp_sgcontext()
@@ -163,6 +197,7 @@ static void init() {
             {.action = SG_ACTION_CLEAR, .value = {0, 0, 0, .5}}
         },
     };
+
     const uint16_t indices[] = {
          0,  1,  2,  0,  2,  3,
     };
@@ -294,6 +329,7 @@ static void init() {
         .index_type = SG_INDEXTYPE_UINT16,
         .label = "color-pipeline",
     });
+    ShowWindow(hwnd, SW_SHOW);
 }
 
 static ULONGLONG nextTick = 0, nextSearchTick = 0;
@@ -308,22 +344,27 @@ static void updateWindowPosition() {
     auto windowSize = (width + height) * 3 / 4;
     auto d2rhwnd = (HWND)mapstate.d2rProcess->hwnd();
     RECT rc;
-    POINT pt;
     if (GetClientRect(d2rhwnd, &rc)) {
-        pt = {rc.right, rc.top};
+        POINT pt = {rc.left, rc.top};
         ClientToScreen(d2rhwnd, &pt);
+        rc.left = pt.x; rc.top = pt.y;
+        pt = {rc.right, rc.bottom};
+        ClientToScreen(d2rhwnd, &pt);
+        rc.right = pt.x; rc.bottom = pt.y;
     } else {
         HMONITOR hm = MonitorFromPoint(POINT {1, 1}, MONITOR_DEFAULTTONEAREST);
         MONITORINFO mi;
         mi.cbSize = sizeof(MONITORINFO);
         GetMonitorInfo(hm, &mi);
-        pt = { mi.rcWork.right, mi.rcWork.top };
+        rc = mi.rcWork;
     }
-    MoveWindow(hwnd, pt.x - windowSize, pt.y, windowSize, windowSize / 2, FALSE);
+    auto bear = (rc.bottom - rc.top) / 40;
+    MoveWindow(hwnd, rc.right - windowSize - bear, rc.top + bear, windowSize, windowSize / 2, FALSE);
+    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     auto w = (float)windowSize;
     auto h = w / 2;
     skstate.mapMVP = HMM_Orthographic(-w / 2, w / 2, h / 2, -h / 2, -1, 1)
-        * (HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1)));
+        * HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
 }
 
 static void updatePlayerPos(uint16_t posX, uint16_t posY) {
@@ -421,21 +462,26 @@ static void checkForUpdate() {
         };
         sg_update_buffer(drawstate[0].bind.vertex_buffers[0], SG_RANGE(vertices));
 
-        skstate.mapExits.clear();
+        skstate.mapObjs.clear();
         int count = 0;
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
+        auto transMat = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
         for (auto &p: mapstate.currMap->adjacentLevels) {
             if (p.second.exits.empty()) { ++count; continue; }
             auto px = float(p.second.exits[0].x - originX - x0) - widthf;
             auto py = float(p.second.exits[0].y - originY - y0) - heightf;
-            skstate.mapExits.emplace_back(MapExit{px, py, count ? "out" : "in"});
+            hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
+            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first][JsonLng::LNG_zhTW] : "Unknown";
+            /* Check for TalTombs */
+            if (p.first >= 66 && p.first <= 72) {
+                auto *m = mapstate.session->getMap(p.first);
+                if (m->objects.find(152) != m->objects.end()) {
+                    name = ">>> " + name +  " <<<";
+                }
+            }
+            skstate.mapObjs.emplace_back(MapObject{px, py, 1.f, .6f, 1.f, coord.X, coord.Y, std::move(name)});
             ++count;
         }
-        struct ObjectData {
-            float x, y;
-            float r, g, b;
-        };
-        std::vector<ObjectData> objects;
         for (auto &p: mapstate.currMap->objects) {
             auto ite = mapstate.ObjectType.find(p.first);
             if (ite == mapstate.ObjectType.end()) { continue; }
@@ -443,17 +489,18 @@ static void checkForUpdate() {
                 auto ptx = float(pt.x - originX - x0) - widthf;
                 auto pty = float(pt.y - originY - y0) - heightf;
                 switch (ite->second) {
-                case TypeWP:
-                    objects.emplace_back(ObjectData {
-                        ptx, pty, 1, 1, 0
-                    });
+                case TypeWP: {
+                    hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
+                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first][JsonLng::LNG_zhTW] : "Unknown";
+                    skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, 1.f, .0f, coord.X, coord.Y, std::move(name)});
                     break;
+                }
                 default:
                     break;
                 }
             }
         }
-        auto drawCount = 1 + skstate.mapExits.size() + objects.size();
+        auto drawCount = 1 + skstate.mapObjs.size();
         drawstate[1].count = drawCount;
         if (drawCount > skstate.drawArrayCapacity) {
             skstate.drawArrayCapacity = drawCount;
@@ -478,33 +525,7 @@ static void checkForUpdate() {
         auto posX = mapstate.d2rProcess->posX(), posY = mapstate.d2rProcess->posY();
         auto *vertices2 = skstate.vertices;
         index = 0;
-        for (auto &e: skstate.mapExits) {
-            vertices2[index++] = e.x - 4;
-            vertices2[index++] = e.y - 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = 1;
-            vertices2[index++] = .6f;
-            vertices2[index++] = 1;
-            vertices2[index++] = e.x + 4;
-            vertices2[index++] = e.y - 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = 1;
-            vertices2[index++] = .6f;
-            vertices2[index++] = 1;
-            vertices2[index++] = e.x + 4;
-            vertices2[index++] = e.y + 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = 1;
-            vertices2[index++] = .6f;
-            vertices2[index++] = 1;
-            vertices2[index++] = e.x - 4;
-            vertices2[index++] = e.y + 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = 1;
-            vertices2[index++] = .6f;
-            vertices2[index++] = 1;
-        }
-        for (auto &e: objects) {
+        for (auto &e: skstate.mapObjs) {
             vertices2[index++] = e.x - 4;
             vertices2[index++] = e.y - 4;
             vertices2[index++] = 0;
@@ -559,15 +580,17 @@ static void frame() {
             fonsClearState(skstate.fonsCtx);
             sgl_defaults();
             sgl_matrix_mode_projection();
-            sgl_load_matrix((const float *)&skstate.mapMVP.Elements[0][0]);
+            float w = sapp_widthf() * .5f, h = sapp_heightf() * .5f;
+            sgl_ortho(-w, w, h, -h, -1, 1);
             fonsSetFont(skstate.fonsCtx, skstate.font);
-            fonsSetSize(skstate.fonsCtx, 24.0f * skstate.dpiScale);
-            fonsSetColor(skstate.fonsCtx, sfons_rgba(224, 224, 224, 255));
+            fonsSetSize(skstate.fonsCtx, 16.0f * skstate.dpiScale);
+            fonsSetColor(skstate.fonsCtx, sfons_rgba(255, 255, 255, 255));
             fonsSetAlign(skstate.fonsCtx, FONS_ALIGN_CENTER);
-            for (auto &t: skstate.mapExits) {
-                fonsDrawText(skstate.fonsCtx, t.x, t.y - 8.f, t.str, nullptr);
+            for (auto &t: skstate.mapObjs) {
+                if (!t.str.empty()) {
+                    fonsDrawText(skstate.fonsCtx, t.tx, t.ty - 8.f, t.str.c_str(), nullptr);
+                }
             }
-//            fonsDrawText(skstate.fonsCtx, 10, 50, "Test Test", nullptr);
             sfons_flush(skstate.fonsCtx);
             sgl_draw();
         }
@@ -597,13 +620,12 @@ static void cleanup() {
 }
 
 sapp_desc sokol_main(int argc, char *argv[]) {
-    init(".");
     return sapp_desc {
         .init_cb = init,
         .frame_cb = frame,
         .cleanup_cb = cleanup,
-        .width = WindowSize * 2,
-        .height = WindowSize,
+        .width = 0,
+        .height = 0,
         .sample_count = 4,
         .swap_interval = 1,
         .alpha = true,

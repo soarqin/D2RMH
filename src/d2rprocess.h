@@ -39,6 +39,9 @@ private:
     uint64_t baseAddr_ = 0;
     uint64_t baseSize_ = 0;
 
+    uint64_t playerUnitOffset_ = 0;
+    uint64_t mapEnablePtr_ = 0;
+
     uint8_t mapEnabled_ = 0;
     char name_[16] = {};
     uint32_t act_ = 0;

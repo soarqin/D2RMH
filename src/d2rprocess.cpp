@@ -63,33 +63,27 @@ void D2RProcess::updateData(bool searchProcess) {
     available_ = false;
     if (!handle_) { return; }
 
-    const uint64_t playerUnitOffset = baseAddr_ + 0x2027660;
-    const uint64_t inGameMapOffset = baseAddr_ + 0x2037322;
-    const uint64_t xorKey0Offset = baseAddr_ + 0x1F86830;
-    const uint64_t xorKey1Offset = baseAddr_ + 0x20D2370 + 0x2EE;
-    const uint64_t xorKey2Offset = baseAddr_ + 0x20D2370 + 0x69B;
+    if (playerUnitOffset_ == 0) {
+        uint64_t playerPtr = baseAddr_ + 0x2027660;
+        for (uint64_t i = 0; i < 0x80; ++i) {
+            uint64_t paddr;
+            uint64_t val;
+            if (READ(playerPtr, paddr) && paddr && READ(paddr + 0xB8, val) && val == 0x100ULL) {
+                playerUnitOffset_ = playerPtr;
+                mapEnablePtr_ = baseAddr_ + 0x2037322;
+                break;
+            }
+            playerPtr += 8;
+        }
+    }
 
-    uint64_t xorKey64[3];
-    uint64_t xorData[2] = {
-        0xFFFFFFFF00000000ULL,
-        0x8092E7004270C976ULL,
-    };
-    READ(xorKey0Offset, xorKey64[0]);
-    READ(xorKey1Offset, xorKey64[1]);
-    READ(xorKey2Offset, xorKey64[2]);
-
-    uint64_t n0 = ((xorKey64[0] - xorKey64[1]) << 0x20) ^ (xorKey64[0] & xorData[0]);
-    uint64_t xorKey2Hi = xorKey64[2] >> 0x20;
-    uint64_t xorKey2HiRor = (xorKey2Hi >> 0xB) | (xorKey2Hi << (32 - 0xB));  //ror xorKey2Hi,0B
-    uint64_t n1 = (xorKey2HiRor ^ ~(n0 | (uint32_t)xorKey64[0])) << 0x20;
-    uint64_t n2 = (((n1 ^ ((n0 | (uint32_t)xorKey64[0]) & xorData[0])) | (uint32_t)xorKey64[0]) ^ xorData[1]) & 0x7F;
-    uint64_t playerPtr = playerUnitOffset + n2 * 8;
-    uint64_t mapEnablePtr = inGameMapOffset;
-
-    READ(mapEnablePtr, mapEnabled_);
+    READ(mapEnablePtr_, mapEnabled_);
 
     uint64_t addr;
-    if (!READ(playerPtr, addr) || !addr) { return; }
+    if (!READ(playerUnitOffset_, addr) || !addr) {
+        playerUnitOffset_ = 0;
+        return;
+    }
 
     uint64_t plrAddr;
     READ(addr + 0x10, plrAddr);
@@ -182,6 +176,9 @@ void D2RProcess::resetData() {
 
     baseAddr_ = 0;
     baseSize_ = 0;
+
+    playerUnitOffset_ = 0;
+    mapEnablePtr_ = 0;
 
     mapEnabled_ = 0;
     name_[0] = 0;

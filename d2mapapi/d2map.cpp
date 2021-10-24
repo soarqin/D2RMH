@@ -10,7 +10,7 @@ d2client_struct D2Client;
 
 char D2_DIR[MAX_PATH] = "";
 
-void init(const char *dir) {
+void d2MapInit(const char *dir) {
     snprintf(D2_DIR, sizeof(D2_DIR), "%s\\", dir);
 
     char szPath[MAX_PATH] = {0};
