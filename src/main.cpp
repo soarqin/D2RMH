@@ -118,6 +118,7 @@ static struct {
         {496, {TypeWP}},
         {511, {TypeWP}},
         {539, {TypeWP}},
+        {30, {TypeQuest}}, // Tree of Inifuss
         {61, {TypeQuest, "StoneTheta"}}, // Cairn Stones
         {100, {TypePortal}}, // Portal to Duriel's Lair
         {108, {TypeQuest}}, // Malus
