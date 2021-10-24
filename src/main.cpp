@@ -3,6 +3,7 @@
 #include "d2rprocess.h"
 #include "d2txt.h"
 #include "jsonlng.h"
+#include "cfg.h"
 
 #include "sokol/HandmadeMath.h"
 
@@ -67,6 +68,7 @@ static struct {
     Session *session = nullptr;
     CollisionMap *currMap = nullptr;
     D2RProcess *d2rProcess = nullptr;
+    JsonLng::LNG language = JsonLng::LNG_enUS;
     int lastMapId = -1;
     uint32_t lastSeed = 0;
     uint8_t lastDifficulty = 0xFF;
@@ -145,7 +147,7 @@ static void init() {
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
     SetLayeredWindowAttributes(hwnd, 0, 185, LWA_COLORKEY | LWA_ALPHA);
 
-    d2MapInit(".");
+    d2MapInit(cfg->d2Path.c_str());
     {
         JsonLng lng;
         lng.load("lng/levels.json");
@@ -187,7 +189,7 @@ static void init() {
     skstate.dpiScale = sapp_dpi_scale();
     const int atlas_dim = round_pow2(512.0f * skstate.dpiScale);
     skstate.fonsCtx = sfons_create(atlas_dim, atlas_dim, FONS_ZERO_TOPLEFT);
-    skstate.fontBuf = loadFromFile("normal.ttf", skstate.fontBufSize);
+    skstate.fontBuf = loadFromFile(cfg->fontFilePath.c_str(), skstate.fontBufSize);
     if (skstate.fontBuf) {
         skstate.font = fonsAddFontMem(skstate.fonsCtx, "normal", skstate.fontBuf, skstate.fontBufSize, 0);
     }
@@ -471,7 +473,7 @@ static void checkForUpdate() {
             auto px = float(p.second.exits[0].x - originX - x0) - widthf;
             auto py = float(p.second.exits[0].y - originY - y0) - heightf;
             hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
-            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first][JsonLng::LNG_zhTW] : "Unknown";
+            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first][mapstate.language] : "Unknown";
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = mapstate.session->getMap(p.first);
@@ -491,7 +493,7 @@ static void checkForUpdate() {
                 switch (ite->second) {
                 case TypeWP: {
                     hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first][JsonLng::LNG_zhTW] : "Unknown";
+                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first][mapstate.language] : "Unknown";
                     skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, 1.f, .0f, coord.X, coord.Y, std::move(name)});
                     break;
                 }
@@ -583,7 +585,7 @@ static void frame() {
             float w = sapp_widthf() * .5f, h = sapp_heightf() * .5f;
             sgl_ortho(-w, w, h, -h, -1, 1);
             fonsSetFont(skstate.fonsCtx, skstate.font);
-            fonsSetSize(skstate.fonsCtx, 16.0f * skstate.dpiScale);
+            fonsSetSize(skstate.fonsCtx, cfg->fontSize * skstate.dpiScale);
             fonsSetColor(skstate.fonsCtx, sfons_rgba(255, 255, 255, 255));
             fonsSetAlign(skstate.fonsCtx, FONS_ALIGN_CENTER);
             for (auto &t: skstate.mapObjs) {
@@ -620,6 +622,8 @@ static void cleanup() {
 }
 
 sapp_desc sokol_main(int argc, char *argv[]) {
+    loadCfg();
+    mapstate.language = JsonLng::lngFromString(cfg->language);
     return sapp_desc {
         .init_cb = init,
         .frame_cb = frame,

@@ -52,3 +52,20 @@ const std::array<std::string, JsonLng::LNG_MAX> *JsonLng::get(const std::string 
     if (ite == strings_.end()) { return nullptr; }
     return &ite->second;
 }
+
+JsonLng::LNG JsonLng::lngFromString(const std::string &language) {
+    if (language == "enUS") return LNG_enUS;
+    if (language == "zhTW") return LNG_zhTW;
+    if (language == "deDE") return LNG_deDE;
+    if (language == "esES") return LNG_esES;
+    if (language == "frFR") return LNG_frFR;
+    if (language == "itIT") return LNG_itIT;
+    if (language == "koKR") return LNG_koKR;
+    if (language == "plPL") return LNG_plPL;
+    if (language == "esMX") return LNG_esMX;
+    if (language == "jaJP") return LNG_jaJP;
+    if (language == "ptBR") return LNG_ptBR;
+    if (language == "ruRU") return LNG_ruRU;
+    if (language == "zhCN") return LNG_zhCN;
+    return JsonLng::LNG_enUS;
+}
