@@ -1,9 +1,9 @@
 #include "d2map.h"
 #include "session.h"
 #include "d2rprocess.h"
-#include "d2txt.h"
-#include "jsonlng.h"
 #include "cfg.h"
+#include "ini.h"
+#include "../common/jsonlng.h"
 
 #include "sokol/HandmadeMath.h"
 
@@ -19,13 +19,9 @@
 #include "sokol/sokol_gl.h"
 #include "sokol/sokol_fontstash.h"
 
+#include <unordered_map>
 #include <iostream>
 #include <fstream>
-#include <vector>
-
-static struct {
-    std::vector<std::string> levelNames, objNames;
-} d2data;
 
 static sg_pass_action pass_action = {};
 static struct {
@@ -61,10 +57,19 @@ static struct {
 
 enum EObjType {
     TypeNone,
-    TypeWP,
+    TypeWayPoint,
     TypePortal,
     TypeChest,
     TypeQuest,
+    TypeMax,
+};
+
+const float objColors[TypeMax][4] = {
+    {0, 0, 0, 0},
+    {.6f, .6f, 1.f},
+    {1.f, .6f, 1.f},
+    {1.f, .4f, .4f},
+    {.4f, .4f, .1f},
 };
 
 static struct {
@@ -72,10 +77,10 @@ static struct {
     CollisionMap *currMap = nullptr;
     D2RProcess *d2rProcess = nullptr;
     JsonLng::LNG language = JsonLng::LNG_enUS;
-    int lastMapId = -1;
-    uint32_t lastSeed = 0;
-    uint8_t lastDifficulty = 0xFF;
-    uint16_t lastPosX = 0, lastPosY = 0;
+    int currLevelId = -1;
+    uint32_t currSeed = 0;
+    uint8_t currDifficulty = 0xFF;
+    uint16_t currPosX = 0, currPosY = 0;
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 8) | (uint32_t(a) << 24))
     std::map<int, uint32_t> MapColor = {
         {0, RGBA(50, 50, 50, 255)},
@@ -99,41 +104,11 @@ static struct {
 #undef RGBA
     struct ObjType {
         EObjType type;
-        const char *replaceName;
+        std::string name;
     };
-    std::map<int, ObjType> ObjectType = {
-        {119, {TypeWP}},
-        {145, {TypeWP}},
-        {156, {TypeWP}},
-        {157, {TypeWP}},
-        {237, {TypeWP}},
-        {238, {TypeWP}},
-        {288, {TypeWP}},
-        {323, {TypeWP}},
-        {324, {TypeWP}},
-        {398, {TypeWP}},
-        {402, {TypeWP}},
-        {429, {TypeWP}},
-        {494, {TypeWP}},
-        {496, {TypeWP}},
-        {511, {TypeWP}},
-        {539, {TypeWP}},
-        {30, {TypeQuest}}, // Tree of Inifuss
-        {61, {TypeQuest, "StoneTheta"}}, // Cairn Stones
-        {100, {TypePortal}}, // Portal to Duriel's Lair
-        {108, {TypeQuest}}, // Malus
-        {149, {TypeQuest}}, // Tainted Sun Altar
-        {152, {TypeQuest}}, // Where you place the Horadric staff
-        {298, {TypePortal}}, // Arcane Sanctuary portal
-        {342, {TypePortal}}, // Hellgate
-        {354, {TypeQuest, "box"}}, // Horadric Cube Chest
-        {355, {TypeQuest, "tr1"}}, // Horadric Scroll Chest
-        {356, {TypeQuest, "Staff of Kings"}}, // Staff Of Kings Chest
-        {357, {TypeQuest}}, // Arcane Tome
-        {376, {TypeQuest}}, // Hellforge
-        {580, {TypeChest}}, // Unique Chest
-        // {581, {TypeChest}}, // Random Treasure Chest
-    };
+    std::unordered_map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
+    std::map<int, std::string> levels;
+    std::map<int, ObjType> objects;
 } mapstate;
 
 static int round_pow2(float v) {
@@ -158,51 +133,54 @@ unsigned char *loadFromFile(const char *filename, size_t &size) {
     return buf;
 }
 
-static void init() {
-    mapstate.d2rProcess = new D2RProcess;
-    HWND hwnd = (HWND)sapp_win32_get_hwnd();
-    ShowWindow(hwnd, SW_HIDE);
-
-    DWORD style = WS_POPUP;
-    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT;
-    SetWindowLong(hwnd, GWL_STYLE, style);
-    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
-    SetLayeredWindowAttributes(hwnd, 0, 185, LWA_COLORKEY | LWA_ALPHA);
-
-    d2MapInit(cfg->d2Path.c_str());
-    {
-        JsonLng lng;
-        lng.load("lng/item-names.json");
-        lng.load("lng/levels.json");
-        lng.load("lng/objects.json");
-        D2TXT levelTxt, objTxt;
-        levelTxt.load("txt/levels.txt");
-        auto idx0 = levelTxt.colIndexByName("Id");
-        auto idx1 = levelTxt.colIndexByName("LevelName");
-        auto rows = levelTxt.rows();
-        for (size_t i = 0; i < rows; ++i) {
-            auto id = levelTxt.value(i, idx0).second;
-            if (id >= d2data.levelNames.size()) {
-                d2data.levelNames.resize(id + 1);
-            }
-            d2data.levelNames[id] = lng.get(levelTxt.value(i, idx1).first, mapstate.language);
+static void initData() {
+    int section = -1;
+    ini_parse("D2RMH_data.ini", [](void* user, const char* section,
+                             const char* name, const char* value)->int {
+        auto *isec = (int*)user;
+        if (!name) {
+            if (!strcmp(section, "levels")) { *isec = 0; }
+            else if (!strcmp(section, "objects")) { *isec = 1; }
+            else if (!strcmp(section, "strings")) { *isec = 2; }
+            else { *isec = -1; }
+            return 1;
         }
-        objTxt.load("txt/objects.txt");
-        idx0 = objTxt.colIndexByName("*ID");
-        idx1 = objTxt.colIndexByName("Name");
-        rows = objTxt.rows();
-        for (size_t i = 0; i < rows; ++i) {
-            auto id = objTxt.value(i, idx0).second;
-            if (id >= d2data.objNames.size()) {
-                d2data.objNames.resize(id + 1);
-            }
-            auto ite = mapstate.ObjectType.find(id);
-            d2data.objNames[id] = ite != mapstate.ObjectType.end() && ite->second.replaceName != nullptr ?
-                                  lng.get(ite->second.replaceName, mapstate.language) :
-                                  lng.get(objTxt.value(i, idx1).first, mapstate.language);
+        switch (*isec) {
+        case 0:
+            mapstate.levels[strtol(name, nullptr, 0)] = value;
+            break;
+        case 1: {
+            const char *pos = strchr(value, '|');
+            if (!pos) { break; }
+            auto ssize = pos - value;
+            EObjType t = TypeNone;
+            if (!strncmp(value, "Waypoint", ssize)) { t = TypeWayPoint; }
+            else if (!strncmp(value, "Quest", ssize)) { t = TypeQuest; }
+            else if (!strncmp(value, "Portal", ssize)) { t = TypePortal; }
+            else if (!strncmp(value, "Chest", ssize)) { t = TypeChest; }
+            mapstate.objects[strtol(name, nullptr, 0)] = { t, pos + 1 };
+            break;
         }
-    }
+        case 2: {
+            const char *pos = strchr(name, '[');
+            if (!pos) { break; }
+            auto index = strtoul(pos + 1, nullptr, 0);
+            if (index < 0 || index >= JsonLng::LNG_MAX) { break; }
+            char realname[256];
+            auto ssize = pos - name;
+            memcpy(realname, name, ssize);
+            realname[ssize] = 0;
+            mapstate.strings[realname][index] = value;
+            break;
+        }
+        default:
+            break;
+        }
+        return 1;
+    }, &section);
+}
 
+static void initSokol() {
     sg_setup(sg_desc{
         .context = sapp_sgcontext()
     });
@@ -355,6 +333,23 @@ static void init() {
         .index_type = SG_INDEXTYPE_UINT16,
         .label = "color-pipeline",
     });
+}
+
+static void init() {
+    mapstate.d2rProcess = new D2RProcess;
+    HWND hwnd = (HWND)sapp_win32_get_hwnd();
+    ShowWindow(hwnd, SW_HIDE);
+
+    DWORD style = WS_POPUP;
+    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    SetWindowLong(hwnd, GWL_STYLE, style);
+    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+    SetLayeredWindowAttributes(hwnd, 0, 190, LWA_COLORKEY | LWA_ALPHA);
+
+    d2MapInit(cfg->d2Path.c_str());
+    initData();
+    initSokol();
+
     ShowWindow(hwnd, SW_SHOW);
 }
 
@@ -397,10 +392,10 @@ static void updateWindowPosition() {
 }
 
 static void updatePlayerPos(uint16_t posX, uint16_t posY) {
-    mapstate.lastPosX = posX;
-    mapstate.lastPosY = posY;
+    mapstate.currPosX = posX;
+    mapstate.currPosY = posY;
 
-    if (drawstate[1].count) {
+    if (drawstate[1].count > 1) {
         int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
             y1 = mapstate.currMap->cropY2;
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
@@ -410,12 +405,16 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
         auto oyf = float(posY) - float(y1 - y0) * .5f;
 
         float vertices[] = {
-            oxf - 3, oyf - 3, .0f, .4f, .4f, 1,
-            oxf + 3, oyf - 3, .0f, .4f, .4f, 1,
-            oxf + 3, oyf + 3, .0f, .4f, .4f, 1,
-            oxf - 3, oyf + 3, .0f, .4f, .4f, 1,
+            oxf - 4, oyf - 4, .0f, .2f, 1.f, 1.f,
+            oxf + 4, oyf - 4, .0f, .2f, 1.f, 1.f,
+            oxf + 4, oyf + 4, .0f, .2f, 1.f, 1.f,
+            oxf - 4, oyf + 4, .0f, .2f, 1.f, 1.f,
+            oxf - 2, oyf - 2, .0f, 1.f, .5f, .5f,
+            oxf + 2, oyf - 2, .0f, 1.f, .5f, .5f,
+            oxf + 2, oyf + 2, .0f, 1.f, .5f, .5f,
+            oxf - 2, oyf + 2, .0f, 1.f, .5f, .5f,
         };
-        memcpy(skstate.vertices + 6 * 4 * (drawstate[1].count - 1), &vertices, sizeof(vertices));
+        memcpy(skstate.vertices + 6 * 4 * (drawstate[1].count - 2), &vertices, sizeof(vertices));
         sg_update_buffer(drawstate[1].bind.vertex_buffers[0],
                          sg_range{skstate.vertices, sizeof(float) * 6 * 4 * drawstate[1].count});
     }
@@ -441,16 +440,16 @@ static void checkForUpdate() {
     auto seed = mapstate.d2rProcess->seed();
     auto difficulty = mapstate.d2rProcess->difficulty();
     bool changed = false;
-    if (!mapstate.session || seed != mapstate.lastSeed || difficulty != mapstate.lastDifficulty) {
-        mapstate.lastSeed = seed;
-        mapstate.lastDifficulty = difficulty;
+    if (!mapstate.session || seed != mapstate.currSeed || difficulty != mapstate.currDifficulty) {
+        mapstate.currSeed = seed;
+        mapstate.currDifficulty = difficulty;
         changed = true;
         delete mapstate.session;
         mapstate.session = new Session(seed, difficulty);
     }
     auto levelId = mapstate.d2rProcess->levelId();
-    if (changed || levelId != mapstate.lastMapId) {
-        mapstate.lastMapId = levelId;
+    if (changed || levelId != mapstate.currLevelId) {
+        mapstate.currLevelId = levelId;
         drawstate[0].enable = drawstate[1].enable = levelId > 0;
         if (levelId <= 0) {
             drawstate[0].enable = drawstate[1].enable = false;
@@ -510,46 +509,56 @@ static void checkForUpdate() {
                 ++count;
                 continue;
             }
+            auto ite = mapstate.levels.find(p.first);
+            if (ite == mapstate.levels.end()) { continue; }
             auto px = float(p.second.exits[0].x - originX - x0) - widthf;
             auto py = float(p.second.exits[0].y - originY - y0) - heightf;
             hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
-            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first] : "Unknown";
+            std::string name = mapstate.strings[ite->second][mapstate.language];
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = mapstate.session->getMap(p.first);
                 if (m->objects.find(152) != m->objects.end()) {
                     name = ">>> " + name + " <<<";
+                    break;
                 }
             }
-            skstate.mapObjs.emplace_back(MapObject{px, py, 1.f, .6f, 1.f, coord.X, coord.Y, std::move(name)});
+            skstate.mapObjs.emplace_back(MapObject{px, py,
+                                                   objColors[TypePortal][0],
+                                                   objColors[TypePortal][1],
+                                                   objColors[TypePortal][2],
+                                                   coord.X, coord.Y,
+                                                   std::move(name)});
             ++count;
         }
         for (auto &p: mapstate.currMap->objects) {
-            auto ite = mapstate.ObjectType.find(p.first);
-            if (ite == mapstate.ObjectType.end()) { continue; }
+            auto ite = mapstate.objects.find(p.first);
+            if (ite == mapstate.objects.end()) { continue; }
             for (auto &pt: p.second) {
                 auto ptx = float(pt.x - originX - x0) - widthf;
                 auto pty = float(pt.y - originY - y0) - heightf;
-                switch (ite->second.type) {
-                case TypeWP:
+                auto tp = ite->second.type;
+                switch (tp) {
+                case TypeWayPoint:
                 case TypeQuest:
-                case TypePortal: {
-                    hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first] : "Unknown";
-                    skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, 1.f, .0f, coord.X, coord.Y, std::move(name)});
-                    break;
-                }
+                case TypePortal:
                 case TypeChest: {
                     hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[5] : "Unknown";
-                    skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, .4f, .4f, coord.X, coord.Y, std::move(name)});
+                    std::string name = mapstate.strings[ite->second.name][mapstate.language];
+                    skstate.mapObjs.emplace_back(MapObject {ptx, pty,
+                                                            objColors[tp][0],
+                                                            objColors[tp][1],
+                                                            objColors[tp][2],
+                                                            coord.X, coord.Y,
+                                                            std::move(name)});
                     break;
                 }
-                default:break;
+                default:
+                    break;
                 }
             }
         }
-        auto drawCount = 1 + skstate.mapObjs.size();
+        auto drawCount = 2 + skstate.mapObjs.size();
         drawstate[1].count = drawCount;
         if (drawCount > skstate.drawArrayCapacity) {
             skstate.drawArrayCapacity = drawCount;
@@ -604,7 +613,7 @@ static void checkForUpdate() {
     } else {
         if (mapstate.currMap) {
             auto posX = mapstate.d2rProcess->posX(), posY = mapstate.d2rProcess->posY();
-            if (posX != mapstate.lastPosX || posY != mapstate.lastPosY) {
+            if (posX != mapstate.currPosX || posY != mapstate.currPosY) {
                 updatePlayerPos(posX, posY);
             }
         }
@@ -668,9 +677,26 @@ static void cleanup() {
     delete mapstate.d2rProcess;
 }
 
+static JsonLng::LNG lngFromString(const std::string &language) {
+    if (language == "enUS") return JsonLng::LNG_enUS;
+    if (language == "zhTW") return JsonLng::LNG_zhTW;
+    if (language == "deDE") return JsonLng::LNG_deDE;
+    if (language == "esES") return JsonLng::LNG_esES;
+    if (language == "frFR") return JsonLng::LNG_frFR;
+    if (language == "itIT") return JsonLng::LNG_itIT;
+    if (language == "koKR") return JsonLng::LNG_koKR;
+    if (language == "plPL") return JsonLng::LNG_plPL;
+    if (language == "esMX") return JsonLng::LNG_esMX;
+    if (language == "jaJP") return JsonLng::LNG_jaJP;
+    if (language == "ptBR") return JsonLng::LNG_ptBR;
+    if (language == "ruRU") return JsonLng::LNG_ruRU;
+    if (language == "zhCN") return JsonLng::LNG_zhCN;
+    return JsonLng::LNG_enUS;
+}
+
 sapp_desc sokol_main(int argc, char *argv[]) {
     loadCfg();
-    mapstate.language = JsonLng::lngFromString(cfg->language);
+    mapstate.language = lngFromString(cfg->language);
     return sapp_desc{
         .init_cb = init,
         .frame_cb = frame,

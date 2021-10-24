@@ -17,6 +17,6 @@ struct Cfg {
     std::string language;
 };
 
-extern void loadCfg(const std::string &filename = "D2RMH.json");
+extern void loadCfg(const std::string &filename = "D2RMH.ini");
 
 extern const Cfg *cfg;

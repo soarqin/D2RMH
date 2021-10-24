@@ -11,6 +11,7 @@
 #include <map>
 #include <array>
 #include <string>
+#include <istream>
 
 class JsonLng final {
 public:
@@ -32,10 +33,13 @@ public:
     };
 
     bool load(const std::string &filename);
+    void load(const void *data, size_t size);
 
-    const std::string &get(const std::string &key, LNG lang, LNG fallback = LNG_enUS);
+    [[nodiscard]] const std::string &get(const std::string &key, LNG lang, LNG fallback = LNG_enUS) const;
+    [[nodiscard]] const std::array<std::string, LNG_MAX> *get(const std::string &key) const;
 
-    static LNG lngFromString(const std::string &language);
+private:
+    void loadInternal(std::istream &stm);
 
 private:
     std::map<std::string, std::array<std::string, LNG_MAX>> strings_;

@@ -8,29 +8,26 @@
 
 #include "cfg.h"
 
-#include "json/json.hpp"
-#include <fstream>
+#include "ini.h"
+#include <cstring>
 
 static Cfg sCfg;
 const Cfg *cfg = &sCfg;
 
-template<typename T, typename V>
-inline void loadval(nlohmann::json &j, T &val, const std::string &key, const V &defVal) {
-    if (j.contains(key)) {
-        val = j[key].get<T>();
-    } else {
-        val = defVal;
-    }
-}
+#define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
+#define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtoul(value, nullptr, 0); }
 
 void loadCfg(const std::string &filename) {
-    std::ifstream ifs(filename);
-    if (!ifs.is_open()) { return; }
-    nlohmann::json j;
-    ifs >> j;
-    ifs.close();
-    loadval(j, sCfg.d2Path, "d2_path", ".");
-    loadval(j, sCfg.fontFilePath, "font_file_path", "normal.ttf");
-    loadval(j, sCfg.fontSize, "font_size", 12.f);
-    loadval(j, sCfg.language, "language", "enUS");
+    ini_parse(filename.c_str(), [](void* user, const char* section,
+                                   const char* name, const char* value)->int {
+        if (!name) {
+            return 1;
+        }
+        if (false) {}
+        LOADVAL(d2_path, d2Path)
+        LOADVAL(font_file_path, fontFilePath)
+        LOADVALN(font_size, fontSize)
+        LOADVAL(language, language)
+        return 1;
+    }, nullptr);
 }
