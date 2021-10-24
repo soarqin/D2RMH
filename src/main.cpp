@@ -24,7 +24,7 @@
 #include <vector>
 
 static struct {
-    std::vector<std::array<std::string, JsonLng::LNG_MAX>> levelNames, objNames;
+    std::vector<std::string> levelNames, objNames;
 } d2data;
 
 static sg_pass_action pass_action = {};
@@ -62,6 +62,9 @@ static struct {
 enum EObjType {
     TypeNone,
     TypeWP,
+    TypePortal,
+    TypeChest,
+    TypeQuest,
 };
 
 static struct {
@@ -94,32 +97,50 @@ static struct {
         {53, RGBA(10, 11, 43, 255)},
     };
 #undef RGBA
-    std::map<int, EObjType> ObjectType = {
-        {119, TypeWP},
-        {145, TypeWP},
-        {156, TypeWP},
-        {157, TypeWP},
-        {237, TypeWP},
-        {238, TypeWP},
-        {288, TypeWP},
-        {323, TypeWP},
-        {324, TypeWP},
-        {398, TypeWP},
-        {402, TypeWP},
-        {429, TypeWP},
-        {494, TypeWP},
-        {496, TypeWP},
-        {511, TypeWP},
-        {539, TypeWP},
-   };
+    struct ObjType {
+        EObjType type;
+        const char *replaceName;
+    };
+    std::map<int, ObjType> ObjectType = {
+        {119, {TypeWP}},
+        {145, {TypeWP}},
+        {156, {TypeWP}},
+        {157, {TypeWP}},
+        {237, {TypeWP}},
+        {238, {TypeWP}},
+        {288, {TypeWP}},
+        {323, {TypeWP}},
+        {324, {TypeWP}},
+        {398, {TypeWP}},
+        {402, {TypeWP}},
+        {429, {TypeWP}},
+        {494, {TypeWP}},
+        {496, {TypeWP}},
+        {511, {TypeWP}},
+        {539, {TypeWP}},
+        {61, {TypeQuest, "StoneTheta"}}, // Cairn Stones
+        {100, {TypePortal}}, // Portal to Duriel's Lair
+        {108, {TypeQuest}}, // Malus
+        {149, {TypeQuest}}, // Tainted Sun Altar
+        {152, {TypeQuest}}, // Where you place the Horadric staff
+        {298, {TypePortal}}, // Arcane Sanctuary portal
+        {342, {TypePortal}}, // Hellgate
+        {354, {TypeQuest, "box"}}, // Horadric Cube Chest
+        {355, {TypeQuest, "tr1"}}, // Horadric Scroll Chest
+        {356, {TypeQuest, "Staff of Kings"}}, // Staff Of Kings Chest
+        {357, {TypeQuest}}, // Arcane Tome
+        {376, {TypeQuest}}, // Hellforge
+        {580, {TypeChest}}, // Unique Chest
+        // {581, {TypeChest}}, // Random Treasure Chest
+    };
 } mapstate;
 
 static int round_pow2(float v) {
-    uint32_t vi = ((uint32_t) v) - 1;
+    uint32_t vi = ((uint32_t)v) - 1;
     for (uint32_t i = 0; i < 5; i++) {
-        vi |= (vi >> (1<<i));
+        vi |= (vi >> (1 << i));
     }
-    return (int) (vi + 1);
+    return (int)(vi + 1);
 }
 
 unsigned char *loadFromFile(const char *filename, size_t &size) {
@@ -131,7 +152,7 @@ unsigned char *loadFromFile(const char *filename, size_t &size) {
     size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     auto *buf = new unsigned char[size];
-    ifs.read((char*)buf, size);
+    ifs.read((char *)buf, size);
     ifs.close();
     return buf;
 }
@@ -150,6 +171,7 @@ static void init() {
     d2MapInit(cfg->d2Path.c_str());
     {
         JsonLng lng;
+        lng.load("lng/item-names.json");
         lng.load("lng/levels.json");
         lng.load("lng/objects.json");
         D2TXT levelTxt, objTxt;
@@ -162,8 +184,7 @@ static void init() {
             if (id >= d2data.levelNames.size()) {
                 d2data.levelNames.resize(id + 1);
             }
-            auto *arr = lng.get(levelTxt.value(i, idx1).first);
-            if (arr != nullptr) { d2data.levelNames[id] = *arr; }
+            d2data.levelNames[id] = lng.get(levelTxt.value(i, idx1).first, mapstate.language);
         }
         objTxt.load("txt/objects.txt");
         idx0 = objTxt.colIndexByName("*ID");
@@ -174,15 +195,17 @@ static void init() {
             if (id >= d2data.objNames.size()) {
                 d2data.objNames.resize(id + 1);
             }
-            auto *arr = lng.get(objTxt.value(i, idx1).first);
-            if (arr != nullptr) { d2data.objNames[id] = *arr; }
+            auto ite = mapstate.ObjectType.find(id);
+            d2data.objNames[id] = ite != mapstate.ObjectType.end() && ite->second.replaceName != nullptr ?
+                                  lng.get(ite->second.replaceName, mapstate.language) :
+                                  lng.get(objTxt.value(i, idx1).first, mapstate.language);
         }
     }
 
-    sg_setup(sg_desc {
+    sg_setup(sg_desc{
         .context = sapp_sgcontext()
     });
-    sgl_setup(sgl_desc_t {
+    sgl_setup(sgl_desc_t{
         .sample_count = sapp_sample_count()
     });
 
@@ -194,16 +217,16 @@ static void init() {
         skstate.font = fonsAddFontMem(skstate.fonsCtx, "normal", skstate.fontBuf, skstate.fontBufSize, 0);
     }
 
-    pass_action = sg_pass_action {
+    pass_action = sg_pass_action{
         .colors = {
             {.action = SG_ACTION_CLEAR, .value = {0, 0, 0, .5}}
         },
     };
 
     const uint16_t indices[] = {
-         0,  1,  2,  0,  2,  3,
+        0, 1, 2, 0, 2, 3,
     };
-    drawstate[0].bind.index_buffer = sg_make_buffer(sg_buffer_desc {
+    drawstate[0].bind.index_buffer = sg_make_buffer(sg_buffer_desc{
         .type = SG_BUFFERTYPE_INDEXBUFFER,
         .data = SG_RANGE(indices),
         .label = "draw-indices"
@@ -213,7 +236,7 @@ static void init() {
         .usage = SG_USAGE_DYNAMIC,
         .label = "draw-vertices"
     });
-    sg_shader image_shd = sg_make_shader(sg_shader_desc {
+    sg_shader image_shd = sg_make_shader(sg_shader_desc{
         .vs = {
             .source =
             "#version 330\n"
@@ -243,15 +266,15 @@ static void init() {
             "void main() {\n"
             "  frag_color = texture(tex, uv);\n"
             "}\n",
-            .images = {{ .name="tex", .image_type=SG_IMAGETYPE_2D }},
+            .images = {{.name="tex", .image_type=SG_IMAGETYPE_2D}},
         }
     });
-    drawstate[0].pip = sg_make_pipeline(sg_pipeline_desc {
+    drawstate[0].pip = sg_make_pipeline(sg_pipeline_desc{
         .shader = image_shd,
         .layout = {
             .attrs = {
-                { .format = SG_VERTEXFORMAT_FLOAT3 },
-                { .format = SG_VERTEXFORMAT_FLOAT2 },
+                {.format = SG_VERTEXFORMAT_FLOAT3},
+                {.format = SG_VERTEXFORMAT_FLOAT2},
             }
         },
         .colors = {
@@ -268,18 +291,18 @@ static void init() {
         .label = "draw-pipeline",
     });
 
-    drawstate[1].bind.index_buffer = sg_make_buffer(sg_buffer_desc {
-        .size = sizeof(uint16_t) * 6 * 96,
+    drawstate[1].bind.index_buffer = sg_make_buffer(sg_buffer_desc{
+        .size = sizeof(uint16_t) * 6 * 256,
         .type = SG_BUFFERTYPE_INDEXBUFFER,
         .usage = SG_USAGE_DYNAMIC,
         .label = "color-indices"
     });
     drawstate[1].bind.vertex_buffers[0] = sg_make_buffer(sg_buffer_desc{
-        .size = sizeof(float) * 6 * 4 * 96,
+        .size = sizeof(float) * 6 * 4 * 256,
         .usage = SG_USAGE_DYNAMIC,
         .label = "color-vertices"
     });
-    sg_shader color_shd = sg_make_shader(sg_shader_desc {
+    sg_shader color_shd = sg_make_shader(sg_shader_desc{
         .vs = {
             .source =
             "#version 330\n"
@@ -310,12 +333,12 @@ static void init() {
             "}\n",
         }
     });
-    drawstate[1].pip = sg_make_pipeline(sg_pipeline_desc {
+    drawstate[1].pip = sg_make_pipeline(sg_pipeline_desc{
         .shader = color_shd,
         .layout = {
             .attrs = {
-                { .format = SG_VERTEXFORMAT_FLOAT3 },
-                { .format = SG_VERTEXFORMAT_FLOAT3 },
+                {.format = SG_VERTEXFORMAT_FLOAT3},
+                {.format = SG_VERTEXFORMAT_FLOAT3},
             }
         },
         .colors = {
@@ -338,23 +361,26 @@ static ULONGLONG nextTick = 0, nextSearchTick = 0;
 
 static void updateWindowPosition() {
     if (!mapstate.currMap) { return; }
-    int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2, y1 = mapstate.currMap->cropY2;
+    int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
+        y1 = mapstate.currMap->cropY2;
     int width = x1 - x0;
     int height = y1 - y0;
 
     HWND hwnd = (HWND)sapp_win32_get_hwnd();
-    auto windowSize = (width + height) * 3 / 4;
+    auto windowSize = (width + height) * 3 / 4 + 8;
     auto d2rhwnd = (HWND)mapstate.d2rProcess->hwnd();
     RECT rc;
     if (GetClientRect(d2rhwnd, &rc)) {
         POINT pt = {rc.left, rc.top};
         ClientToScreen(d2rhwnd, &pt);
-        rc.left = pt.x; rc.top = pt.y;
+        rc.left = pt.x;
+        rc.top = pt.y;
         pt = {rc.right, rc.bottom};
         ClientToScreen(d2rhwnd, &pt);
-        rc.right = pt.x; rc.bottom = pt.y;
+        rc.right = pt.x;
+        rc.bottom = pt.y;
     } else {
-        HMONITOR hm = MonitorFromPoint(POINT {1, 1}, MONITOR_DEFAULTTONEAREST);
+        HMONITOR hm = MonitorFromPoint(POINT{1, 1}, MONITOR_DEFAULTTONEAREST);
         MONITORINFO mi;
         mi.cbSize = sizeof(MONITORINFO);
         GetMonitorInfo(hm, &mi);
@@ -373,22 +399,25 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
     mapstate.lastPosX = posX;
     mapstate.lastPosY = posY;
 
-    int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
-        y1 = mapstate.currMap->cropY2;
-    auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
-    posX -= originX + x0;
-    posY -= originY + y0;
-    auto oxf = float(posX) - float(x1 - x0) * .5f;
-    auto oyf = float(posY) - float(y1 - y0) * .5f;
+    if (drawstate[1].count) {
+        int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
+            y1 = mapstate.currMap->cropY2;
+        auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
+        posX -= originX + x0;
+        posY -= originY + y0;
+        auto oxf = float(posX) - float(x1 - x0) * .5f;
+        auto oyf = float(posY) - float(y1 - y0) * .5f;
 
-    float vertices[] = {
-        oxf - 3, oyf - 3, .0f, .4f, .4f, 1,
-        oxf + 3, oyf - 3, .0f, .4f, .4f, 1,
-        oxf + 3, oyf + 3, .0f, .4f, .4f, 1,
-        oxf - 3, oyf + 3, .0f, .4f, .4f, 1,
-    };
-    memcpy(skstate.vertices + 6 * 4 * (drawstate[1].count - 1), &vertices, sizeof(vertices));
-    sg_update_buffer(drawstate[1].bind.vertex_buffers[0], sg_range { skstate.vertices, sizeof(float) * 6 * 4 * drawstate[1].count });
+        float vertices[] = {
+            oxf - 3, oyf - 3, .0f, .4f, .4f, 1,
+            oxf + 3, oyf - 3, .0f, .4f, .4f, 1,
+            oxf + 3, oyf + 3, .0f, .4f, .4f, 1,
+            oxf - 3, oyf + 3, .0f, .4f, .4f, 1,
+        };
+        memcpy(skstate.vertices + 6 * 4 * (drawstate[1].count - 1), &vertices, sizeof(vertices));
+        sg_update_buffer(drawstate[1].bind.vertex_buffers[0],
+                         sg_range{skstate.vertices, sizeof(float) * 6 * 4 * drawstate[1].count});
+    }
 }
 
 static void checkForUpdate() {
@@ -422,13 +451,20 @@ static void checkForUpdate() {
     if (changed || levelId != mapstate.lastMapId) {
         mapstate.lastMapId = levelId;
         drawstate[0].enable = drawstate[1].enable = levelId > 0;
-        if (levelId <= 0) { drawstate[0].enable = drawstate[1].enable = false; return; }
+        if (levelId <= 0) {
+            drawstate[0].enable = drawstate[1].enable = false;
+            return;
+        }
         mapstate.currMap = mapstate.session->getMap(levelId);
-        if (!mapstate.currMap) { drawstate[0].enable = drawstate[1].enable = false; return; }
+        if (!mapstate.currMap) {
+            drawstate[0].enable = drawstate[1].enable = false;
+            return;
+        }
         drawstate[0].count = 1;
         sg_destroy_image(drawstate[0].bind.fs_images[0]);
         drawstate[0].bind.fs_images[0] = sg_alloc_image();
-        int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2, y1 = mapstate.currMap->cropY2;
+        int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
+            y1 = mapstate.currMap->cropY2;
         int width = x1 - x0;
         int height = y1 - y0;
         auto *pixels = new uint32_t[width * height];
@@ -469,16 +505,19 @@ static void checkForUpdate() {
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
         auto transMat = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
         for (auto &p: mapstate.currMap->adjacentLevels) {
-            if (p.second.exits.empty()) { ++count; continue; }
+            if (p.second.exits.empty()) {
+                ++count;
+                continue;
+            }
             auto px = float(p.second.exits[0].x - originX - x0) - widthf;
             auto py = float(p.second.exits[0].y - originY - y0) - heightf;
             hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
-            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first][mapstate.language] : "Unknown";
+            std::string name = p.first < d2data.levelNames.size() ? d2data.levelNames[p.first] : "Unknown";
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = mapstate.session->getMap(p.first);
                 if (m->objects.find(152) != m->objects.end()) {
-                    name = ">>> " + name +  " <<<";
+                    name = ">>> " + name + " <<<";
                 }
             }
             skstate.mapObjs.emplace_back(MapObject{px, py, 1.f, .6f, 1.f, coord.X, coord.Y, std::move(name)});
@@ -490,15 +529,22 @@ static void checkForUpdate() {
             for (auto &pt: p.second) {
                 auto ptx = float(pt.x - originX - x0) - widthf;
                 auto pty = float(pt.y - originY - y0) - heightf;
-                switch (ite->second) {
-                case TypeWP: {
+                switch (ite->second.type) {
+                case TypeWP:
+                case TypeQuest:
+                case TypePortal: {
                     hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first][mapstate.language] : "Unknown";
+                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[p.first] : "Unknown";
                     skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, 1.f, .0f, coord.X, coord.Y, std::move(name)});
                     break;
                 }
-                default:
+                case TypeChest: {
+                    hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
+                    std::string name = p.first < d2data.objNames.size() ? d2data.objNames[5] : "Unknown";
+                    skstate.mapObjs.emplace_back(MapObject{ptx, pty, 1.f, .4f, .4f, coord.X, coord.Y, std::move(name)});
                     break;
+                }
+                default:break;
                 }
             }
         }
@@ -522,7 +568,7 @@ static void checkForUpdate() {
             indices[index++] = base + 2;
             indices[index++] = base + 3;
         }
-        sg_update_buffer(drawstate[1].bind.index_buffer, sg_range { indices, sizeof(uint16_t) * 6 * drawCount });
+        sg_update_buffer(drawstate[1].bind.index_buffer, sg_range{indices, sizeof(uint16_t) * 6 * drawCount});
 
         auto posX = mapstate.d2rProcess->posX(), posY = mapstate.d2rProcess->posY();
         auto *vertices2 = skstate.vertices;
@@ -624,7 +670,7 @@ static void cleanup() {
 sapp_desc sokol_main(int argc, char *argv[]) {
     loadCfg();
     mapstate.language = JsonLng::lngFromString(cfg->language);
-    return sapp_desc {
+    return sapp_desc{
         .init_cb = init,
         .frame_cb = frame,
         .cleanup_cb = cleanup,

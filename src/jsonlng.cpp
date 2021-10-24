@@ -47,12 +47,6 @@ const std::string &JsonLng::get(const std::string &key, JsonLng::LNG lang, JsonL
     return ite->second[fallback];
 }
 
-const std::array<std::string, JsonLng::LNG_MAX> *JsonLng::get(const std::string &key) {
-    auto ite = strings_.find(key);
-    if (ite == strings_.end()) { return nullptr; }
-    return &ite->second;
-}
-
 JsonLng::LNG JsonLng::lngFromString(const std::string &language) {
     if (language == "enUS") return LNG_enUS;
     if (language == "zhTW") return LNG_zhTW;

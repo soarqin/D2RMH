@@ -34,7 +34,6 @@ public:
     bool load(const std::string &filename);
 
     const std::string &get(const std::string &key, LNG lang, LNG fallback = LNG_enUS);
-    const std::array<std::string, LNG_MAX> *get(const std::string &key);
 
     static LNG lngFromString(const std::string &language);
 
