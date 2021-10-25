@@ -1,8 +1,20 @@
 # D2RMH
 Diablo II Resurrected map revealing tool.
 
-# Notes
+# What's New
+## v0.1
+* first release, with complete map revealing and quest/npc guides
+
+# Prerequisite
 * Diablo II v1.13c is required.
+
+# Usage
+1. Edit D2RMH.ini, set `d2_path` to your Diablo II v1.13c folder path.
+2. Run D2RMH.exe, enjoy!
+
+# How to build
+* Just use [cmake](https://www.cmake.org/) to build, Visual Studio 2019 and MinGW GCC 32bit 9.0+(better using MSYS2) are supported
+* For Visual Studio 2019: add `-A Win32` to cmake commandline to ensure builds a 32-bit exe
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
