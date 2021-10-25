@@ -20,6 +20,8 @@
 #include "sokol/sokol_fontstash.h"
 
 #include <unordered_map>
+#include <map>
+#include <set>
 #include <iostream>
 #include <fstream>
 
@@ -41,6 +43,10 @@ struct MapObject {
     std::string str;
 };
 
+struct LinePoint {
+    float x, y;
+};
+
 static struct {
     hmm_mat4 mapMVP = {};
     float dpiScale = .0f;
@@ -49,6 +55,7 @@ static struct {
     size_t fontBufSize = 0;
     int font = FONS_INVALID;
     std::vector<MapObject> mapObjs;
+    std::vector<LinePoint> lineEnds;
 
     uint16_t *indices = nullptr;
     float *vertices = nullptr;
@@ -88,8 +95,8 @@ static struct {
         {3, RGBA(255, 0, 255, 255)},
         {4, RGBA(0, 255, 255, 255)},
         {6, RGBA(80, 51, 33, 255)},
-        {7, RGBA(180, 180, 180, 255)},
-        {8, RGBA(180, 180, 180, 255)},
+        {7, RGBA(0, 0, 0, 255)},
+        {8, RGBA(0, 0, 0, 255)},
         {16, RGBA(50, 50, 50, 255)},
         {17, RGBA(255, 51, 255, 255)},
         {19, RGBA(0, 51, 255, 255)},
@@ -109,6 +116,8 @@ static struct {
     std::unordered_map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
     std::map<int, std::string> levels;
     std::map<int, ObjType> objects;
+    std::map<int, std::string> npcs;
+    std::map<int, std::set<int>> guides;
 } mapstate;
 
 static int round_pow2(float v) {
@@ -139,17 +148,32 @@ static void initData() {
                              const char* name, const char* value)->int {
         auto *isec = (int*)user;
         if (!name) {
-            if (!strcmp(section, "levels")) { *isec = 0; }
-            else if (!strcmp(section, "objects")) { *isec = 1; }
-            else if (!strcmp(section, "strings")) { *isec = 2; }
+            if (!strcmp(section, "guides")) { *isec = 0; }
+            else if (!strcmp(section, "levels")) { *isec = 1; }
+            else if (!strcmp(section, "objects")) { *isec = 2; }
+            else if (!strcmp(section, "npcs")) { *isec = 3; }
+            else if (!strcmp(section, "strings")) { *isec = 4; }
             else { *isec = -1; }
             return 1;
         }
         switch (*isec) {
-        case 0:
+        case 0: {
+            int from = strtol(name, nullptr, 0);
+            int to;
+            if (value[0] == '+') {
+                to = strtol(value + 1, nullptr, 0) | 0x10000;
+            } else if (value[0] == '-') {
+                to = strtol(value + 1, nullptr, 0) | 0x20000;
+            } else {
+                to = strtol(value, nullptr, 0);
+            }
+            mapstate.guides[from].insert(to);
+            break;
+        }
+        case 1:
             mapstate.levels[strtol(name, nullptr, 0)] = value;
             break;
-        case 1: {
+        case 2: {
             const char *pos = strchr(value, '|');
             if (!pos) { break; }
             auto ssize = pos - value;
@@ -161,7 +185,11 @@ static void initData() {
             mapstate.objects[strtol(name, nullptr, 0)] = { t, pos + 1 };
             break;
         }
-        case 2: {
+        case 3: {
+            mapstate.npcs[strtol(name, nullptr, 0)] = value;
+            break;
+        }
+        case 4: {
             const char *pos = strchr(name, '[');
             if (!pos) { break; }
             auto index = strtoul(pos + 1, nullptr, 0);
@@ -391,6 +419,25 @@ static void updateWindowPosition() {
         * HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
 }
 
+static void drawLineBuild(float *verticesOut, float x0, float y0, float x1, float y1, float width,
+                     float r, float g, float b) {
+    auto fromPt = HMM_Vec2(x0, y0);
+    auto toPt = HMM_Vec2(x1, y1);
+    auto delta = toPt - fromPt;
+    auto perp = HMM_Normalize(HMM_Vec2(-delta.Y, delta.X)) * width * .5f;
+    auto A = fromPt + perp;
+    auto B = fromPt - perp;
+    auto C = toPt - perp;
+    auto D = toPt + perp;
+    float vertices[] = {
+        A.X, A.Y, .0f, r, g, b,
+        B.X, B.Y, .0f, r, g, b,
+        C.X, C.Y, .0f, r, g, b,
+        D.X, D.Y, .0f, r, g, b,
+    };
+    memcpy(verticesOut, vertices, sizeof(vertices));
+}
+
 static void updatePlayerPos(uint16_t posX, uint16_t posY) {
     mapstate.currPosX = posX;
     mapstate.currPosY = posY;
@@ -404,6 +451,11 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
         auto oxf = float(posX) - float(x1 - x0) * .5f;
         auto oyf = float(posY) - float(y1 - y0) * .5f;
 
+        auto idx = drawstate[1].count - 2 - skstate.lineEnds.size();
+        for (auto &le: skstate.lineEnds) {
+            drawLineBuild(skstate.vertices + 6 * 4 * idx, oxf, oyf, le.x, le.y, 1.5f, .8f, .8f, .8f);
+            ++idx;
+        }
         float vertices[] = {
             oxf - 4, oyf - 4, .0f, .2f, 1.f, 1.f,
             oxf + 4, oyf - 4, .0f, .2f, 1.f, 1.f,
@@ -501,35 +553,45 @@ static void checkForUpdate() {
         sg_update_buffer(drawstate[0].bind.vertex_buffers[0], SG_RANGE(vertices));
 
         skstate.mapObjs.clear();
-        int count = 0;
+        skstate.lineEnds.clear();
+        const std::set<int> *guides = nullptr;
+        {
+            auto gdite = mapstate.guides.find(levelId);
+            if (gdite != mapstate.guides.end()) {
+                guides = &gdite->second;
+            }
+        }
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
         auto transMat = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
         for (auto &p: mapstate.currMap->adjacentLevels) {
             if (p.second.exits.empty()) {
-                ++count;
                 continue;
             }
             auto ite = mapstate.levels.find(p.first);
             if (ite == mapstate.levels.end()) { continue; }
-            auto px = float(p.second.exits[0].x - originX - x0) - widthf;
-            auto py = float(p.second.exits[0].y - originY - y0) - heightf;
-            hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
-            std::string name = mapstate.strings[ite->second][mapstate.language];
-            /* Check for TalTombs */
-            if (p.first >= 66 && p.first <= 72) {
-                auto *m = mapstate.session->getMap(p.first);
-                if (m->objects.find(152) != m->objects.end()) {
-                    name = ">>> " + name + " <<<";
-                    break;
+            for (auto &e: p.second.exits) {
+                auto px = float(e.x - originX - x0) - widthf;
+                auto py = float(e.y - originY - y0) - heightf;
+                hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
+                std::string name = mapstate.strings[ite->second][mapstate.language];
+                /* Check for TalTombs */
+                if (p.first >= 66 && p.first <= 72) {
+                    auto *m = mapstate.session->getMap(p.first);
+                    if (m->objects.find(152) != m->objects.end()) {
+                        name = ">>> " + name + " <<<";
+                        break;
+                    }
+                }
+                skstate.mapObjs.emplace_back(MapObject{px, py,
+                                                       objColors[TypePortal][0],
+                                                       objColors[TypePortal][1],
+                                                       objColors[TypePortal][2],
+                                                       coord.X, coord.Y,
+                                                       std::move(name)});
+                if (guides && (*guides).find(p.first) != (*guides).end()) {
+                    skstate.lineEnds.emplace_back(LinePoint{px, py});
                 }
             }
-            skstate.mapObjs.emplace_back(MapObject{px, py,
-                                                   objColors[TypePortal][0],
-                                                   objColors[TypePortal][1],
-                                                   objColors[TypePortal][2],
-                                                   coord.X, coord.Y,
-                                                   std::move(name)});
-            ++count;
         }
         for (auto &p: mapstate.currMap->objects) {
             auto ite = mapstate.objects.find(p.first);
@@ -551,6 +613,9 @@ static void checkForUpdate() {
                                                             objColors[tp][2],
                                                             coord.X, coord.Y,
                                                             std::move(name)});
+                    if (guides && (*guides).find(p.first | 0x10000) != (*guides).end()) {
+                        skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
+                    }
                     break;
                 }
                 default:
@@ -558,7 +623,26 @@ static void checkForUpdate() {
                 }
             }
         }
-        auto drawCount = 2 + skstate.mapObjs.size();
+        for (auto &p: mapstate.currMap->npcs) {
+            auto ite = mapstate.npcs.find(p.first);
+            if (ite == mapstate.npcs.end()) { continue; }
+            for (auto &pt: p.second) {
+                auto ptx = float(pt.x - originX - x0) - widthf;
+                auto pty = float(pt.y - originY - y0) - heightf;
+                hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
+                std::string name = mapstate.strings[ite->second][mapstate.language];
+                skstate.mapObjs.emplace_back(MapObject {ptx, pty,
+                                                        objColors[TypeQuest][0],
+                                                        objColors[TypeQuest][1],
+                                                        objColors[TypeQuest][2],
+                                                        coord.X, coord.Y,
+                                                        std::move(name)});
+                if (guides && (*guides).find(p.first | 0x20000) != (*guides).end()) {
+                    skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
+                }
+            }
+        }
+        auto drawCount = 2 + skstate.mapObjs.size() + skstate.lineEnds.size();
         drawstate[1].count = drawCount;
         if (drawCount > skstate.drawArrayCapacity) {
             skstate.drawArrayCapacity = drawCount;
