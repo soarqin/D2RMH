@@ -93,24 +93,9 @@ static struct {
     uint8_t currDifficulty = 0xFF;
     uint16_t currPosX = 0, currPosY = 0;
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 8) | (uint32_t(a) << 24))
-    std::map<int, uint32_t> MapColor = {
-        {0, RGBA(50, 50, 50, 255)},
-        {2, RGBA(10, 51, 23, 255)},
-        {3, RGBA(255, 0, 255, 255)},
-        {4, RGBA(0, 255, 255, 255)},
-        {6, RGBA(80, 51, 33, 255)},
-        {7, RGBA(0, 0, 0, 255)},
-        {8, RGBA(0, 0, 0, 255)},
-        {16, RGBA(50, 50, 50, 255)},
-        {17, RGBA(255, 51, 255, 255)},
-        {19, RGBA(0, 51, 255, 255)},
-        {20, RGBA(70, 51, 41, 255)},
-        {21, RGBA(255, 0, 255, 255)},
-        {23, RGBA(0, 0, 255, 255)},
-        {33, RGBA(0, 0, 255, 255)},
-        {37, RGBA(50, 51, 23, 255)},
-        {39, RGBA(20, 11, 33, 255)},
-        {53, RGBA(10, 11, 43, 255)},
+    uint32_t MapColor[2] = {
+        RGBA(50, 50, 50, 255),
+        RGBA(0, 0, 0, 255),
     };
 #undef RGBA
     struct ObjType {
@@ -443,7 +428,8 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
     mapstate.currPosX = posX;
     mapstate.currPosY = posY;
 
-    if (drawstate[1].count > 1) {
+    int idx = drawstate[1].count - 2 - int(skstate.lineEnds.size() * 3);
+    if (idx >= 0) {
         int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
             y1 = mapstate.currMap->cropY2;
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
@@ -452,9 +438,35 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
         auto oxf = float(posX) - float(x1 - x0) * .5f;
         auto oyf = float(posY) - float(y1 - y0) * .5f;
 
-        auto idx = drawstate[1].count - 2 - skstate.lineEnds.size();
         for (auto &le: skstate.lineEnds) {
-            drawLineBuild(skstate.vertices + 6 * 4 * idx, oxf, oyf, le.x, le.y, 1.5f, .8f, .8f, .8f);
+            const float mlen = 80.f;
+            float sx, sy, ex, ey;
+            auto line = HMM_Vec2(le.x, le.y) - HMM_Vec2(oxf, oyf);
+            auto len = HMM_Length(line);
+            sx = oxf + line.X / len * 6.f;
+            sy = oyf + line.Y / len * 6.f;
+            if (len > mlen) {
+                ex = sx + line.X / len * mlen;
+                ey = sy + line.Y / len * mlen;
+            } else if (len > 6.f) {
+                ex = le.x;
+                ey = le.y;
+            } else {
+                ex = sx; ey = sy;
+            }
+
+            const float angle = 35.f;
+            /* Draw the line */
+            drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
+            ++idx;
+
+            /* Draw the arrow */
+            len = len > 20.f ? 10.f : len * .5f;
+            auto rot = HMM_Normalize(HMM_Rotate(angle, HMM_Vec3(0, 0, 1)) * HMM_Vec4(-line.X, -line.Y, 0, 0)) * len;
+            drawLineBuild(skstate.vertices + 6 * 4 * idx, ex, ey, ex + rot.X, ey + rot.Y, 1.5f, .8f, .8f, .8f);
+            ++idx;
+            rot = HMM_Normalize(HMM_Rotate(-angle, HMM_Vec3(0, 0, 1)) * HMM_Vec4(-line.X, -line.Y, 0, 0)) * len;
+            drawLineBuild(skstate.vertices + 6 * 4 * idx, ex, ey, ex + rot.X, ey + rot.Y, 1.5f, .8f, .8f, .8f);
             ++idx;
         }
         float vertices[] = {
@@ -526,8 +538,8 @@ static void checkForUpdate() {
         for (int y = y0; y < y1; ++y) {
             int idx = y * totalWidth + x0;
             for (int x = x0; x < x1; ++x) {
-                auto ite = mapstate.MapColor.find(mapstate.currMap->map[idx++]);
-                *ptr++ = ite == mapstate.MapColor.end() ? 0u : ite->second;
+                auto clr = mapstate.MapColor[mapstate.currMap->map[idx++] & 1];
+                *ptr++ = clr;
             }
         }
         needUpdate = true;
@@ -567,33 +579,35 @@ static void checkForUpdate() {
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
         auto transMat = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
         for (auto &p: mapstate.currMap->adjacentLevels) {
-            if (p.second.exits.empty()) {
-                continue;
-            }
             auto ite = mapstate.levels.find(p.first);
             if (ite == mapstate.levels.end()) { continue; }
-            for (auto &e: p.second.exits) {
-                auto px = float(e.x - originX - x0) - widthf;
-                auto py = float(e.y - originY - y0) - heightf;
-                hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
-                std::string name = mapstate.strings[ite->second][mapstate.language];
-                /* Check for TalTombs */
-                if (p.first >= 66 && p.first <= 72) {
-                    auto *m = mapstate.session->getMap(p.first);
-                    if (m->objects.find(152) != m->objects.end()) {
-                        name = ">>> " + name + " <<<";
-                        skstate.lineEnds.emplace_back(LinePoint{px, py});
-                    }
-                }
-                skstate.mapObjs.emplace_back(MapObject{px, py,
-                                                       objColors[TypePortal][0],
-                                                       objColors[TypePortal][1],
-                                                       objColors[TypePortal][2],
-                                                       coord.X, coord.Y,
-                                                       std::move(name)});
-                if (guides && (*guides).find(p.first) != (*guides).end()) {
+            float px, py;
+            if (p.second.exits.empty()) {
+                px = float(p.second.levelOrigin.x - originX - x0) - widthf;
+                py = float(p.second.levelOrigin.y - originY - y0) - heightf;
+            } else {
+                auto &e = p.second.exits[0];
+                px = float(e.x - originX - x0) - widthf;
+                py = float(e.y - originY - y0) - heightf;
+            }
+            hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
+            std::string name = mapstate.strings[ite->second][mapstate.language];
+            /* Check for TalTombs */
+            if (p.first >= 66 && p.first <= 72) {
+                auto *m = mapstate.session->getMap(p.first);
+                if (m->objects.find(152) != m->objects.end()) {
+                    name = ">>> " + name + " <<<";
                     skstate.lineEnds.emplace_back(LinePoint{px, py});
                 }
+            }
+            skstate.mapObjs.emplace_back(MapObject{px, py,
+                                                   objColors[TypePortal][0],
+                                                   objColors[TypePortal][1],
+                                                   objColors[TypePortal][2],
+                                                   coord.X, coord.Y,
+                                                   std::move(name)});
+            if (guides && (*guides).find(p.first) != (*guides).end()) {
+                skstate.lineEnds.emplace_back(LinePoint{px, py});
             }
         }
         std::map<uint32_t, std::vector<Point>> *objs[2] = {&mapstate.currMap->objects, &mapstate.currMap->npcs};
@@ -631,7 +645,7 @@ static void checkForUpdate() {
                 }
             }
         }
-        auto drawCount = 2 + skstate.mapObjs.size() + skstate.lineEnds.size();
+        auto drawCount = 2 + skstate.mapObjs.size() + skstate.lineEnds.size() * 3;
         drawstate[1].count = drawCount;
         if (drawCount > skstate.drawArrayCapacity) {
             skstate.drawArrayCapacity = drawCount;
