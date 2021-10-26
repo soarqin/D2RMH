@@ -2,14 +2,21 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.2
+* add display for Unique Chest, Well, neighbour map path
+* fix display of correct taltomb entrance
+* shorter line pointed to target, similar to legacy d2hackmap
+* peformance tweaks to d2mapapi
+
 ## v0.1
 * first release, with complete map revealing and quest/npc guides
 
 # Prerequisite
-* Diablo II v1.13c is required.
+* Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
 
 # Usage
-1. Edit D2RMH.ini, set `d2_path` to your Diablo II v1.13c folder path.
+1. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
+   or just put extracted D2RMH.exe/D2RMH.ini/D2RMH_data.ini to D2 v1.13c folder.
 2. Run D2RMH.exe, enjoy!
 
 # How to build

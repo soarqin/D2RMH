@@ -428,7 +428,7 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
     mapstate.currPosX = posX;
     mapstate.currPosY = posY;
 
-    int idx = drawstate[1].count - 2 - int(skstate.lineEnds.size() * 3);
+    int idx = drawstate[1].count - 2 - int(skstate.lineEnds.size() * 2);
     if (idx >= 0) {
         int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
             y1 = mapstate.currMap->cropY2;
@@ -439,18 +439,19 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
         auto oyf = float(posY) - float(y1 - y0) * .5f;
 
         for (auto &le: skstate.lineEnds) {
-            const float mlen = 80.f;
+            const float mlen = 78.f;
+            const float gap = 12.f;
             float sx, sy, ex, ey;
             auto line = HMM_Vec2(le.x, le.y) - HMM_Vec2(oxf, oyf);
             auto len = HMM_Length(line);
-            sx = oxf + line.X / len * 6.f;
-            sy = oyf + line.Y / len * 6.f;
+            sx = oxf + line.X / len * 8.f;
+            sy = oyf + line.Y / len * 8.f;
             if (len > mlen) {
-                ex = sx + line.X / len * mlen;
-                ey = sy + line.Y / len * mlen;
-            } else if (len > 6.f) {
-                ex = le.x;
-                ey = le.y;
+                ex = oxf + line.X / len * (mlen - gap);
+                ey = oyf + line.Y / len * (mlen - gap);
+            } else if (len > gap) {
+                ex = le.x - line.X / len * gap;
+                ey = le.y - line.Y / len * gap;
             } else {
                 ex = sx; ey = sy;
             }
@@ -460,13 +461,26 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
             drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
             ++idx;
 
-            /* Draw the arrow */
-            len = len > 20.f ? 10.f : len * .5f;
-            auto rot = HMM_Normalize(HMM_Rotate(angle, HMM_Vec3(0, 0, 1)) * HMM_Vec4(-line.X, -line.Y, 0, 0)) * len;
-            drawLineBuild(skstate.vertices + 6 * 4 * idx, ex, ey, ex + rot.X, ey + rot.Y, 1.5f, .8f, .8f, .8f);
-            ++idx;
-            rot = HMM_Normalize(HMM_Rotate(-angle, HMM_Vec3(0, 0, 1)) * HMM_Vec4(-line.X, -line.Y, 0, 0)) * len;
-            drawLineBuild(skstate.vertices + 6 * 4 * idx, ex, ey, ex + rot.X, ey + rot.Y, 1.5f, .8f, .8f, .8f);
+            /* Draw the dot */
+            if (ex == sx) {
+                float vertices[] = {
+                    0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                };
+                memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+            } else {
+                ex += line.X / len * gap;
+                ey += line.Y / len * gap;
+                float vertices[] = {
+                    ex - 3, ey - 3, .0f, .8f, .8f, .8f,
+                    ex + 1.5f, ey - 1.5f, .0f, .8f, .8f, .8f,
+                    ex + 3, ey + 3, .0f, .8f, .8f, .8f,
+                    ex - 1.5f, ey + 1.5f, .0f, .8f, .8f, .8f,
+                };
+                memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+            }
             ++idx;
         }
         float vertices[] = {
@@ -645,7 +659,7 @@ static void checkForUpdate() {
                 }
             }
         }
-        auto drawCount = 2 + skstate.mapObjs.size() + skstate.lineEnds.size() * 3;
+        auto drawCount = 2 + skstate.mapObjs.size() + skstate.lineEnds.size() * 2;
         drawstate[1].count = drawCount;
         if (drawCount > skstate.drawArrayCapacity) {
             skstate.drawArrayCapacity = drawCount;
