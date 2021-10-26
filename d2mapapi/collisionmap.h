@@ -27,8 +27,9 @@ public:
     bool build();
 
     Point levelOrigin; // level top-left
+    int totalWidth = 0, totalHeight = 0;
     int cropX = -1, cropY = -1, cropX2 = -1, cropY2 = -1;
-    std::vector<std::vector<uint16_t>> map;
+    std::vector<int16_t> map;
     std::map<uint32_t, AdjacentLevel> adjacentLevels;
     std::map<uint32_t, std::vector<Point>> npcs;
     std::map<uint32_t, std::vector<Point>> objects;

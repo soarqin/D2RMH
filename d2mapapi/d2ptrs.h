@@ -40,7 +40,7 @@ FUNCPTR(D2COMMON,
         LoadAct,
         Act* __stdcall,
         (uint32_t ActNumber, uint32_t MapId, uint32_t Unk, uint32_t Unk_2, uint32_t Unk_3, uint32_t Unk_4, uint32_t TownLevelId, uint32_t Func_1, uint32_t Func_2),
-        0x3CB30)//Updated 1.13 0x3CB30 // 1.12  0x56780
+        -10951)//Updated 1.13 0x3CB30 // 1.12  0x56780
 FUNCPTR(D2COMMON, UnloadAct, void __stdcall, (Act * pAct), -10868) //Updated // 1.12 -10710
 
 FUNCPTR(FOG, 10021, void __fastcall, (const char *szProg), -10021) // 1.12 & 1.13

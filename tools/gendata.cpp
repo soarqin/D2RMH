@@ -55,8 +55,7 @@ int main(int argc, char *argv[]) {
     struct UserParseData {
         /* -1-not used  0-guides  1-useful_names  2-useful_objects  3-name_replace */
         int section = -1;
-        std::map<std::string, std::string> usefulNames;
-        std::map<int, std::string> usefulObjects, usefulNpcs, nameReplace;
+        std::map<int, std::pair<std::string, std::string>> usefulObjectOp, usefulObjects, usefulNpcs;
         std::map<std::string, std::set<std::string>> guides;
     } parseData;
     ini_parse("gendata.ini", [](void* user, const char* section, const char* name, const char* value)->int {
@@ -64,14 +63,12 @@ int main(int argc, char *argv[]) {
         if (!name) {
             if (!strcmp(section, "guides")) {
                 pd->section = 0;
-            } else if (!strcmp(section, "useful_names")) {
+            } else if (!strcmp(section, "useful_object_op")) {
                 pd->section = 1;
             } else if (!strcmp(section, "useful_objects")) {
                 pd->section = 2;
             } else if (!strcmp(section, "useful_npcs")) {
                 pd->section = 3;
-            } else if (!strcmp(section, "name_replace")) {
-                pd->section = 4;
             } else {
                 pd->section = -1;
             }
@@ -94,21 +91,24 @@ int main(int argc, char *argv[]) {
             const char *token2 = strchr(start2, ']');
             if (token2 == nullptr) { break; }
             pd->guides[std::string(start, token)].insert(std::string(start2, token2));
+            break;
         }
         case 1: {
-            pd->usefulNames[name] = value;
+            const char *token = strchr(value, ',');
+            pd->usefulObjectOp[strtol(name, nullptr, 0)] = token == nullptr ? std::make_pair(value, "")
+                                                                            : std::make_pair(std::string(value, token), token + 1);
             break;
         }
         case 2: {
-            pd->usefulObjects[strtol(name, nullptr, 0)] = value;
+            const char *token = strchr(value, ',');
+            pd->usefulObjects[strtol(name, nullptr, 0)] = token == nullptr ? std::make_pair(value, "")
+                                                                           : std::make_pair(std::string(value, token), token + 1);
             break;
         }
         case 3: {
-            pd->usefulNpcs[strtol(name, nullptr, 0)] = value;
-            break;
-        }
-        case 4: {
-            pd->nameReplace[strtol(name, nullptr, 0)] = value;
+            const char *token = strchr(value, ',');
+            pd->usefulNpcs[strtol(name, nullptr, 0)] = token == nullptr ? std::make_pair(value, "")
+                                                                        : std::make_pair(std::string(value, token), token + 1);
             break;
         }
         default:
@@ -131,9 +131,10 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/npcs.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
 
-    D2TXT levelTxt, objTxt;
+    D2TXT levelTxt, objTxt, npcTxt;
     loadTxt(levelTxt, storage, "data:data/global/excel/levels.txt");
     loadTxt(objTxt, storage, "data:data/global/excel/objects.txt");
+    loadTxt(npcTxt, storage, "data:data/global/excel/monstats.txt");
     CascCloseStorage(storage);
 
     std::map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
@@ -160,23 +161,24 @@ int main(int argc, char *argv[]) {
     ofs << std::endl << '[' << "objects" << ']' << std::endl;
     idx0 = objTxt.colIndexByName("*ID");
     idx1 = objTxt.colIndexByName("Name");
+    auto idx2 = objTxt.colIndexByName("OperateFn");
     rows = objTxt.rows();
     for (size_t i = 0; i < rows; ++i) {
         auto id = objTxt.value(i, idx0).second;
-        auto key = objTxt.value(i, idx1).first;
-        auto kite = parseData.usefulNames.find(key);
+        auto op = objTxt.value(i, idx2).second;
+        auto kite = parseData.usefulObjectOp.find(op);
         std::string typeStr;
-        if (kite == parseData.usefulNames.end()) {
+        std::string key;
+        if (kite == parseData.usefulObjectOp.end()) {
             auto ite = parseData.usefulObjects.find(id);
             if (ite == parseData.usefulObjects.end()) { continue; }
-            typeStr = ite->second;
-            auto rite = parseData.nameReplace.find(id);
-            if (rite != parseData.nameReplace.end()) {
-                key = rite->second;
-            }
+            key = ite->second.second;
+            typeStr = ite->second.first;
         } else {
-            typeStr = kite->second;
+            key = kite->second.second;
+            typeStr = kite->second.first;
         }
+        if (key.empty()) { key = objTxt.value(i, idx1).first; }
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;
@@ -184,12 +186,20 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    idx0 = npcTxt.colIndexByName("*hcIdx");
+    idx1 = npcTxt.colIndexByName("NameStr");
     ofs << std::endl << '[' << "npcs" << ']' << std::endl;
-    for (auto &p: parseData.usefulNpcs) {
-        const auto *arr = jlng.get(p.second);
+    rows = npcTxt.rows();
+    for (size_t i = 0; i < rows; ++i) {
+        auto id = npcTxt.value(i, idx0).second;
+        auto ite = parseData.usefulNpcs.find(id);
+        if (ite == parseData.usefulNpcs.end()) { continue; }
+        std::string key = ite->second.second;
+        if (key.empty()) { key = npcTxt.value(i, idx1).first; }
+        const auto *arr = jlng.get(key);
         if (arr) {
-            strings[p.second] = *arr;
-            ofs << p.first << '=' << p.second << std::endl;
+            strings[key] = *arr;
+            ofs << id << '=' << ite->second.first << '|' << key << std::endl;
         }
     }
 

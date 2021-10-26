@@ -30,7 +30,8 @@ bool CollisionMap::build() {
 
         const int width = pLevel->dwSizeX * 5;
         const int height = pLevel->dwSizeY * 5;
-        map = std::vector<std::vector<uint16_t>>(height, std::vector<uint16_t>(width, -1));
+        map = std::vector<int16_t>(width * height, -1);
+        totalWidth = width; totalHeight = height;
 
         for (Room2 *pRoom2 = pLevel->pRoom2First; pRoom2; pRoom2 = pRoom2->pRoom2Next) {
             bool bAdded = false;
@@ -71,8 +72,9 @@ bool CollisionMap::build() {
                 if (cropX2 < 0 || nLimitX > cropX2) cropX2 = nLimitX;
                 if (cropY2 < 0 || nLimitY > cropY2) cropY2 = nLimitY;
                 for (int j = y; j < nLimitY; j++) {
+                    int index = j * width + x;
                     for (int i = x; i < nLimitX; i++) {
-                        map[j][i] = *p++;
+                        map[index++] = *p++;
                     }
                 }
             }

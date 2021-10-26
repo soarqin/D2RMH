@@ -68,6 +68,8 @@ enum EObjType {
     TypePortal,
     TypeChest,
     TypeQuest,
+    TypeShrine,
+    TypeWell,
     TypeMax,
 };
 
@@ -77,6 +79,8 @@ const float objColors[TypeMax][4] = {
     {1.f, .6f, 1.f},
     {1.f, .4f, .4f},
     {.4f, .4f, .1f},
+    {1.f, .2f, .7f},
+    {2.f, .2f, .1f},
 };
 
 static struct {
@@ -115,8 +119,7 @@ static struct {
     };
     std::unordered_map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
     std::map<int, std::string> levels;
-    std::map<int, ObjType> objects;
-    std::map<int, std::string> npcs;
+    std::map<int, ObjType> objects[2];
     std::map<int, std::set<int>> guides;
 } mapstate;
 
@@ -173,7 +176,7 @@ static void initData() {
         case 1:
             mapstate.levels[strtol(name, nullptr, 0)] = value;
             break;
-        case 2: {
+        case 2: case 3: {
             const char *pos = strchr(value, '|');
             if (!pos) { break; }
             auto ssize = pos - value;
@@ -182,11 +185,9 @@ static void initData() {
             else if (!strncmp(value, "Quest", ssize)) { t = TypeQuest; }
             else if (!strncmp(value, "Portal", ssize)) { t = TypePortal; }
             else if (!strncmp(value, "Chest", ssize)) { t = TypeChest; }
-            mapstate.objects[strtol(name, nullptr, 0)] = { t, pos + 1 };
-            break;
-        }
-        case 3: {
-            mapstate.npcs[strtol(name, nullptr, 0)] = value;
+            else if (!strncmp(value, "Shrine", ssize)) { t = TypeShrine; }
+            else if (!strncmp(value, "Well", ssize)) { t = TypeWell; }
+            mapstate.objects[*isec - 2][strtol(name, nullptr, 0)] = { t, pos + 1 };
             break;
         }
         case 4: {
@@ -519,11 +520,13 @@ static void checkForUpdate() {
             y1 = mapstate.currMap->cropY2;
         int width = x1 - x0;
         int height = y1 - y0;
+        auto totalWidth = mapstate.currMap->totalWidth;
         auto *pixels = new uint32_t[width * height];
         auto *ptr = pixels;
         for (int y = y0; y < y1; ++y) {
+            int idx = y * totalWidth + x0;
             for (int x = x0; x < x1; ++x) {
-                auto ite = mapstate.MapColor.find(mapstate.currMap->map[y][x]);
+                auto ite = mapstate.MapColor.find(mapstate.currMap->map[idx++]);
                 *ptr++ = ite == mapstate.MapColor.end() ? 0u : ite->second;
             }
         }
@@ -579,7 +582,7 @@ static void checkForUpdate() {
                     auto *m = mapstate.session->getMap(p.first);
                     if (m->objects.find(152) != m->objects.end()) {
                         name = ">>> " + name + " <<<";
-                        break;
+                        skstate.lineEnds.emplace_back(LinePoint{px, py});
                     }
                 }
                 skstate.mapObjs.emplace_back(MapObject{px, py,
@@ -593,52 +596,38 @@ static void checkForUpdate() {
                 }
             }
         }
-        for (auto &p: mapstate.currMap->objects) {
-            auto ite = mapstate.objects.find(p.first);
-            if (ite == mapstate.objects.end()) { continue; }
-            for (auto &pt: p.second) {
-                auto ptx = float(pt.x - originX - x0) - widthf;
-                auto pty = float(pt.y - originY - y0) - heightf;
-                auto tp = ite->second.type;
-                switch (tp) {
-                case TypeWayPoint:
-                case TypeQuest:
-                case TypePortal:
-                case TypeChest: {
-                    hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                    std::string name = mapstate.strings[ite->second.name][mapstate.language];
-                    skstate.mapObjs.emplace_back(MapObject {ptx, pty,
-                                                            objColors[tp][0],
-                                                            objColors[tp][1],
-                                                            objColors[tp][2],
-                                                            coord.X, coord.Y,
-                                                            std::move(name)});
-                    if (guides && (*guides).find(p.first | 0x10000) != (*guides).end()) {
-                        skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
+        std::map<uint32_t, std::vector<Point>> *objs[2] = {&mapstate.currMap->objects, &mapstate.currMap->npcs};
+        for (int i = 0; i < 2; ++i) {
+            for (auto &p: *objs[i]) {
+                auto ite = mapstate.objects[i].find(p.first);
+                if (ite == mapstate.objects[i].end()) { continue; }
+                for (auto &pt: p.second) {
+                    auto ptx = float(pt.x - originX - x0) - widthf;
+                    auto pty = float(pt.y - originY - y0) - heightf;
+                    auto tp = ite->second.type;
+                    switch (tp) {
+                    case TypeWayPoint:
+                    case TypeQuest:
+                    case TypePortal:
+                    case TypeChest:
+                    case TypeShrine:
+                    case TypeWell: {
+                        hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
+                        std::string name = mapstate.strings[ite->second.name][mapstate.language];
+                        skstate.mapObjs.emplace_back(MapObject{ptx, pty,
+                                                               objColors[tp][0],
+                                                               objColors[tp][1],
+                                                               objColors[tp][2],
+                                                               coord.X, coord.Y,
+                                                               std::move(name)});
+                        if (guides && (*guides).find(p.first | (0x10000 * (i + 1))) != (*guides).end()) {
+                            skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
+                        }
+                        break;
                     }
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
-        }
-        for (auto &p: mapstate.currMap->npcs) {
-            auto ite = mapstate.npcs.find(p.first);
-            if (ite == mapstate.npcs.end()) { continue; }
-            for (auto &pt: p.second) {
-                auto ptx = float(pt.x - originX - x0) - widthf;
-                auto pty = float(pt.y - originY - y0) - heightf;
-                hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
-                std::string name = mapstate.strings[ite->second][mapstate.language];
-                skstate.mapObjs.emplace_back(MapObject {ptx, pty,
-                                                        objColors[TypeQuest][0],
-                                                        objColors[TypeQuest][1],
-                                                        objColors[TypeQuest][2],
-                                                        coord.X, coord.Y,
-                                                        std::move(name)});
-                if (guides && (*guides).find(p.first | 0x20000) != (*guides).end()) {
-                    skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
+                    default:
+                        break;
+                    }
                 }
             }
         }
