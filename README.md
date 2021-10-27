@@ -2,6 +2,12 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.4
+* [#2] add 397 to useful_objects
+* fixed path display between Rogue Encampment and Blood Moor, and similar paths
+* reduce memory use of vertex buffers
+* alpha and all color values can be set in configuration file now
+
 ## v0.3
 * add various configurations in D2RMH.ini, check comments there
 * fix Gidbinn guide line
