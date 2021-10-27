@@ -31,7 +31,6 @@ bool defineOffsets() {
     for (auto *ptr: ptrToLoad) {
         auto *p = (DWORD*)ptr;
         *p = getDllOffset(*p);
-        fflush(stdout);
         if (!*p) { return false; }
     }
     return true;

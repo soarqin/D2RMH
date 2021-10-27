@@ -38,8 +38,6 @@ struct MapObject {
     float x, y;
     /* Rendering color */
     float r, g, b;
-    /* Text drawing coord */
-    float tx, ty;
     std::string str;
 };
 
@@ -48,7 +46,7 @@ struct LinePoint {
 };
 
 static struct {
-    hmm_mat4 mapMVP = {};
+    hmm_mat4 baseMVP = {}, baseMapMVP = {}, mapMVP = {}, textMVP = {};
     float dpiScale = .0f;
     FONScontext *fonsCtx = nullptr;
     unsigned char *fontBuf = nullptr;
@@ -60,6 +58,7 @@ static struct {
     uint16_t *indices = nullptr;
     float *vertices = nullptr;
     int drawArrayCapacity = 0;
+    float offsetX = 0, offsetY = 0;
 } skstate;
 
 enum EObjType {
@@ -209,6 +208,7 @@ static void initSokol() {
     if (skstate.fontBuf) {
         skstate.font = fonsAddFontMem(skstate.fonsCtx, "normal", skstate.fontBuf, skstate.fontBufSize, 0);
     }
+    skstate.baseMVP = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
 
     pass_action = sg_pass_action{
         .colors = {
@@ -377,7 +377,7 @@ static void updateWindowPosition() {
     int height = y1 - y0;
 
     HWND hwnd = (HWND)sapp_win32_get_hwnd();
-    auto windowSize = (width + height) * 3 / 4 + 8;
+    auto windowSize = (int)lroundf(cfg->scale * (float)(width + height) * 0.75) + 8;
     auto d2rhwnd = (HWND)mapstate.d2rProcess->hwnd();
     RECT rc;
     if (GetClientRect(d2rhwnd, &rc)) {
@@ -396,13 +396,35 @@ static void updateWindowPosition() {
         GetMonitorInfo(hm, &mi);
         rc = mi.rcWork;
     }
-    auto bear = (rc.bottom - rc.top) / 40;
-    MoveWindow(hwnd, rc.right - windowSize - bear, rc.top + bear, windowSize, windowSize / 2, FALSE);
+    auto bear = 16;
+    if (windowSize + bear * 2 > rc.right - rc.left) {
+        windowSize = rc.right - rc.left - bear * 2;
+    }
+    if (windowSize / 2 + bear * 2 > rc.bottom - rc.top) {
+        windowSize = (rc.bottom - rc.top - bear * 2) * 2;
+    }
+    float w, h;
+    switch (cfg->position) {
+    case 0:
+        MoveWindow(hwnd, rc.left + bear, rc.top + bear, windowSize, windowSize / 2, FALSE);
+        w = (float)windowSize;
+        h = w / 2;
+        break;
+    case 1:
+        MoveWindow(hwnd, rc.right - windowSize - bear, rc.top + bear, windowSize, windowSize / 2, FALSE);
+        w = (float)windowSize;
+        h = w / 2;
+        break;
+    default:
+        MoveWindow(hwnd, rc.left + bear, rc.top + bear, rc.right - rc.left - bear * 2, rc.bottom - rc.top - bear * 2, FALSE);
+        w = (float)(rc.right - rc.left - bear * 2);
+        h = (float)(rc.bottom - rc.top - bear * 2);
+        break;
+    }
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    auto w = (float)windowSize;
-    auto h = w / 2;
-    skstate.mapMVP = HMM_Orthographic(-w / 2, w / 2, h / 2, -h / 2, -1, 1)
-        * HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
+    skstate.baseMapMVP = HMM_Scale(HMM_Vec3(cfg->scale, cfg->scale, 1.f)) * HMM_Orthographic(-w / 2, w / 2, h / 2, -h / 2, -1, 1)
+        * skstate.baseMVP;
+    skstate.mapMVP = skstate.baseMapMVP * HMM_Translate(HMM_Vec3(skstate.offsetX, skstate.offsetY, 0));
 }
 
 static void drawLineBuild(float *verticesOut, float x0, float y0, float x1, float y1, float width,
@@ -437,32 +459,29 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
         posY -= originY + y0;
         auto oxf = float(posX) - float(x1 - x0) * .5f;
         auto oyf = float(posY) - float(y1 - y0) * .5f;
+        if (cfg->mapCentered) {
+            skstate.offsetX = -oxf;
+            skstate.offsetY = -oyf;
+        } else {
+            skstate.offsetX = skstate.offsetY = 0;
+        }
+        auto transMVP = HMM_Scale(HMM_Vec3(cfg->scale, cfg->scale, 1.f)) * HMM_Translate(HMM_Vec3(skstate.offsetX, skstate.offsetY, 0));
+        skstate.textMVP = skstate.baseMVP * transMVP;
+        skstate.mapMVP = skstate.baseMapMVP * transMVP;
 
         for (auto &le: skstate.lineEnds) {
-            const float mlen = 78.f;
-            const float gap = 12.f;
-            float sx, sy, ex, ey;
-            auto line = HMM_Vec2(le.x, le.y) - HMM_Vec2(oxf, oyf);
-            auto len = HMM_Length(line);
-            sx = oxf + line.X / len * 8.f;
-            sy = oyf + line.Y / len * 8.f;
-            if (len > mlen) {
-                ex = oxf + line.X / len * (mlen - gap);
-                ey = oyf + line.Y / len * (mlen - gap);
-            } else if (len > gap) {
-                ex = le.x - line.X / len * gap;
-                ey = le.y - line.Y / len * gap;
-            } else {
-                ex = sx; ey = sy;
-            }
-
-            const float angle = 35.f;
-            /* Draw the line */
-            drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
-            ++idx;
-
-            /* Draw the dot */
-            if (ex == sx) {
+            if (cfg->fullLine) {
+                auto line = HMM_Vec2(le.x, le.y) - HMM_Vec2(oxf, oyf);
+                auto len = HMM_Length(line);
+                auto sx = oxf + line.X / len * 8.f;
+                auto sy = oyf + line.Y / len * 8.f;
+                auto ex = le.x - line.X / len * 8.f;
+                auto ey = le.y - line.Y / len * 8.f;
+                if (len < 17.f) {
+                    ex = sx; ey = sy;
+                }
+                drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
+                ++idx;
                 float vertices[] = {
                     0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0,
@@ -470,18 +489,53 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
                     0, 0, 0, 0, 0, 0,
                 };
                 memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                ++idx;
             } else {
-                ex += line.X / len * gap;
-                ey += line.Y / len * gap;
-                float vertices[] = {
-                    ex - 3, ey - 3, .0f, .8f, .8f, .8f,
-                    ex + 1.5f, ey - 1.5f, .0f, .8f, .8f, .8f,
-                    ex + 3, ey + 3, .0f, .8f, .8f, .8f,
-                    ex - 1.5f, ey + 1.5f, .0f, .8f, .8f, .8f,
-                };
-                memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                const float mlen = 78.f;
+                const float gap = 12.f;
+                float sx, sy, ex, ey;
+                auto line = HMM_Vec2(le.x, le.y) - HMM_Vec2(oxf, oyf);
+                auto len = HMM_Length(line);
+                sx = oxf + line.X / len * 8.f;
+                sy = oyf + line.Y / len * 8.f;
+                if (len > mlen) {
+                    ex = oxf + line.X / len * (mlen - gap);
+                    ey = oyf + line.Y / len * (mlen - gap);
+                } else if (len > gap) {
+                    ex = le.x - line.X / len * gap;
+                    ey = le.y - line.Y / len * gap;
+                } else {
+                    ex = sx;
+                    ey = sy;
+                }
+
+                const float angle = 35.f;
+                /* Draw the line */
+                drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
+                ++idx;
+
+                /* Draw the dot */
+                if (ex == sx) {
+                    float vertices[] = {
+                        0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0,
+                    };
+                    memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                } else {
+                    ex += line.X / len * gap;
+                    ey += line.Y / len * gap;
+                    float vertices[] = {
+                        ex - 3, ey - 3, .0f, .8f, .8f, .8f,
+                        ex + 1.5f, ey - 1.5f, .0f, .8f, .8f, .8f,
+                        ex + 3, ey + 3, .0f, .8f, .8f, .8f,
+                        ex - 1.5f, ey + 1.5f, .0f, .8f, .8f, .8f,
+                    };
+                    memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                }
+                ++idx;
             }
-            ++idx;
         }
         float vertices[] = {
             oxf - 4, oyf - 4, .0f, .2f, 1.f, 1.f,
@@ -591,7 +645,6 @@ static void checkForUpdate() {
             }
         }
         auto originX = mapstate.currMap->levelOrigin.x, originY = mapstate.currMap->levelOrigin.y;
-        auto transMat = HMM_Scale(HMM_Vec3(1, 0.5, 1)) * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1));
         for (auto &p: mapstate.currMap->adjacentLevels) {
             auto ite = mapstate.levels.find(p.first);
             if (ite == mapstate.levels.end()) { continue; }
@@ -604,7 +657,6 @@ static void checkForUpdate() {
                 px = float(e.x - originX - x0) - widthf;
                 py = float(e.y - originY - y0) - heightf;
             }
-            hmm_vec4 coord = transMat * HMM_Vec4(px, py, 0, 0);
             std::string name = mapstate.strings[ite->second][mapstate.language];
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
@@ -618,7 +670,6 @@ static void checkForUpdate() {
                                                    objColors[TypePortal][0],
                                                    objColors[TypePortal][1],
                                                    objColors[TypePortal][2],
-                                                   coord.X, coord.Y,
                                                    std::move(name)});
             if (guides && (*guides).find(p.first) != (*guides).end()) {
                 skstate.lineEnds.emplace_back(LinePoint{px, py});
@@ -640,13 +691,11 @@ static void checkForUpdate() {
                     case TypeChest:
                     case TypeShrine:
                     case TypeWell: {
-                        hmm_vec4 coord = transMat * HMM_Vec4(ptx, pty, 0, 0);
                         std::string name = mapstate.strings[ite->second.name][mapstate.language];
                         skstate.mapObjs.emplace_back(MapObject{ptx, pty,
                                                                objColors[tp][0],
                                                                objColors[tp][1],
                                                                objColors[tp][2],
-                                                               coord.X, coord.Y,
                                                                std::move(name)});
                         if (guides && (*guides).find(p.first | (0x10000 * (i + 1))) != (*guides).end()) {
                             skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
@@ -727,31 +776,47 @@ static void checkForUpdate() {
 static void frame() {
     checkForUpdate();
     sg_begin_default_pass(&pass_action, sapp_width(), sapp_height());
-    if (mapstate.d2rProcess->available() && !mapstate.d2rProcess->mapEnabled()) {
-        for (auto &s: drawstate) {
-            if (!s.enable) { continue; }
-            sg_apply_pipeline(s.pip);
-            sg_apply_bindings(&s.bind);
-            sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(skstate.mapMVP));
-            sg_draw(0, s.count * 6, 1);
+    if (mapstate.d2rProcess->available()) {
+        bool show;
+        switch (cfg->show) {
+        case 0:
+            show = !mapstate.d2rProcess->mapEnabled();
+            break;
+        case 1:
+            show = mapstate.d2rProcess->mapEnabled();
+            break;
+        default:
+            show = true;
+            break;
         }
-        if (skstate.font != FONS_INVALID) {
-            fonsClearState(skstate.fonsCtx);
-            sgl_defaults();
-            sgl_matrix_mode_projection();
-            float w = sapp_widthf() * .5f, h = sapp_heightf() * .5f;
-            sgl_ortho(-w, w, h, -h, -1, 1);
-            fonsSetFont(skstate.fonsCtx, skstate.font);
-            fonsSetSize(skstate.fonsCtx, cfg->fontSize * skstate.dpiScale);
-            fonsSetColor(skstate.fonsCtx, sfons_rgba(255, 255, 255, 255));
-            fonsSetAlign(skstate.fonsCtx, FONS_ALIGN_CENTER);
-            for (auto &t: skstate.mapObjs) {
-                if (!t.str.empty()) {
-                    fonsDrawText(skstate.fonsCtx, t.tx, t.ty - 8.f, t.str.c_str(), nullptr);
-                }
+        if (show) {
+            for (auto &s: drawstate) {
+                if (!s.enable) { continue; }
+                sg_apply_pipeline(s.pip);
+                sg_apply_bindings(&s.bind);
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE(skstate.mapMVP));
+                sg_draw(0, s.count * 6, 1);
             }
-            sfons_flush(skstate.fonsCtx);
-            sgl_draw();
+            if (skstate.font != FONS_INVALID) {
+                fonsClearState(skstate.fonsCtx);
+                sgl_defaults();
+                sgl_matrix_mode_projection();
+                float w = sapp_widthf() * .5f, h = sapp_heightf() * .5f;
+                sgl_ortho(-w, w, h, -h, -1, 1);
+                fonsSetFont(skstate.fonsCtx, skstate.font);
+                fonsSetSize(skstate.fonsCtx, cfg->fontSize * skstate.dpiScale);
+                fonsSetColor(skstate.fonsCtx, sfons_rgba(255, 255, 255, 255));
+                fonsSetBlur(skstate.fonsCtx, .5f);
+                fonsSetAlign(skstate.fonsCtx, FONS_ALIGN_CENTER);
+                for (auto &t: skstate.mapObjs) {
+                    if (!t.str.empty()) {
+                        auto coord = skstate.textMVP * HMM_Vec4(t.x, t.y, 0, 1);
+                        fonsDrawText(skstate.fonsCtx, coord.X, coord.Y - 8, t.str.c_str(), nullptr);
+                    }
+                }
+                sfons_flush(skstate.fonsCtx);
+                sgl_draw();
+            }
         }
     }
     sg_end_pass();

@@ -2,6 +2,10 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.3
+* add various configurations in D2RMH.ini, check comments there
+* fix Gidbinn guide line
+
 ## v0.2
 * add display for Unique Chest, Well, neighbour map path
 * fix display of correct taltomb entrance
@@ -20,8 +24,20 @@ Diablo II Resurrected map revealing tool.
 2. Run D2RMH.exe, enjoy!
 
 # How to build
+## Quick instruction
 * Just use [cmake](https://www.cmake.org/) to build, Visual Studio 2019 and MinGW GCC 32bit 9.0+(better using MSYS2) are supported
 * For Visual Studio 2019: add `-A Win32` to cmake commandline to ensure builds a 32-bit exe
+## Detailed instruction
+### MinGW GCC 32bit
+* Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make cmake git mingw-w64-i686-toolchain` in MSYS2 command line to install required components
+* Clone D2RMH source by type `git clone https://github.com/soarqin/D2RMH`
+* type `cd D2RMH && mkdir -p build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON ..`
+* then `make` to get the compiled binary in `bin` foler
+### Microsoft Visual Studio 2019
+* Install Visual Studio 2019 Community Edition(or Pro/Ent if you have)
+* Unpack downloaded source code file, or you can use git to Clone D2RMH source by type: `git clone https://github.com/soarqin/D2RMH`. Note: Using git requires [Git for windows](https://git-scm.com/download/win) installed
+* type `md build && cd build && cmake -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON ..`
+* open generated `D2RMH.sln` and build, you can get the compiled binary in `bin` folder
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).

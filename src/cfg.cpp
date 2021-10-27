@@ -16,6 +16,7 @@ const Cfg *cfg = &sCfg;
 
 #define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
 #define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtoul(value, nullptr, 0); }
+#define LOADVALF(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtof(value, nullptr); }
 
 void loadCfg(const std::string &filename) {
     ini_parse(filename.c_str(), [](void* user, const char* section,
@@ -28,6 +29,13 @@ void loadCfg(const std::string &filename) {
         LOADVAL(font_file_path, fontFilePath)
         LOADVALN(font_size, fontSize)
         LOADVAL(language, language)
+        LOADVALN(show, show)
+        LOADVALN(full_line, fullLine)
+        LOADVALN(position, position)
+        LOADVALF(scale, scale)
+        LOADVALN(map_centered, mapCentered)
         return 1;
     }, nullptr);
+    if (sCfg.scale < 1.f) { sCfg.scale = 1.f; }
+    else if (sCfg.scale > 4.f) { sCfg.scale = 4.f; }
 }

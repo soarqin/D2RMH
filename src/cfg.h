@@ -11,10 +11,16 @@
 #include <string>
 
 struct Cfg {
-    std::string d2Path;
-    std::string fontFilePath;
-    float fontSize;
-    std::string language;
+    std::string d2Path = ".";
+    std::string fontFilePath = R"(C:\Windows\Fonts\Arial.ttf)";
+    float fontSize = 12;
+    std::string language = "enUS";
+
+    int show = 0;
+    int fullLine = 0;
+    int position = 1;
+    float scale = 1;
+    int mapCentered = 0;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");
