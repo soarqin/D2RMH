@@ -21,6 +21,17 @@ struct Cfg {
     int position = 1;
     float scale = 1;
     int mapCentered = 0;
+    uint8_t alpha = 0;
+    uint32_t walkableColor = 0;
+    uint32_t textColor = 0;
+    uint32_t playerInnerColor = 0;
+    uint32_t playerOuterColor = 0;
+    uint32_t lineColor = 0;
+    uint32_t waypointColor = 0;
+    uint32_t portalColor = 0;
+    uint32_t chestColor = 0;
+    uint32_t questColor = 0;
+    uint32_t wellColor = 0;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

@@ -37,12 +37,19 @@ struct MapObject {
     /* Rendering coord */
     float x, y;
     /* Rendering color */
-    float r, g, b;
+    uint32_t color;
     std::string str;
 };
 
 struct LinePoint {
     float x, y;
+};
+
+#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
+
+struct DrawVertex {
+    float x, y;
+    uint32_t color;
 };
 
 static struct {
@@ -56,7 +63,7 @@ static struct {
     std::vector<LinePoint> lineEnds;
 
     uint16_t *indices = nullptr;
-    float *vertices = nullptr;
+    DrawVertex *vertices = nullptr;
     int drawArrayCapacity = 0;
     float offsetX = 0, offsetY = 0;
 } skstate;
@@ -72,16 +79,6 @@ enum EObjType {
     TypeMax,
 };
 
-const float objColors[TypeMax][4] = {
-    {0, 0, 0, 0},
-    {.6f, .6f, 1.f},
-    {1.f, .6f, 1.f},
-    {1.f, .4f, .4f},
-    {.4f, .4f, .1f},
-    {1.f, .2f, .7f},
-    {2.f, .2f, .1f},
-};
-
 static struct {
     Session *session = nullptr;
     CollisionMap *currMap = nullptr;
@@ -91,12 +88,19 @@ static struct {
     uint32_t currSeed = 0;
     uint8_t currDifficulty = 0xFF;
     uint16_t currPosX = 0, currPosY = 0;
-#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 8) | (uint32_t(a) << 24))
-    uint32_t MapColor[2] = {
+    uint32_t objColors[TypeMax] = {
+        0,
+        RGBA(153, 153, 255, 255),
+        RGBA(255, 153, 255, 255),
+        RGBA(255, 104, 104, 255),
+        RGBA(104, 104, 255, 255),
+        RGBA(255, 51, 178, 255),
+        RGBA(51, 51, 255, 255),
+    };
+    uint32_t mapColor[2] = {
         RGBA(50, 50, 50, 255),
         RGBA(0, 0, 0, 255),
     };
-#undef RGBA
     struct ObjType {
         EObjType type;
         std::string name;
@@ -194,6 +198,13 @@ static void initData() {
 }
 
 static void initSokol() {
+    mapstate.objColors[TypeWayPoint] = cfg->waypointColor;
+    mapstate.objColors[TypePortal] = cfg->portalColor;
+    mapstate.objColors[TypeChest] = cfg->chestColor;
+    mapstate.objColors[TypeQuest] = cfg->questColor;
+    mapstate.objColors[TypeWell] = cfg->wellColor;
+    mapstate.mapColor[0] = cfg->walkableColor;
+
     sg_setup(sg_desc{
         .context = sapp_sgcontext()
     });
@@ -234,11 +245,11 @@ static void initSokol() {
             .source =
             "#version 330\n"
             "uniform mat4 mvp;\n"
-            "layout(location=0) in vec4 position;\n"
+            "layout(location=0) in vec2 position;\n"
             "layout(location=1) in vec2 texcoord0;\n"
             "out vec2 uv;\n"
             "void main() {\n"
-            "  gl_Position = mvp * position;\n"
+            "  gl_Position = mvp * vec4(position, 0, 1);\n"
             "  uv = texcoord0;\n"
             "}\n",
             .uniform_blocks = {
@@ -266,7 +277,7 @@ static void initSokol() {
         .shader = image_shd,
         .layout = {
             .attrs = {
-                {.format = SG_VERTEXFORMAT_FLOAT3},
+                {.format = SG_VERTEXFORMAT_FLOAT2},
                 {.format = SG_VERTEXFORMAT_FLOAT2},
             }
         },
@@ -300,12 +311,12 @@ static void initSokol() {
             .source =
             "#version 330\n"
             "uniform mat4 mvp;\n"
-            "layout(location=0) in vec4 position;\n"
-            "layout(location=1) in vec3 color;\n"
+            "layout(location=0) in vec2 position;\n"
+            "layout(location=1) in vec4 color;\n"
             "out vec4 outColor;\n"
             "void main() {\n"
-            "  gl_Position = mvp * position;\n"
-            "  outColor = vec4(color.rgb, 1);\n"
+            "  gl_Position = mvp * vec4(position.xy, 0, 1);\n"
+            "  outColor = color;\n"
             "}\n",
             .uniform_blocks = {
                 {
@@ -330,8 +341,8 @@ static void initSokol() {
         .shader = color_shd,
         .layout = {
             .attrs = {
-                {.format = SG_VERTEXFORMAT_FLOAT3},
-                {.format = SG_VERTEXFORMAT_FLOAT3},
+                {.format = SG_VERTEXFORMAT_FLOAT2},
+                {.format = SG_VERTEXFORMAT_UBYTE4N},
             }
         },
         .colors = {
@@ -358,7 +369,7 @@ static void init() {
     DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT;
     SetWindowLong(hwnd, GWL_STYLE, style);
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
-    SetLayeredWindowAttributes(hwnd, 0, 190, LWA_COLORKEY | LWA_ALPHA);
+    SetLayeredWindowAttributes(hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
 
     d2MapInit(cfg->d2Path.c_str());
     initData();
@@ -427,8 +438,7 @@ static void updateWindowPosition() {
     skstate.mapMVP = skstate.baseMapMVP * HMM_Translate(HMM_Vec3(skstate.offsetX, skstate.offsetY, 0));
 }
 
-static void drawLineBuild(float *verticesOut, float x0, float y0, float x1, float y1, float width,
-                     float r, float g, float b) {
+static void drawLineBuild(DrawVertex *verticesOut, float x0, float y0, float x1, float y1, float width, uint32_t c) {
     auto fromPt = HMM_Vec2(x0, y0);
     auto toPt = HMM_Vec2(x1, y1);
     auto delta = toPt - fromPt;
@@ -437,11 +447,11 @@ static void drawLineBuild(float *verticesOut, float x0, float y0, float x1, floa
     auto B = fromPt - perp;
     auto C = toPt - perp;
     auto D = toPt + perp;
-    float vertices[] = {
-        A.X, A.Y, .0f, r, g, b,
-        B.X, B.Y, .0f, r, g, b,
-        C.X, C.Y, .0f, r, g, b,
-        D.X, D.Y, .0f, r, g, b,
+    DrawVertex vertices[] = {
+        {A.X, A.Y, c},
+        {B.X, B.Y, c},
+        {C.X, C.Y, c},
+        {D.X, D.Y, c},
     };
     memcpy(verticesOut, vertices, sizeof(vertices));
 }
@@ -480,15 +490,15 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
                 if (len < 17.f) {
                     ex = sx; ey = sy;
                 }
-                drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
+                drawLineBuild(skstate.vertices + 4 * idx, sx, sy, ex, ey, 1.5f, cfg->lineColor);
                 ++idx;
-                float vertices[] = {
-                    0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
+                DrawVertex vertices[] = {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
                 };
-                memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                memcpy(skstate.vertices + 4 * idx, &vertices, sizeof(vertices));
                 ++idx;
             } else {
                 const float mlen = 78.f;
@@ -511,45 +521,47 @@ static void updatePlayerPos(uint16_t posX, uint16_t posY) {
 
                 const float angle = 35.f;
                 /* Draw the line */
-                drawLineBuild(skstate.vertices + 6 * 4 * idx, sx, sy, ex, ey, 1.5f, .8f, .8f, .8f);
+                drawLineBuild(skstate.vertices + 4 * idx, sx, sy, ex, ey, 1.5f, cfg->lineColor);
                 ++idx;
 
                 /* Draw the dot */
                 if (ex == sx) {
-                    float vertices[] = {
-                        0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0,
+                    DrawVertex vertices[] = {
+                        {0, 0, 0},
+                        {0, 0, 0},
+                        {0, 0, 0},
+                        {0, 0, 0},
                     };
-                    memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                    memcpy(skstate.vertices + 4 * idx, &vertices, sizeof(vertices));
                 } else {
                     ex += line.X / len * gap;
                     ey += line.Y / len * gap;
-                    float vertices[] = {
-                        ex - 3, ey - 3, .0f, .8f, .8f, .8f,
-                        ex + 1.5f, ey - 1.5f, .0f, .8f, .8f, .8f,
-                        ex + 3, ey + 3, .0f, .8f, .8f, .8f,
-                        ex - 1.5f, ey + 1.5f, .0f, .8f, .8f, .8f,
+                    auto c = cfg->lineColor;
+                    DrawVertex vertices[] = {
+                        {ex - 3, ey - 3, c},
+                        {ex + 1.5f, ey - 1.5f, c},
+                        {ex + 3, ey + 3, c},
+                        {ex - 1.5f, ey + 1.5f, c},
                     };
-                    memcpy(skstate.vertices + 6 * 4 * idx, &vertices, sizeof(vertices));
+                    memcpy(skstate.vertices + 4 * idx, &vertices, sizeof(vertices));
                 }
                 ++idx;
             }
         }
-        float vertices[] = {
-            oxf - 4, oyf - 4, .0f, .2f, 1.f, 1.f,
-            oxf + 4, oyf - 4, .0f, .2f, 1.f, 1.f,
-            oxf + 4, oyf + 4, .0f, .2f, 1.f, 1.f,
-            oxf - 4, oyf + 4, .0f, .2f, 1.f, 1.f,
-            oxf - 2, oyf - 2, .0f, 1.f, .5f, .5f,
-            oxf + 2, oyf - 2, .0f, 1.f, .5f, .5f,
-            oxf + 2, oyf + 2, .0f, 1.f, .5f, .5f,
-            oxf - 2, oyf + 2, .0f, 1.f, .5f, .5f,
+        auto c1 = cfg->playerOuterColor, c2 = cfg->playerInnerColor;
+        DrawVertex vertices[] = {
+            {oxf - 4, oyf - 4, c1},
+            {oxf + 4, oyf - 4, c1},
+            {oxf + 4, oyf + 4, c1},
+            {oxf - 4, oyf + 4, c1},
+            {oxf - 2, oyf - 2, c2},
+            {oxf + 2, oyf - 2, c2},
+            {oxf + 2, oyf + 2, c2},
+            {oxf - 2, oyf + 2, c2},
         };
-        memcpy(skstate.vertices + 6 * 4 * (drawstate[1].count - 2), &vertices, sizeof(vertices));
+        memcpy(skstate.vertices + 4 * (drawstate[1].count - 2), &vertices, sizeof(vertices));
         sg_update_buffer(drawstate[1].bind.vertex_buffers[0],
-                         sg_range{skstate.vertices, sizeof(float) * 6 * 4 * drawstate[1].count});
+                         sg_range{skstate.vertices, sizeof(DrawVertex) * 4 * drawstate[1].count});
     }
 }
 
@@ -606,7 +618,7 @@ static void checkForUpdate() {
         for (int y = y0; y < y1; ++y) {
             int idx = y * totalWidth + x0;
             for (int x = x0; x < x1; ++x) {
-                auto clr = mapstate.MapColor[mapstate.currMap->map[idx++] & 1];
+                auto clr = mapstate.mapColor[mapstate.currMap->map[idx++] & 1];
                 *ptr++ = clr;
             }
         }
@@ -628,10 +640,10 @@ static void checkForUpdate() {
         auto widthf = (float)width * .5f;
         auto heightf = (float)height * .5f;
         const float vertices[] = {
-            -widthf, -heightf, .0f, 0, 0,
-            widthf, -heightf, .0f, 1, 0,
-            widthf, heightf, .0f, 1, 1,
-            -widthf, heightf, .0f, 0, 1,
+            -widthf, -heightf, 0, 0,
+            widthf, -heightf, 1, 0,
+            widthf, heightf, 1, 1,
+            -widthf, heightf, 0, 1,
         };
         sg_update_buffer(drawstate[0].bind.vertex_buffers[0], SG_RANGE(vertices));
 
@@ -667,9 +679,7 @@ static void checkForUpdate() {
                 }
             }
             skstate.mapObjs.emplace_back(MapObject{px, py,
-                                                   objColors[TypePortal][0],
-                                                   objColors[TypePortal][1],
-                                                   objColors[TypePortal][2],
+                                                   mapstate.objColors[TypePortal],
                                                    std::move(name)});
             if (guides && (*guides).find(p.first) != (*guides).end()) {
                 skstate.lineEnds.emplace_back(LinePoint{px, py});
@@ -693,9 +703,7 @@ static void checkForUpdate() {
                     case TypeWell: {
                         std::string name = mapstate.strings[ite->second.name][mapstate.language];
                         skstate.mapObjs.emplace_back(MapObject{ptx, pty,
-                                                               objColors[tp][0],
-                                                               objColors[tp][1],
-                                                               objColors[tp][2],
+                                                               mapstate.objColors[tp],
                                                                std::move(name)});
                         if (guides && (*guides).find(p.first | (0x10000 * (i + 1))) != (*guides).end()) {
                             skstate.lineEnds.emplace_back(LinePoint{ptx, pty});
@@ -715,7 +723,7 @@ static void checkForUpdate() {
             delete[] skstate.indices;
             skstate.indices = new uint16_t[6 * drawCount];
             delete[] skstate.vertices;
-            skstate.vertices = new float[6 * 4 * drawCount];
+            skstate.vertices = new DrawVertex[4 * drawCount];
         }
         auto *indices = skstate.indices;
         int index = 0;
@@ -734,30 +742,10 @@ static void checkForUpdate() {
         auto *vertices2 = skstate.vertices;
         index = 0;
         for (auto &e: skstate.mapObjs) {
-            vertices2[index++] = e.x - 4;
-            vertices2[index++] = e.y - 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = e.r;
-            vertices2[index++] = e.g;
-            vertices2[index++] = e.b;
-            vertices2[index++] = e.x + 4;
-            vertices2[index++] = e.y - 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = e.r;
-            vertices2[index++] = e.g;
-            vertices2[index++] = e.b;
-            vertices2[index++] = e.x + 4;
-            vertices2[index++] = e.y + 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = e.r;
-            vertices2[index++] = e.g;
-            vertices2[index++] = e.b;
-            vertices2[index++] = e.x - 4;
-            vertices2[index++] = e.y + 4;
-            vertices2[index++] = 0;
-            vertices2[index++] = e.r;
-            vertices2[index++] = e.g;
-            vertices2[index++] = e.b;
+            vertices2[index++] = {e.x - 4, e.y - 4, e.color};
+            vertices2[index++] = {e.x + 4, e.y - 4, e.color};
+            vertices2[index++] = {e.x + 4, e.y + 4, e.color};
+            vertices2[index++] = {e.x - 4, e.y + 4, e.color};
         }
         updatePlayerPos(posX, posY);
     } else {
@@ -805,7 +793,7 @@ static void frame() {
                 sgl_ortho(-w, w, h, -h, -1, 1);
                 fonsSetFont(skstate.fonsCtx, skstate.font);
                 fonsSetSize(skstate.fonsCtx, cfg->fontSize * skstate.dpiScale);
-                fonsSetColor(skstate.fonsCtx, sfons_rgba(255, 255, 255, 255));
+                fonsSetColor(skstate.fonsCtx, cfg->textColor);
                 fonsSetBlur(skstate.fonsCtx, .5f);
                 fonsSetAlign(skstate.fonsCtx, FONS_ALIGN_CENTER);
                 for (auto &t: skstate.mapObjs) {
