@@ -123,7 +123,7 @@ bool CollisionMap::build() {
                 int startY = -1, endY = -1;
                 int index = 0;
                 for (int i = 0; i < height; ++i) {
-                    if (map[index] & 1) {
+                    if ((map[index] & 1) || (map[index + 5] & 1)) {
                         if (startY >= 0) {
                             endY = i;
                             break;
@@ -142,7 +142,7 @@ bool CollisionMap::build() {
                 int startY = -1, endY = -1;
                 int index = width - 1;
                 for (int i = 0; i < height; ++i) {
-                    if (map[index] & 1) {
+                    if ((map[index] & 1) || (map[index - 5] & 1)) {
                         if (startY >= 0) {
                             endY = i;
                             break;
@@ -160,7 +160,7 @@ bool CollisionMap::build() {
                 /* Check near level on upside */
                 int startX = -1, endX = -1;
                 for (int i = 0; i < width; ++i) {
-                    if (map[i] & 1) {
+                    if ((map[i] & 1) || (map[i + 5 * width] & 1)) {
                         if (startX >= 0) {
                             endX = i;
                             break;
@@ -178,7 +178,7 @@ bool CollisionMap::build() {
                 int startX = -1, endX = -1;
                 int index = width * (height - 1);
                 for (int i = 0; i < width; ++i) {
-                    if (map[index++] & 1) {
+                    if ((map[index] & 1) || map[index - 5 * width] & 1) {
                         if (startX >= 0) {
                             endX = i;
                             break;
@@ -188,6 +188,7 @@ bool CollisionMap::build() {
                             startX = i;
                         }
                     }
+                    ++index;
                 }
                 adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y + height - 1});
             }
