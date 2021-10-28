@@ -3,6 +3,8 @@
 #include "d2rprocess.h"
 #include "cfg.h"
 #include "ini.h"
+#define TRAY_WINAPI 1
+#include "tray/tray.h"
 #include "../common/jsonlng.h"
 
 #include "sokol/HandmadeMath.h"
@@ -360,16 +362,31 @@ static void initSokol() {
     });
 }
 
+static void quit_cb(struct tray_menu *item) {
+    tray_exit();
+}
+
 static void init() {
     mapstate.d2rProcess = new D2RProcess;
     HWND hwnd = (HWND)sapp_win32_get_hwnd();
     ShowWindow(hwnd, SW_HIDE);
 
     DWORD style = WS_POPUP;
-    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW;
     SetWindowLong(hwnd, GWL_STYLE, style);
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
     SetLayeredWindowAttributes(hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
+
+    static tray_menu menu[] = {
+        {.text = (char*)"Quit", .cb = quit_cb},
+        {.text = nullptr}
+    };
+
+    static tray tmenu = {
+        .icon = "D2RMH.exe",
+        .menu = menu,
+    };
+    tray_init(&tmenu);
 
     d2MapInit(cfg->d2Path.c_str());
     initData();
@@ -762,6 +779,10 @@ static void checkForUpdate() {
 }
 
 static void frame() {
+    if (tray_loop(0) != 0) {
+        sapp_request_quit();
+        return;
+    }
     checkForUpdate();
     sg_begin_default_pass(&pass_action, sapp_width(), sapp_height());
     if (mapstate.d2rProcess->available()) {
@@ -861,9 +882,6 @@ sapp_desc sokol_main(int argc, char *argv[]) {
         .swap_interval = 1,
         .alpha = true,
         .window_title = "D2RMH",
-        .icon = {
-            .sokol_default = true,
-        },
         .gl_force_gles2 = true,
     };
 }

@@ -54,3 +54,4 @@ Diablo II Resurrected map revealing tool.
 * [inih](https://github.com/benhoyt/inih) for reading INI files.
 * [JSON for Modern C++](https://github.com/nlohmann/json) for reading JSON files.
 * [CascLib](https://github.com/ladislav-zezula/CascLib) for reading Casc Storage from Diablo II Resurrected.
+* [tray](https://github.com/zserge/tray) for tray icon support

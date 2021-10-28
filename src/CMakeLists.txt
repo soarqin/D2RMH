@@ -1,4 +1,4 @@
-file(GLOB D2RMH_SRC_FILES *.cpp *.h)
+file(GLOB D2RMH_SRC_FILES *.cpp *.h *.rc)
 add_executable(D2RMH ${D2RMH_SRC_FILES})
 target_include_directories(D2RMH PRIVATE ../d2mapapi)
 target_link_libraries(D2RMH inih d2mapapi shlwapi)
