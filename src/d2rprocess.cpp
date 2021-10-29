@@ -86,31 +86,36 @@ void D2RProcess::updateData(bool searchProcess) {
     }
 
     uint64_t plrAddr;
-    READ(addr + 0x10, plrAddr);
-    uint64_t actAddr;
-    READ(addr + 0x20, actAddr);
+    if (READ(addr + 0x10, plrAddr) && plrAddr) {
+        READ(plrAddr, name_);
+    }
 
-    READ(plrAddr, name_);
+    uint64_t actAddr = 0;
+    if (READ(addr + 0x20, actAddr) && actAddr) {
+        READ(actAddr + 0x20, act_);
 
-    READ(actAddr + 0x20, act_);
-
-    uint64_t actUnk1Addr;
-    READ(actAddr + 0x70, actUnk1Addr);
-    READ(actUnk1Addr + 0x830, difficulty_);
+        uint64_t actUnk1Addr;
+        READ(actAddr + 0x70, actUnk1Addr);
+        READ(actUnk1Addr + 0x830, difficulty_);
+    }
 
     uint64_t pathAddr;
-    READ(addr + 0x38, pathAddr);
-    uint64_t room1Addr;
-    READ(pathAddr + 0x20, room1Addr);
-    uint64_t room2Addr;
-    READ(room1Addr + 0x18, room2Addr);
-    uint64_t levelAddr;
-    READ(room2Addr + 0x90, levelAddr);
-    if (levelAddr != 0) {
-        READ(levelAddr + 0x1F8, levelId_);
-        READ(actAddr + 0x14, seed_);
-        READ(pathAddr + 0x02, posX_);
-        READ(pathAddr + 0x06, posY_);
+    if (READ(addr + 0x38, pathAddr) && pathAddr) {
+        uint64_t room1Addr;
+        if (READ(pathAddr + 0x20, room1Addr) && room1Addr) {
+            uint64_t room2Addr;
+            if (READ(room1Addr + 0x18, room2Addr) && room2Addr) {
+                uint64_t levelAddr;
+                if (READ(room2Addr + 0x90, levelAddr) && levelAddr) {
+                    READ(levelAddr + 0x1F8, levelId_);
+                    if (actAddr) {
+                        READ(actAddr + 0x14, seed_);
+                    }
+                    READ(pathAddr + 0x02, posX_);
+                    READ(pathAddr + 0x06, posY_);
+                }
+            }
+        }
     }
     available_ = true;
 }

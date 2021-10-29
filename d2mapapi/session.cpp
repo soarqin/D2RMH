@@ -15,13 +15,13 @@ unsigned int getAct(unsigned int areaid) {
         }
     }
 
-    return 4;
+    return -1;
 }
 }
 
 Session::Session(unsigned seed, unsigned difficulty) {
     seed_ = seed;
-    difficulty_ = difficulty;
+    difficulty_ = std::min(difficulty, 2u);
     memset(acts_, 0, sizeof(acts_));
 }
 
@@ -37,6 +37,7 @@ CollisionMap *Session::getMap(unsigned int areaid) {
     auto ite = maps_.find(areaid);
     if (ite == maps_.end()) {
         auto actId = Helpers::getAct(areaid);
+        if (actId < 0) { return nullptr; }
         if (!acts_[actId]) {
             acts_[actId] = D2COMMON_LoadAct(actId,
                                         seed_,

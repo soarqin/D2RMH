@@ -118,79 +118,83 @@ bool CollisionMap::build() {
             /* we have exii already */
             if (!adjacentLevel.exits.empty()) { continue; }
             /* caculate the path to the new level */
-            if (origin.x < levelOrigin.x && origin.x + newLevelWidth == levelOrigin.x) {
-                /* Check near level on left-side */
-                int startY = -1, endY = -1;
-                int index = 0;
-                for (int i = 0; i < height; ++i) {
-                    if ((map[index] & 1) || (map[index + 5] & 1)) {
-                        if (startY >= 0) {
-                            endY = i;
-                            break;
+            if (width > 5) {
+                if (origin.x < levelOrigin.x && origin.x + newLevelWidth == levelOrigin.x) {
+                    /* Check near level on left-side */
+                    int startY = -1, endY = -1;
+                    int index = 0;
+                    for (int i = 0; i < height; ++i) {
+                        if ((map[index] & 1) || (map[index + 5] & 1)) {
+                            if (startY >= 0) {
+                                endY = i;
+                                break;
+                            }
+                        } else {
+                            if (startY < 0) {
+                                startY = i;
+                            }
                         }
-                    } else {
-                        if (startY < 0) {
-                            startY = i;
-                        }
+                        index += width;
                     }
-                    index += width;
+                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x, levelOrigin.y + (startY + endY) / 2});
                 }
-                adjacentLevel.exits.emplace_back(Point{levelOrigin.x, levelOrigin.y + (startY + endY) / 2});
+                if (origin.x > levelOrigin.x && origin.x == levelOrigin.x + width) {
+                    /* Check near level on right-side */
+                    int startY = -1, endY = -1;
+                    int index = width - 1;
+                    for (int i = 0; i < height; ++i) {
+                        if ((map[index] & 1) || (map[index - 5] & 1)) {
+                            if (startY >= 0) {
+                                endY = i;
+                                break;
+                            }
+                        } else {
+                            if (startY < 0) {
+                                startY = i;
+                            }
+                        }
+                        index += width;
+                    }
+                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + width - 1, levelOrigin.y + (startY + endY) / 2});
+                }
             }
-            if (origin.x > levelOrigin.x && origin.x == levelOrigin.x + width) {
-                /* Check near level on right-side */
-                int startY = -1, endY = -1;
-                int index = width - 1;
-                for (int i = 0; i < height; ++i) {
-                    if ((map[index] & 1) || (map[index - 5] & 1)) {
-                        if (startY >= 0) {
-                            endY = i;
-                            break;
-                        }
-                    } else {
-                        if (startY < 0) {
-                            startY = i;
-                        }
-                    }
-                    index += width;
-                }
-                adjacentLevel.exits.emplace_back(Point{levelOrigin.x + width - 1, levelOrigin.y + (startY + endY) / 2});
-            }
-            if (origin.y < levelOrigin.y && origin.y + newLevelHeight == levelOrigin.y) {
-                /* Check near level on upside */
-                int startX = -1, endX = -1;
-                for (int i = 0; i < width; ++i) {
-                    if ((map[i] & 1) || (map[i + 5 * width] & 1)) {
-                        if (startX >= 0) {
-                            endX = i;
-                            break;
-                        }
-                    } else {
-                        if (startX < 0) {
-                            startX = i;
+            if (height > 5) {
+                if (origin.y < levelOrigin.y && origin.y + newLevelHeight == levelOrigin.y) {
+                    /* Check near level on upside */
+                    int startX = -1, endX = -1;
+                    for (int i = 0; i < width; ++i) {
+                        if ((map[i] & 1) || (map[i + 5 * width] & 1)) {
+                            if (startX >= 0) {
+                                endX = i;
+                                break;
+                            }
+                        } else {
+                            if (startX < 0) {
+                                startX = i;
+                            }
                         }
                     }
+                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y});
                 }
-                adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y});
-            }
-            if (origin.y > levelOrigin.y && origin.y == levelOrigin.y + height) {
-                /* Check near level on downside */
-                int startX = -1, endX = -1;
-                int index = width * (height - 1);
-                for (int i = 0; i < width; ++i) {
-                    if ((map[index] & 1) || map[index - 5 * width] & 1) {
-                        if (startX >= 0) {
-                            endX = i;
-                            break;
+                if (origin.y > levelOrigin.y && origin.y == levelOrigin.y + height) {
+                    /* Check near level on downside */
+                    int startX = -1, endX = -1;
+                    int index = width * (height - 1);
+                    for (int i = 0; i < width; ++i) {
+                        if ((map[index] & 1) || map[index - 5 * width] & 1) {
+                            if (startX >= 0) {
+                                endX = i;
+                                break;
+                            }
+                        } else {
+                            if (startX < 0) {
+                                startX = i;
+                            }
                         }
-                    } else {
-                        if (startX < 0) {
-                            startX = i;
-                        }
+                        ++index;
                     }
-                    ++index;
+                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y + height - 1});
                 }
-                adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y + height - 1});
             }
         }
     }

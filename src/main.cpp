@@ -627,8 +627,8 @@ static void checkForUpdate() {
         drawstate[0].bind.fs_images[0] = sg_alloc_image();
         int x0 = mapstate.currMap->cropX, y0 = mapstate.currMap->cropY, x1 = mapstate.currMap->cropX2,
             y1 = mapstate.currMap->cropY2;
-        int width = x1 - x0;
-        int height = y1 - y0;
+        int width = std::max(0, x1 - x0);
+        int height = std::max(0, y1 - y0);
         auto totalWidth = mapstate.currMap->totalWidth;
         auto *pixels = new uint32_t[width * height];
         auto *ptr = pixels;
@@ -690,7 +690,7 @@ static void checkForUpdate() {
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = mapstate.session->getMap(p.first);
-                if (m->objects.find(152) != m->objects.end()) {
+                if (m && m->objects.find(152) != m->objects.end()) {
                     name = ">>> " + name + " <<<";
                     skstate.lineEnds.emplace_back(LinePoint{px, py});
                 }
