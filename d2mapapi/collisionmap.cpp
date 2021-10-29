@@ -108,8 +108,8 @@ bool CollisionMap::build() {
             const auto originX = static_cast<int>(level->dwPosX * 5);
             const auto originY = static_cast<int>(level->dwPosY * 5);
             const auto origin = Point{originX, originY};
-            const auto newLevelWidth = level->dwSizeX * 5;
-            const auto newLevelHeight = level->dwSizeY * 5;
+            const int newLevelWidth = level->dwSizeX * 5;
+            const int newLevelHeight = level->dwSizeY * 5;
 
             auto &adjacentLevel = adjacentLevels[level->dwLevelNo];
             adjacentLevel.levelOrigin = origin;
@@ -122,8 +122,10 @@ bool CollisionMap::build() {
                 if (origin.x < levelOrigin.x && origin.x + newLevelWidth == levelOrigin.x) {
                     /* Check near level on left-side */
                     int startY = -1, endY = -1;
-                    int index = 0;
-                    for (int i = 0; i < height; ++i) {
+                    int h0 = std::max(origin.y - levelOrigin.y, 0);
+                    int h1 = std::min(origin.y + newLevelHeight - levelOrigin.y, height);
+                    int index = h0 * width;
+                    for (int i = h0; i < h1; ++i) {
                         if ((map[index] & 1) || (map[index + 5] & 1)) {
                             if (startY >= 0) {
                                 endY = i;
@@ -141,8 +143,10 @@ bool CollisionMap::build() {
                 if (origin.x > levelOrigin.x && origin.x == levelOrigin.x + width) {
                     /* Check near level on right-side */
                     int startY = -1, endY = -1;
-                    int index = width - 1;
-                    for (int i = 0; i < height; ++i) {
+                    int h0 = std::max(origin.y - levelOrigin.y, 0);
+                    int h1 = std::min(origin.y + newLevelHeight - levelOrigin.y, height);
+                    int index = h0 * width + (width - 1);
+                    for (int i = h0; i < h1; ++i) {
                         if ((map[index] & 1) || (map[index - 5] & 1)) {
                             if (startY >= 0) {
                                 endY = i;
@@ -162,7 +166,9 @@ bool CollisionMap::build() {
                 if (origin.y < levelOrigin.y && origin.y + newLevelHeight == levelOrigin.y) {
                     /* Check near level on upside */
                     int startX = -1, endX = -1;
-                    for (int i = 0; i < width; ++i) {
+                    int w0 = std::max(origin.x - levelOrigin.x, 0);
+                    int w1 = std::min(origin.x + newLevelWidth - levelOrigin.x, width);
+                    for (int i = w0; i < w1; ++i) {
                         if ((map[i] & 1) || (map[i + 5 * width] & 1)) {
                             if (startX >= 0) {
                                 endX = i;
@@ -179,8 +185,10 @@ bool CollisionMap::build() {
                 if (origin.y > levelOrigin.y && origin.y == levelOrigin.y + height) {
                     /* Check near level on downside */
                     int startX = -1, endX = -1;
-                    int index = width * (height - 1);
-                    for (int i = 0; i < width; ++i) {
+                    int w0 = std::max(origin.x - levelOrigin.x, 0);
+                    int w1 = std::min(origin.x + newLevelWidth - levelOrigin.x, width);
+                    int index = width * (height - 1) + w0;
+                    for (int i = w0; i < w1; ++i) {
                         if ((map[index] & 1) || map[index - 5 * width] & 1) {
                             if (startX >= 0) {
                                 endX = i;

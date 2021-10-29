@@ -677,15 +677,12 @@ static void checkForUpdate() {
         for (auto &p: mapstate.currMap->adjacentLevels) {
             auto ite = mapstate.levels.find(p.first);
             if (ite == mapstate.levels.end()) { continue; }
-            float px, py;
             if (p.second.exits.empty()) {
-                px = float(p.second.levelOrigin.x - originX - x0) - widthf;
-                py = float(p.second.levelOrigin.y - originY - y0) - heightf;
-            } else {
-                auto &e = p.second.exits[0];
-                px = float(e.x - originX - x0) - widthf;
-                py = float(e.y - originY - y0) - heightf;
+                continue;
             }
+            auto &e = p.second.exits[0];
+            auto px = float(e.x - originX - x0) - widthf;
+            auto py = float(e.y - originY - y0) - heightf;
             std::string name = mapstate.strings[ite->second][mapstate.language];
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
