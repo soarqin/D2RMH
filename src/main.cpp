@@ -225,7 +225,7 @@ static void initSokol() {
 
     pass_action = sg_pass_action{
         .colors = {
-            {.action = SG_ACTION_CLEAR, .value = {0, 0, 0, 1}}
+            {.action = SG_ACTION_CLEAR, .value = {0, 0, 0, 0}}
         },
     };
 
@@ -376,8 +376,6 @@ static void init() {
     SetWindowLong(hwnd, GWL_STYLE, style);
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
     SetLayeredWindowAttributes(hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
-    SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)CreateSolidBrush(0));
-    InvalidateRect(hwnd, nullptr, TRUE);
 
     static tray_menu menu[] = {
         {.text = (char*)"Quit", .cb = quit_cb},
