@@ -37,25 +37,18 @@ bool defineOffsets() {
 }
 
 uint32_t GetDllOffset(const char *DllName, int Offset) {
-    try {
-        HMODULE hMod = GetModuleHandle(DllName);
+    HMODULE hMod = GetModuleHandle(DllName);
 
-        if (!hMod)
-            hMod = LoadLibrary(DllName);
+    if (!hMod)
+        hMod = LoadLibrary(DllName);
 
-        if (!hMod)
-            return 0;
+    if (!hMod)
+        return 0;
 
-        if (Offset < 0)
-            return (DWORD)GetProcAddress(hMod, (LPCSTR)(-Offset));
+    if (Offset < 0)
+        return (DWORD)GetProcAddress(hMod, (LPCSTR)(-Offset));
 
-        return ((DWORD)hMod) + Offset;
-    }
-    catch (...) {
-        std::cout << "getDllOffset" << std::endl;
-    }
-
-    return 0;
+    return ((DWORD)hMod) + Offset;
 }
 
 uint32_t getDllOffset(int num) {

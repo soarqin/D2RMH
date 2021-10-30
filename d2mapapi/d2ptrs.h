@@ -6,16 +6,16 @@
 
 enum {DLLNO_D2CLIENT, DLLNO_D2COMMON, DLLNO_D2GFX, DLLNO_D2LANG, DLLNO_D2WIN, DLLNO_D2NET, DLLNO_D2GAME, DLLNO_D2LAUNCH, DLLNO_FOG, DLLNO_BNCLIENT, DLLNO_STORM, DLLNO_D2CMP, DLLNO_D2MULTI, DLLNO_D2SOUND};
 
-#define DLLOFFSET(a1,b1) ((DLLNO_##a1)|((b1)<<8))
-#define FUNCPTR(d1,v1,t1,t2,o1)	typedef t1 d1##_##v1##_t t2; d1##_##v1##_t *d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
-#define VARPTR(d1,v1,t1,o1)		typedef t1 d1##_##v1##_t;    d1##_##v1##_t *p_##d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
-#define ASMPTR(d1,v1,o1)			uint32_t d1##_##v1 = DLLOFFSET(d1,o1);
+#define DLLOFFSET(a1,b1)         ((DLLNO_##a1)|((b1)<<8))
+#define FUNCPTR(d1,v1,t1,t2,o1)  typedef t1 d1##_##v1##_t t2; d1##_##v1##_t *d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
+#define VARPTR(d1,v1,t1,o1)      typedef t1 d1##_##v1##_t;    d1##_##v1##_t *p_##d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
+#define ASMPTR(d1,v1,o1)         uint32_t d1##_##v1 = DLLOFFSET(d1,o1);
 
 #else
 
-#define FUNCPTR(d1, v1, t1, t2, o1)    typedef t1 d1##_##v1##_t t2; extern d1##_##v1##_t *d1##_##v1;
-#define VARPTR(d1, v1, t1, o1)        typedef t1 d1##_##v1##_t;    extern d1##_##v1##_t *p_##d1##_##v1;
-#define ASMPTR(d1, v1, o1)            extern uint32_t d1##_##v1;
+#define FUNCPTR(d1, v1, t1, t2, o1)  typedef t1 d1##_##v1##_t t2; extern d1##_##v1##_t *d1##_##v1;
+#define VARPTR(d1, v1, t1, o1)       typedef t1 d1##_##v1##_t;    extern d1##_##v1##_t *p_##d1##_##v1;
+#define ASMPTR(d1, v1, o1)           extern uint32_t d1##_##v1;
 
 #endif
 
@@ -39,7 +39,7 @@ FUNCPTR(D2COMMON, InitLevel, void __stdcall, (Level * pLevel), -10322)//Updated 
 FUNCPTR(D2COMMON,
         LoadAct,
         Act* __stdcall,
-        (uint32_t ActNumber, uint32_t MapId, uint32_t Unk, uint32_t Unk_2, uint32_t Unk_3, uint32_t Unk_4, uint32_t TownLevelId, uint32_t Func_1, uint32_t Func_2),
+        (uint32_t ActNumber, uint32_t Seed, uint32_t Unk, void *pGame, uint32_t Difficulty, void *pMempool, uint32_t TownLevelId, uint32_t Func_1, uint32_t Func_2),
         -10951)//Updated 1.13 0x3CB30 // 1.12  0x56780
 FUNCPTR(D2COMMON, UnloadAct, void __stdcall, (Act * pAct), -10868) //Updated // 1.12 -10710
 

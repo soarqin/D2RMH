@@ -9,11 +9,13 @@
 #include "d2rprocess.h"
 
 #include "wow64_process.h"
+#include "cfg.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
 #include <shlwapi.h>
 #include <cstdio>
+#include <ctime>
 
 struct handle_data {
     unsigned long processId;
@@ -42,23 +44,34 @@ HWND findMainWindow(unsigned long processId) {
 
 #define READ(a, v) readMemory64(handle_, (a), sizeof(v), &(v))
 
-D2RProcess::D2RProcess() {
+D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval) {
     searchForProcess();
+    nextSearchTime_ = time(nullptr) + searchInterval_;
 }
 
 D2RProcess::~D2RProcess() {
     if (handle_) { CloseHandle(handle_); }
 }
 
-void D2RProcess::updateData(bool searchProcess) {
+void D2RProcess::updateData() {
     if (handle_) {
         DWORD ret = WaitForSingleObject(handle_, 0);
         if (ret != WAIT_TIMEOUT) {
             resetData();
-            if (searchProcess) { searchForProcess(); }
+            time_t now = time(nullptr);
+            bool searchProcess = now >= nextSearchTime_;
+            if (searchProcess) {
+                searchForProcess();
+                nextSearchTime_ = now + searchInterval_;
+            }
         }
     } else {
-        if (searchProcess) { searchForProcess(); }
+        time_t now = time(nullptr);
+        bool searchProcess = now >= nextSearchTime_;
+        if (searchProcess) {
+            searchForProcess();
+            nextSearchTime_ = now + searchInterval_;
+        }
     }
     available_ = false;
     if (!handle_) { return; }
@@ -120,11 +133,47 @@ void D2RProcess::updateData(bool searchProcess) {
     available_ = true;
 }
 
+static std::function<void(int, int, int, int)> sizeCallback;
+
+void onSizeChange(HWND hwnd) {
+    if (!sizeCallback) { return; }
+    RECT rc;
+    if (GetClientRect(hwnd, &rc)) {
+        POINT pt = {rc.left, rc.top};
+        ClientToScreen(hwnd, &pt);
+        rc.left = pt.x;
+        rc.top = pt.y;
+        pt = {rc.right, rc.bottom};
+        ClientToScreen(hwnd, &pt);
+        rc.right = pt.x;
+        rc.bottom = pt.y;
+    } else {
+        HMONITOR hm = MonitorFromPoint(POINT{1, 1}, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi;
+        mi.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfo(hm, &mi);
+        rc = mi.rcWork;
+    }
+    sizeCallback(rc.left, rc.top, rc.right, rc.bottom);
+}
+
+void D2RProcess::setWindowPosCallback(const std::function<void(int, int, int, int)> &cb) {
+    sizeCallback = cb;
+    onSizeChange((HWND)hwnd_);
+}
+
+VOID CALLBACK hookCb(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
+                     DWORD idEventThread, DWORD dwmsEventTime) {
+    onSizeChange(hwnd);
+}
+
 void D2RProcess::searchForProcess() {
     PROCESSENTRY32W entry;
     entry.dwSize = sizeof(PROCESSENTRY32W);
 
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    DWORD processId = 0;
 
     if (Process32FirstW(snapshot, &entry) == TRUE) {
         while (Process32NextW(snapshot, &entry) == TRUE) {
@@ -142,6 +191,7 @@ void D2RProcess::searchForProcess() {
                 });
                 if (baseSize_) {
                     hwnd_ = findMainWindow(entry.th32ProcessID);
+                    processId = entry.th32ProcessID;
                 } else {
                     resetData();
                 }
@@ -151,22 +201,7 @@ void D2RProcess::searchForProcess() {
     }
     CloseHandle(snapshot);
     if (!handle_) { return; }
-/*
-    auto *data = new uint8_t[baseSize_];
-    if (!READN(baseAddr_, baseSize_, data)) {
-        resetData();
-        delete[] data;
-        return;
-    }
-    const uint8_t seq0[] = {0x57, 0x48, 0x83, 0xec, 0x00, 0x33, 0xff, 0x48, 0x8d, 0x05};
-    const uint8_t mask0[] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
-    auto ptr1 = findPattern(handle_, data, baseSize_, seq0, mask0, 10);
-    const uint8_t seq1[] = {0x40, 0x84, 0xed, 0x0f, 0x94, 0x05};
-    auto ptr2 = findPattern(handle_, data, baseSize_, seq1, nullptr, 6);
-
-    delete[] data;
-*/
-
+    hook_ = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     updateData();
 }
 

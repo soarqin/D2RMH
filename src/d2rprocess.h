@@ -8,14 +8,16 @@
 
 #pragma once
 
+#include <functional>
 #include <cstdint>
 
 class D2RProcess final {
 public:
-    D2RProcess();
+    explicit D2RProcess(uint32_t searchInterval = 1);
     ~D2RProcess();
 
-    void updateData(bool searchProcess = false);
+    void updateData();
+    void setWindowPosCallback(const std::function<void(int, int, int, int)> &cb);
 
     void *hwnd() { return hwnd_; }
     [[nodiscard]] inline bool available() const { return available_; }
@@ -35,9 +37,13 @@ private:
 private:
     void *handle_ = nullptr;
     void *hwnd_ = nullptr;
+    void *hook_ = nullptr;
     bool available_ = false;
     uint64_t baseAddr_ = 0;
     uint64_t baseSize_ = 0;
+
+    uint32_t nextSearchTime_ = 0;
+    uint32_t searchInterval_ = 0;
 
     uint64_t playerUnitOffset_ = 0;
     uint64_t mapEnablePtr_ = 0;

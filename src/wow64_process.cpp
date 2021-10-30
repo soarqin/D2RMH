@@ -100,25 +100,3 @@ bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t
 
     return true;
 }
-/*
-
-int main()
-{
-    try
-    {
-        HANDLE handle = get_handle(16944);
-        close_on_exit auto_close_handle(handle);
-
-        check_if_process_is_x64(handle);
-        get_modules_load_order_via_peb(handle);
-    }
-    catch (const std::runtime_error &e)
-    {
-        std::cerr << "\n----------------------------------------------------\n";
-        std::cerr << "Exception occurred: " << e.what();
-        std::cerr << "\n----------------------------------------------------\n";
-    }
-
-    return 0;
-}
-*/

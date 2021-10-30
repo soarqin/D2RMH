@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2021 Soar Qin<soarchin@gmail.com>
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+#include "data.h"
+
+#include "ini.h"
+
+#include <cstring>
+#include <cstdlib>
+
+static Data sgamedata;
+const Data *gamedata = &sgamedata;
+
+void loadData() {
+    int section = -1;
+    ini_parse("D2RMH_data.ini", [](void* user, const char* section,
+                                   const char* name, const char* value)->int {
+        auto *isec = (int*)user;
+        if (!name) {
+            if (!strcmp(section, "guides")) { *isec = 0; }
+            else if (!strcmp(section, "levels")) { *isec = 1; }
+            else if (!strcmp(section, "objects")) { *isec = 2; }
+            else if (!strcmp(section, "npcs")) { *isec = 3; }
+            else if (!strcmp(section, "strings")) { *isec = 4; }
+            else { *isec = -1; }
+            return 1;
+        }
+        switch (*isec) {
+        case 0: {
+            int from = strtol(name, nullptr, 0);
+            int to;
+            if (value[0] == '+') {
+                to = strtol(value + 1, nullptr, 0) | 0x10000;
+            } else if (value[0] == '-') {
+                to = strtol(value + 1, nullptr, 0) | 0x20000;
+            } else {
+                to = strtol(value, nullptr, 0);
+            }
+            sgamedata.guides[from].insert(to);
+            break;
+        }
+        case 1:
+            sgamedata.levels[strtol(name, nullptr, 0)] = value;
+            break;
+        case 2: case 3: {
+            const char *pos = strchr(value, '|');
+            if (!pos) { break; }
+            auto ssize = pos - value;
+            EObjType t = TypeNone;
+            if (!strncmp(value, "Waypoint", ssize)) { t = TypeWayPoint; }
+            else if (!strncmp(value, "Quest", ssize)) { t = TypeQuest; }
+            else if (!strncmp(value, "Portal", ssize)) { t = TypePortal; }
+            else if (!strncmp(value, "Chest", ssize)) { t = TypeChest; }
+            else if (!strncmp(value, "Shrine", ssize)) { t = TypeShrine; }
+            else if (!strncmp(value, "Well", ssize)) { t = TypeWell; }
+            sgamedata.objects[*isec - 2][strtol(name, nullptr, 0)] = { t, pos + 1 };
+            break;
+        }
+        case 4: {
+            const char *pos = strchr(name, '[');
+            if (!pos) { break; }
+            auto index = strtoul(pos + 1, nullptr, 0);
+            if (index < 0 || index >= 13) { break; }
+            char realname[256];
+            auto ssize = pos - name;
+            memcpy(realname, name, ssize);
+            realname[ssize] = 0;
+            sgamedata.strings[realname][index] = value;
+            break;
+        }
+        default:
+            break;
+        }
+        return 1;
+    }, &section);
+}

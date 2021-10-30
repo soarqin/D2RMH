@@ -4,7 +4,9 @@
 
 #define ArraySize(x) (sizeof(x) / sizeof(x[0]))
 
-void d2MapInit(const char *dir);
+/* return NULL if no error,
+ * otherwise return error message */
+const char *d2MapInit(const char *dir);
 
 Level *__fastcall getLevel(ActMisc *misc, uint32_t levelno);
 void D2CLIENT_InitGameMisc();

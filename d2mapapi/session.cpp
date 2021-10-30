@@ -2,9 +2,6 @@
 
 #include "d2ptrs.h"
 
-#include <iostream>
-#include <cstring>
-
 static const unsigned int ActLevels[] = {1, 40, 75, 103, 109, 137};
 
 namespace Helpers {
@@ -19,18 +16,17 @@ int getAct(unsigned int areaid) {
 }
 }
 
-Session::Session(unsigned seed, unsigned difficulty) {
-    seed_ = seed;
-    difficulty_ = std::min(difficulty, 2u);
-    memset(acts_, 0, sizeof(acts_));
+Session::~Session() {
+    unloadAll();
 }
 
-Session::~Session() {
-    for (int i = 0; i < 5; i++) {
-        if (acts_[i]) {
-            D2COMMON_UnloadAct(acts_[i]);
-        }
-    }
+bool Session::update(unsigned int seed, unsigned char difficulty) {
+    if (difficulty > 2) difficulty = 2;
+    if (seed_ == seed && difficulty == difficulty_) { return false; }
+    seed_ = seed;
+    difficulty_ = difficulty;
+    unloadAll();
+    return true;
 }
 
 CollisionMap *Session::getMap(unsigned int areaid) {
@@ -41,15 +37,8 @@ CollisionMap *Session::getMap(unsigned int areaid) {
             return nullptr;
         }
         if (!acts_[actId]) {
-            acts_[actId] = D2COMMON_LoadAct(actId,
-                                        seed_,
-                                        1 /*TRUE*/,
-                                        0 /*FALSE*/,
-                                        difficulty_,
-                                        0,
-                                        ActLevels[actId],
-                                        D2CLIENT_LoadAct_1,
-                                        D2CLIENT_LoadAct_2);
+            acts_[actId] = D2COMMON_LoadAct(actId, seed_, 1 /*TRUE*/, nullptr, difficulty_, nullptr,
+                                            ActLevels[actId], D2CLIENT_LoadAct_1, D2CLIENT_LoadAct_2);
         }
         auto map = std::make_unique<CollisionMap>(acts_[actId], areaid);
         if (!map->build()) { return nullptr; }
@@ -59,4 +48,13 @@ CollisionMap *Session::getMap(unsigned int areaid) {
     }
 
     return ite->second.get();
+}
+
+void Session::unloadAll() {
+    for (auto *&act: acts_) {
+        if (act) {
+            D2COMMON_UnloadAct(act);
+            act = nullptr;
+        }
+    }
 }
