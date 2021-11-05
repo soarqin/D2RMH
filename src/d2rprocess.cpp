@@ -76,13 +76,13 @@ void D2RProcess::updateData() {
     if (!handle_) { return; }
 
     if (playerUnitOffset_ == 0) {
-        uint64_t playerPtr = baseAddr_ + 0x2027660;
+        uint64_t playerPtr = baseAddr_ + 0x20546E0;
         for (uint64_t i = 0; i < 0x80; ++i) {
             uint64_t paddr;
             uint64_t val;
             if (READ(playerPtr, paddr) && paddr && READ(paddr + 0xB8, val) && val == 0x100ULL) {
                 playerUnitOffset_ = playerPtr;
-                mapEnablePtr_ = baseAddr_ + 0x2037322;
+                mapEnablePtr_ = baseAddr_ + 0x20643A2;
                 break;
             }
             playerPtr += 8;
