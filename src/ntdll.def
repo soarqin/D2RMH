@@ -1,0 +1,4 @@
+LIBRARY "ntdll.dll"
+EXPORTS
+NtWow64QueryInformationProcess64
+NtWow64ReadVirtualMemory64

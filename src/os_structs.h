@@ -105,17 +105,18 @@ typedef struct _LDR_DATA_TABLE_ENTRY64 {
 // ------------------------------------------------------------------------
 // Function prototypes.
 // ------------------------------------------------------------------------
-
-typedef NTSTATUS(NTAPI *_NtWow64QueryInformationProcess64)(
+extern "C" {
+NTSYSCALLAPI NTSTATUS NTAPI NtWow64QueryInformationProcess64(
     IN HANDLE ProcessHandle,
     ULONG ProcessInformationClass,
     OUT PVOID ProcessInformation,
     IN ULONG ProcessInformationLength,
     OUT PULONG ReturnLength OPTIONAL);
 
-typedef NTSTATUS(NTAPI *_NtWow64ReadVirtualMemory64)(
+NTSYSCALLAPI NTSTATUS NTAPI NtWow64ReadVirtualMemory64(
     IN HANDLE ProcessHandle,
     IN DWORD64 BaseAddress,
     OUT PVOID Buffer,
     IN ULONG64 Size,
     OUT PDWORD64 NumberOfBytesRead);
+}

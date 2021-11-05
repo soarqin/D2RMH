@@ -9,18 +9,17 @@
 #include "wow64_process.h"
 
 #include "os_structs.h"
-
+#ifdef _MSC_VER
+#pragma comment(linker, "/alternatename:__imp__NtWow64QueryInformationProcess64@20=__imp__NtWow64QueryInformationProcess64")
+#pragma comment(linker, "/alternatename:__imp__NtWow64ReadVirtualMemory64@28=__imp__NtWow64ReadVirtualMemory64")
+#endif
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
 
-#ifndef WIN32
+#ifndef _M_IX86
 #   error "This application must be built as an x86 executable"
 #endif
-
-#define GET_FUNC_ADDR(name) _##name name = (_##name)::GetProcAddress(::GetModuleHandleA("ntdll.dll"), #name)
-static GET_FUNC_ADDR(NtWow64ReadVirtualMemory64);
-static GET_FUNC_ADDR(NtWow64QueryInformationProcess64);
 
 #define IS_TRUE(clause, msg) if (!(clause)) { throw std::runtime_error(msg); }
 
