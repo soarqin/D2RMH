@@ -18,7 +18,7 @@ const char *d2MapInit(const char *dir) {
     memset(&D2Client, 0, sizeof(d2client_struct));
     SetCurrentDirectory(D2_DIR);
     if (!defineOffsets()) {
-        return "Game Initialize Failed!";
+        return "Diablo II Legacy v1.13c: Failed to loading DLLs!";
     }
 
     *p_STORM_MPQHashTable = 0;
@@ -30,17 +30,17 @@ const char *d2MapInit(const char *dir) {
     FOG_10089(1);
 
     if (!FOG_10218()) {
-        return "Game Initialize Failed!";
+        return "Diablo II Legacy v1.13c: Initialize Failed!";
     }
 
     if (!D2WIN_10086() || !D2WIN_10005(0, 0, 0, &D2Client)) {
-        return "Couldn't load Diablo 2 MPQ files. Please make sure you have a full install of Diablo II and copy the D2XMUSIC.MPQ and D2XVIDEO.MPQ from the Expansion CD";
+        return "Diablo II Legacy v1.13c: Couldn't load MPQ files.\nPlease make sure you have a full install of Diablo II and copy the D2XMUSIC.MPQ and D2XVIDEO.MPQ from the Expansion CD";
     }
 
     D2LANG_10008(0, "ENG", 0);
 
     if (!D2COMMON_InitDataTables(0, 0, 0)) {
-        return "Couldn't initialize sqptDataTable!";
+        return "Diablo II Legacy v1.13c: Couldn't initialize sqptDataTable!";
     }
 
     D2CLIENT_InitGameMisc();

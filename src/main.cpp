@@ -24,9 +24,13 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         MessageBoxW(nullptr, L"A D2RMH instance is already running!", L"D2RMH", MB_OK | MB_ICONERROR);
         return 0;
     }
+    const auto *errstr = d2MapInit(cfg->d2Path.c_str());
+    if (errstr) {
+        MessageBoxA(nullptr, errstr, "D2RMH", MB_OK | MB_ICONERROR);
+        return 0;
+    }
     loadCfg();
     loadData();
-    d2MapInit(cfg->d2Path.c_str());
 
     Window wnd(100, 100, 500, 400);
     wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
