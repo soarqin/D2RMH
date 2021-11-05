@@ -13,7 +13,7 @@
 
 class D2RProcess final {
 public:
-    explicit D2RProcess(uint32_t searchInterval = 1);
+    explicit D2RProcess(uint32_t searchInterval = 500);
     ~D2RProcess();
 
     void updateData();

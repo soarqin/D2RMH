@@ -15,7 +15,6 @@
 #include <tlhelp32.h>
 #include <shlwapi.h>
 #include <cstdio>
-#include <ctime>
 
 struct handle_data {
     unsigned long processId;
@@ -46,7 +45,7 @@ HWND findMainWindow(unsigned long processId) {
 
 D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval) {
     searchForProcess();
-    nextSearchTime_ = time(nullptr) + searchInterval_;
+    nextSearchTime_ = timeGetTime() + searchInterval_;
 }
 
 D2RProcess::~D2RProcess() {
@@ -58,16 +57,16 @@ void D2RProcess::updateData() {
         DWORD ret = WaitForSingleObject(handle_, 0);
         if (ret != WAIT_TIMEOUT) {
             resetData();
-            time_t now = time(nullptr);
-            bool searchProcess = now >= nextSearchTime_;
+            auto now = timeGetTime();
+            bool searchProcess = int(now - nextSearchTime_) >= 0;
             if (searchProcess) {
                 searchForProcess();
                 nextSearchTime_ = now + searchInterval_;
             }
         }
     } else {
-        time_t now = time(nullptr);
-        bool searchProcess = now >= nextSearchTime_;
+        time_t now = timeGetTime();
+        bool searchProcess = int(now - nextSearchTime_) >= 0;
         if (searchProcess) {
             searchForProcess();
             nextSearchTime_ = now + searchInterval_;
