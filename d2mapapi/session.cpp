@@ -51,6 +51,7 @@ CollisionMap *Session::getMap(unsigned int areaid) {
 }
 
 void Session::unloadAll() {
+    maps_.clear();
     for (auto *&act: acts_) {
         if (act) {
             D2COMMON_UnloadAct(act);
