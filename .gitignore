@@ -44,3 +44,6 @@ Release
 # Jetbrains generated files
 /.idea/
 /cmake-*/
+
+# Build directory(ies)
+**/build/

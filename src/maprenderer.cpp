@@ -73,8 +73,8 @@ void MapRenderer::update() {
         return;
     }
     bool changed = session_.update(d2rProcess_.seed(), d2rProcess_.difficulty());
-    uint32_t levelId;
-    if (changed || (levelId = d2rProcess_.levelId()) != currLevelId_) {
+    uint32_t levelId = d2rProcess_.levelId();
+    if (changed || levelId != currLevelId_) {
         textStrings_.clear();
         lines_.clear();
         currLevelId_ = levelId;
