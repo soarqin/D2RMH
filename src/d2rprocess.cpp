@@ -10,6 +10,7 @@
 
 #include "wow64_process.h"
 #include "cfg.h"
+#include "data.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
@@ -52,6 +53,138 @@ D2RProcess::~D2RProcess() {
     if (handle_) { CloseHandle(handle_); }
 }
 
+struct DrlgRoom2 {
+    uint64_t unk0[2];
+    /* 0x10  DrlgRoom2 **pRoomsNear */
+    uint64_t roomsNearListPtr;
+    uint64_t unk1[5];
+    /* 0x40  DWORD *levelDef */
+    uint64_t levelPresetPtr;
+    /* 0x48  DrlgRoom2 *pNext */
+    uint64_t nextPtr;
+    /* 0x50 */
+    uint16_t roomsNear;
+    uint16_t unk2;
+    uint32_t roomTiles;
+    /* 0x58  DrlgRoom1 *room1 */
+    uint64_t room1Ptr;
+    /* 0x60  DWORD dwPosX; DWORD dwPosY; DWORD dwSizeX; DWORD dwSizeY; */
+    uint32_t posX, posY, sizeX, sizeY;
+    /* 0x70 */
+    uint32_t unk3;
+    uint32_t presetType;
+    /* 0x78  RoomTile *pRoomTiles */
+    uint64_t roomTilesPtr;
+    uint64_t unk4[2];
+    /* 0x90  DrlgLevel *pLevel */
+    uint64_t levelPtr;
+    /* 0x98  PresetUnit *pPresetUnits */
+    uint64_t presetUnitsPtr;
+};
+
+struct DrlgRoom1 {
+    /* 0x00  DrlgRoom1 **pRoomsNear; */
+    uint64_t roomsNearListPtr;
+    uint64_t unk0[2];
+    /* 0x18  DrlgRoom2 *pRoom2; */
+    uint64_t room2Ptr;
+    uint64_t unk1[4];
+    /* 0x40 */
+    uint32_t roomsNear;
+    uint32_t unk2;
+    /* 0x48  DrlgAct *pAct */
+    uint64_t actAddr;
+    uint64_t unk3[11];
+    /* 0xA8  UnitAny *pUnitFirst */
+    uint64_t unitFirstAddr;
+    /* 0xB0  DrlgRoom1 *pNext */
+    uint64_t nextPtr;
+};
+
+struct DynamicPath {
+    uint16_t offsetX;
+    uint16_t posX;
+    uint16_t offsetY;
+    uint16_t posY;
+    uint32_t mapPosX;
+    uint32_t mapPosY;
+    uint32_t targetX;
+    uint32_t targetY;
+    uint32_t unk0[2];
+    /* 0x20  DrlgRoom1 *pRoom1 */
+    uint64_t room1Ptr;
+};
+
+struct StaticPath {
+    /* DrlgRoom1 *pRoom1; */
+    uint64_t room1Ptr;
+    uint32_t mapPosX;
+    uint32_t dwMapPosY;
+    uint32_t posX;
+    uint32_t posY;
+};
+
+struct DrlgAct {
+    uint64_t unk0[2];
+    uint32_t unk1;
+    uint32_t seed;
+    /* 0x18 DrlgRoom1 *room1 */
+    uint64_t room1Ptr;
+    uint32_t actId;
+    uint32_t unk2;
+    uint64_t unk3[9];
+    /* DrlgMisc *misc */
+    uint64_t miscPtr;
+};
+
+struct UnitAny {
+    uint32_t unitType;
+    uint32_t txtFileNo;
+    uint32_t unitId;
+    uint32_t mode;
+    /* 0x10
+    union {
+        PlayerData *pPlayerData;
+        MonsterData *pMonsterData;
+        ObjectData *pObjectData;
+        ItemData *pItemData;
+        MissileData *pMissileData;
+    };
+     */
+    uint64_t unionPtr;
+    uint64_t unk0;
+    /* 0x20  DrlgAct *pAct */
+    uint64_t actPtr;
+    uint64_t seed;
+    /* 0x30 */
+    uint64_t initSeed;
+    /* 0x38  for Player/Monster: DynamicPath *pPath
+     *       for Object:         StaticPath  *pPath */
+    uint64_t pathPtr;
+    /* 0x40 */
+    uint32_t unk2[8];
+    /* 0x60 */
+    uint32_t gfxFrame;
+    uint32_t frameRemain;
+    /* 0x68 */
+    uint32_t frameRate;
+    uint32_t unk3;
+    /* 0x70
+    uint8_t *pGfxUnk;
+    uint32_t *pGfxInfo;
+     */
+    uint64_t gfxUnkPtr;
+    uint64_t gfxInfoPtr;
+    /* 0x80 */
+    uint64_t unk4;
+    /* 0x88 StatList *pStats */
+    uint64_t statsPtr;
+    /* 0x90 Inventory1 *pInventory */
+    uint64_t inventoryPtr;
+    uint64_t unk5[23];
+    uint64_t nextPtr;
+};
+
 void D2RProcess::updateData() {
     if (handle_) {
         DWORD ret = WaitForSingleObject(handle_, 0);
@@ -79,11 +212,12 @@ void D2RProcess::updateData() {
         uint64_t playerPtr = baseAddr_ + 0x20546E0;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
-            READ(playerPtr, paddr);
+            if (!READ(playerPtr, paddr)) { return; }
             while (paddr) {
                 uint64_t val;
                 if (READ(paddr + 0x90, val) && val) {
-                    playerUnitOffset_ = playerPtr;
+                    playerHashOffset_ = playerPtr;
+                    playerUnitOffset_ = paddr;
                     break;
                 }
                 READ(paddr + 0x150, paddr);
@@ -95,47 +229,110 @@ void D2RProcess::updateData() {
         }
     }
 
-    READ(baseAddr_ + 0x20643A2, mapEnabled_);
-
     uint64_t addr;
-    if (!READ(playerUnitOffset_, addr) || !addr) {
+    if (!READ(playerHashOffset_, addr) || !addr) {
+        playerHashOffset_ = 0;
         playerUnitOffset_ = 0;
         return;
     }
+    READ(baseAddr_ + 0x20643A2, mapEnabled_);
+    addr = playerUnitOffset_;
 
-    uint64_t plrAddr;
-    if (READ(addr + 0x10, plrAddr) && plrAddr) {
-        READ(plrAddr, name_);
+    UnitAny unit;
+    if (!READ(addr, unit)) {
+        playerHashOffset_ = 0;
+        playerUnitOffset_ = 0;
+        return;
     }
-
-    uint64_t actAddr = 0;
-    if (READ(addr + 0x20, actAddr) && actAddr) {
-        READ(actAddr + 0x20, act_);
-
-        uint64_t actUnk1Addr;
-        READ(actAddr + 0x70, actUnk1Addr);
-        READ(actUnk1Addr + 0x830, difficulty_);
-    }
-
-    uint64_t pathAddr;
-    if (READ(addr + 0x38, pathAddr) && pathAddr) {
-        uint64_t room1Addr;
-        if (READ(pathAddr + 0x20, room1Addr) && room1Addr) {
-            uint64_t room2Addr;
-            if (READ(room1Addr + 0x18, room2Addr) && room2Addr) {
-                uint64_t levelAddr;
-                if (READ(room2Addr + 0x90, levelAddr) && levelAddr) {
-                    READ(levelAddr + 0x1F8, levelId_);
-                    if (actAddr) {
-                        READ(actAddr + 0x14, seed_);
-                    }
-                    READ(pathAddr + 0x02, posX_);
-                    READ(pathAddr + 0x06, posY_);
+    DrlgAct act;
+    name_[0] = 0;
+    READ(unit.unionPtr, name_);
+    if (READ(unit.actPtr, act)) {
+        act_ = act.actId;
+        seed_ = act.seed;
+        READ(act.miscPtr + 0x830, difficulty_);
+        DynamicPath path;
+        if (READ(unit.pathPtr, path)) {
+            posX_ = path.posX;
+            posY_ = path.posY;
+            DrlgRoom1 room1;
+            if (READ(path.room1Ptr, room1)) {
+                DrlgRoom2 room2;
+                if (READ(room1.room2Ptr, room2)) {
+                    READ(room2.levelPtr + 0x1F8, levelId_);
                 }
             }
         }
     }
     available_ = true;
+
+    if (cfg->showMonsters) {
+        mapMonsters_.clear();
+        uint64_t baseAddr = baseAddr_ + 0x20546E0 + 8 * 0x80;
+        for (int i = 0; i < 0x80; ++i) {
+            uint64_t paddr;
+            if (!READ(baseAddr, paddr)) { break; }
+            while (paddr) {
+                UnitAny unit;
+                if (!READ(paddr, unit)) { break; }
+                if (unit.mode != 0 && unit.mode != 12) {
+                    uint8_t flag;
+                    READ(unit.unionPtr + 0x1A, flag);
+                    if (flag & 0x1E) {
+                        DynamicPath path;
+                        if (READ(unit.pathPtr, path)) {
+                            auto &mon = mapMonsters_[unit.unitId];
+                            mon.x = path.posX;
+                            mon.y = path.posY;
+                            if (!mon.txtFileNo) {
+                                mon.txtFileNo = unit.txtFileNo;
+                                mon.flag = flag;
+                            }
+                        }
+                    }
+                }
+                paddr = unit.nextPtr;
+            }
+            baseAddr += 8;
+        }
+    }
+    if (cfg->showObjects) {
+        uint64_t baseAddr = baseAddr_ + 0x20546E0 + 8 * 0x100;
+        for (int i = 0; i < 0x80; ++i) {
+            uint64_t paddr;
+            if (!READ(baseAddr, paddr)) { break; }
+            while (paddr) {
+                UnitAny unit;
+                if (!READ(paddr, unit)) { break; }
+                if (unit.mode != 2) {
+                    auto ite = gamedata->objects[0].find(unit.txtFileNo);
+                    if (ite != gamedata->objects[0].end() && ite->second.type == TypeShrine) {
+                        uint8_t flag;
+                        READ(unit.unionPtr + 8, flag);
+                        StaticPath path;
+                        if (READ(unit.pathPtr, path)) {
+                            auto &obj = mapObjects_[unit.unitId];
+                            if (!obj.txtFileNo) {
+                                obj.txtFileNo = unit.txtFileNo;
+                                obj.type = ite->second.type;
+                                const std::string &name =
+                                    flag < gamedata->shrines.size() ? gamedata->shrines[flag] : ite->second.name;
+                                auto ite2 = gamedata->strings.find(name);
+                                obj.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
+                                obj.x = path.posX;
+                                obj.y = path.posY;
+                                obj.flag = flag;
+                            }
+                        }
+                    }
+                } else {
+                    mapObjects_.erase(unit.unitId);
+                }
+                paddr = unit.nextPtr;
+            }
+            baseAddr += 8;
+        }
+    }
 }
 
 static std::function<void(int, int, int, int)> sizeCallback;

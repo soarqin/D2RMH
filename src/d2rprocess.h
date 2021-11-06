@@ -8,10 +8,25 @@
 
 #pragma once
 
+#include <unordered_map>
+#include <string>
 #include <functional>
 #include <cstdint>
 
 class D2RProcess final {
+public:
+    struct MapMonster {
+        uint32_t txtFileNo;
+        uint32_t x, y;
+        uint8_t flag;
+    };
+    struct MapObject {
+        uint32_t txtFileNo;
+        uint32_t x, y;
+        const std::array<std::wstring, 13> *name;
+        uint8_t type;
+        uint8_t flag;
+    };
 public:
     explicit D2RProcess(uint32_t searchInterval = 500);
     ~D2RProcess();
@@ -30,6 +45,9 @@ public:
     [[nodiscard]] inline uint16_t posX() const { return posX_; }
     [[nodiscard]] inline uint16_t posY() const { return posY_; }
 
+    [[nodiscard]] inline const std::unordered_map<uint32_t, MapMonster> &monsters() const { return mapMonsters_; }
+    [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return mapObjects_; }
+
 private:
     void searchForProcess();
     void resetData();
@@ -45,6 +63,7 @@ private:
     uint32_t nextSearchTime_ = 0;
     uint32_t searchInterval_ = 0;
 
+    uint64_t playerHashOffset_ = 0;
     uint64_t playerUnitOffset_ = 0;
 
     uint8_t mapEnabled_ = 0;
@@ -54,4 +73,7 @@ private:
     uint32_t levelId_ = 0;
     uint32_t seed_ = 0;
     uint16_t posX_ = 0, posY_ = 0;
+
+    std::unordered_map<uint32_t, MapMonster> mapMonsters_;
+    std::unordered_map<uint32_t, MapObject> mapObjects_;
 };

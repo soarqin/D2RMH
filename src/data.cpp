@@ -9,6 +9,7 @@
 #include "data.h"
 
 #include "ini.h"
+#include "util.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -26,7 +27,8 @@ void loadData() {
             else if (!strcmp(section, "levels")) { *isec = 1; }
             else if (!strcmp(section, "objects")) { *isec = 2; }
             else if (!strcmp(section, "npcs")) { *isec = 3; }
-            else if (!strcmp(section, "strings")) { *isec = 4; }
+            else if (!strcmp(section, "shrines")) { *isec = 4; }
+            else if (!strcmp(section, "strings")) { *isec = 5; }
             else { *isec = -1; }
             return 1;
         }
@@ -44,9 +46,14 @@ void loadData() {
             sgamedata.guides[from].insert(to);
             break;
         }
-        case 1:
-            sgamedata.levels[strtol(name, nullptr, 0)] = value;
+        case 1: {
+            auto id = strtol(name, nullptr, 0);
+            if (id >= sgamedata.levels.size()) {
+                sgamedata.levels.resize(id + 1);
+            }
+            sgamedata.levels[id] = value;
             break;
+        }
         case 2: case 3: {
             const char *pos = strchr(value, '|');
             if (!pos) { break; }
@@ -62,6 +69,14 @@ void loadData() {
             break;
         }
         case 4: {
+            auto id = strtol(name, nullptr, 0);
+            if (id >= sgamedata.shrines.size()) {
+                sgamedata.shrines.resize(id + 1);
+            }
+            sgamedata.shrines[id] = value;
+            break;
+        }
+        case 5: {
             const char *pos = strchr(name, '[');
             if (!pos) { break; }
             auto index = strtoul(pos + 1, nullptr, 0);
@@ -70,7 +85,7 @@ void loadData() {
             auto ssize = pos - name;
             memcpy(realname, name, ssize);
             realname[ssize] = 0;
-            sgamedata.strings[realname][index] = value;
+            sgamedata.strings[realname][index] = utf8toucs4(value);
             break;
         }
         default:

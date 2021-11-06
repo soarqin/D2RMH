@@ -174,7 +174,7 @@ void TTF::charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int f
     b = fd->iy0 + fd->h;
 }
 
-int TTF::stringWidth(const std::wstring &str, int fontSize) {
+int TTF::stringWidth(std::wstring_view str, int fontSize) {
     uint8_t w;
     int8_t t, b;
     int res = 0;

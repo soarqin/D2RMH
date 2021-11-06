@@ -93,6 +93,7 @@ void Renderer::setClearColor(float r, float g, float b, float a) {
 void Renderer::begin() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_MULTISAMPLE);
 
     auto *c = ctx_->clearColor;
     glClearColor(c[0], c[1], c[2], c[3]);
@@ -317,7 +318,6 @@ Pipeline::~Pipeline() {
 }
 void Pipeline::setOrtho(float left, float right, float bottom, float top, float nearf, float farf) {
     ctx_->mvpBase = HMM_Orthographic(left, right, bottom, top, nearf, farf);
-    ctx_->transform = HMM_Mat4d(1.0f);
     ctx_->mvpDirty = true;
 }
 void Pipeline::resetTransform() {

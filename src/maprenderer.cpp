@@ -9,52 +9,7 @@
 #include "maprenderer.h"
 
 #include "window.h"
-
 #include "cfg.h"
-
-static std::wstring utf8toucs4(const std::string &s) {
-    std::wstring ws;
-    wchar_t wc;
-    for (int i = 0; i < s.length();) {
-        char c = s[i];
-        if ((c & 0x80) == 0) {
-            wc = c;
-            ++i;
-        } else if ((c & 0xE0) == 0xC0) {
-            wc = (s[i] & 0x1F) << 6;
-            wc |= (s[i + 1] & 0x3F);
-            i += 2;
-        } else if ((c & 0xF0) == 0xE0) {
-            wc = (s[i] & 0xF) << 12;
-            wc |= (s[i + 1] & 0x3F) << 6;
-            wc |= (s[i + 2] & 0x3F);
-            i += 3;
-        } else if ((c & 0xF8) == 0xF0) {
-            wc = (s[i] & 0x7) << 18;
-            wc |= (s[i + 1] & 0x3F) << 12;
-            wc |= (s[i + 2] & 0x3F) << 6;
-            wc |= (s[i + 3] & 0x3F);
-            i += 4;
-        } else if ((c & 0xFC) == 0xF8) {
-            wc = (s[i] & 0x3) << 24;
-            wc |= (s[i] & 0x3F) << 18;
-            wc |= (s[i] & 0x3F) << 12;
-            wc |= (s[i] & 0x3F) << 6;
-            wc |= (s[i] & 0x3F);
-            i += 5;
-        } else if ((c & 0xFE) == 0xFC) {
-            wc = (s[i] & 0x1) << 30;
-            wc |= (s[i] & 0x3F) << 24;
-            wc |= (s[i] & 0x3F) << 18;
-            wc |= (s[i] & 0x3F) << 12;
-            wc |= (s[i] & 0x3F) << 6;
-            wc |= (s[i] & 0x3F);
-            i += 6;
-        }
-        ws += wc;
-    }
-    return ws;
-}
 
 static JsonLng::LNG lngFromString(const std::string &language) {
     if (language == "enUS") return JsonLng::LNG_enUS;
@@ -77,6 +32,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     renderer_(renderer),
     mapPipeline_(renderer),
     framePipeline_(renderer),
+    dynamicPipeline_(renderer),
     ttfgl_(renderer),
     ttf_(ttfgl_),
     walkableColor_(cfg->walkableColor) {
@@ -91,6 +47,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypePortal] = cfg->portalColor;
     objColors_[TypeChest] = cfg->chestColor;
     objColors_[TypeQuest] = cfg->questColor;
+    objColors_[TypeShrine] = cfg->shrineColor;
     objColors_[TypeWell] = cfg->wellColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
 }
@@ -157,27 +114,25 @@ void MapRenderer::update() {
         auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
         auto widthf = float(width) * .5f, heightf = float(height) * .5f;
         for (auto &p: currMap_->adjacentLevels) {
-            auto ite = gamedata->levels.find(p.first);
-            if (ite == gamedata->levels.end()) { continue; }
+            if (p.first >= gamedata->levels.size()) { continue; }
             if (p.second.exits.empty()) {
                 continue;
             }
             auto &e = p.second.exits[0];
             auto px = float(e.x - originX - x0);
             auto py = float(e.y - originY - y0);
-            auto strite = gamedata->strings.find(ite->second);
-            std::string name = strite != gamedata->strings.end() ? strite->second[lng_] : "";
+            auto strite = gamedata->strings.find(gamedata->levels[p.first]);
+            std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = session_.getMap(p.first);
                 if (m && m->objects.find(152) != m->objects.end()) {
-                    name = ">>> " + name + " <<<";
+                    name = L">>> " + name + L" <<<";
                     lines_.emplace_back(px - widthf, py - heightf);
                 }
             }
             squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[TypePortal]);
-            auto namew = utf8toucs4(name);
-            textStrings_.emplace_back(px - widthf, py - heightf, namew, float(ttf_.stringWidth(namew, cfg->fontSize)) * .5f);
+            textStrings_.emplace_back(px - widthf, py - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);
             if (guides && (*guides).find(p.first) != (*guides).end()) {
                 lines_.emplace_back(px - widthf, py - heightf);
             }
@@ -200,9 +155,8 @@ void MapRenderer::update() {
                     case TypeWell: {
                         squadPip.pushQuad(ptx - 4, pty - 4, ptx + 4, pty + 4, objColors_[tp]);
                         auto strite = gamedata->strings.find(ite->second.name);
-                        std::string name = strite != gamedata->strings.end() ? strite->second[lng_] : "";
-                        auto namew = utf8toucs4(name);
-                        textStrings_.emplace_back(ptx - widthf, pty - heightf, namew, float(ttf_.stringWidth(namew, cfg->fontSize)) * .5f);
+                        std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
+                        textStrings_.emplace_back(ptx - widthf, pty - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
                             lines_.emplace_back(ptx - widthf, pty - heightf);
                         }
@@ -224,6 +178,8 @@ void MapRenderer::render() {
         updatePlayerPos();
         mapPipeline_.render();
         framePipeline_.render();
+        dynamicPipeline_.render();
+        drawObjects();
         auto fontSize = cfg->fontSize;
         for (const auto &[x, y, text, offX]: textStrings_) {
             if (text.empty()) { continue; }
@@ -270,6 +226,8 @@ void MapRenderer::updateWindowPos() {
     mapPipeline_.pushQuad(-widthf, -heightf, widthf, heightf);
     framePipeline_.reset();
     framePipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
+    dynamicPipeline_.reset();
+    dynamicPipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
     ttfgl_.pipeline()->setOrtho(-w / 2, w / 2, h / 2, -h / 2);
     updatePlayerPos();
 }
@@ -347,4 +305,29 @@ void MapRenderer::updatePlayerPos() {
     }
     mapPipeline_.setTransform(&transform_.Elements[0][0]);
     framePipeline_.setTransform(&transform_.Elements[0][0]);
+    dynamicPipeline_.setTransform(&transform_.Elements[0][0]);
+}
+void MapRenderer::drawObjects() {
+    auto &objs = d2rProcess_.objects();
+    if (!objs.empty()) {
+        auto fontSize = cfg->fontSize;
+        int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
+            y1 = currMap_->cropY2;
+        auto originX = currMap_->levelOrigin.x;
+        auto originY = currMap_->levelOrigin.y;
+        auto w = float(x1 - x0) * .5f;
+        auto h = float(y1 - y0) * .5f;
+        dynamicPipeline_.reset();
+        for (const auto &[id, obj]: objs) {
+            auto x = float(obj.x - originX - x0) - w;
+            auto y = float(obj.y - originY - y0) - h;
+            dynamicPipeline_.pushQuad(x - 4, y - 4, x + 4, y + 4, objColors_[obj.type]);
+            if (obj.name) {
+                auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
+                std::wstring_view sv = (*obj.name)[lng_];
+                ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+            }
+        }
+        dynamicPipeline_.render();
+    }
 }

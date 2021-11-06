@@ -2,8 +2,18 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.5
+* support D2R 66878 update
+* totally rewritten rendering engine, removes several dependencies(sokol, fontstash)
+* add an exclusive-run check
+* add a tray icon and remove program from taskbar
+* optimize d2mapapi a bit
+* show nearby shrines (you can disable it by set `show_objects=0` in D2RMH.ini)
+* set default values for ini configurations so D2RMH can be run without D2RMH.ini (but you still need D2RMH_data.ini)
+* add Caged Barbarian Quest to useful objects
+
 ## v0.4
-* [#2] add 397 to useful_objects
+* (#2) add 397 to useful_objects
 * fixed path display between Rogue Encampment and Blood Moor, and similar paths
 * reduce memory use of vertex buffers
 * alpha and all color values can be set in configuration file now
@@ -53,3 +63,4 @@ Diablo II Resurrected map revealing tool.
 * [inih](https://github.com/benhoyt/inih) for reading INI files.
 * [JSON for Modern C++](https://github.com/nlohmann/json) for reading JSON files.
 * [CascLib](https://github.com/ladislav-zezula/CascLib) for reading Casc Storage from Diablo II Resurrected.
+* [stb](https://github.com/nothings/stb), stb_truetype and stb_rect_pack are used.

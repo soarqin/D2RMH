@@ -51,7 +51,7 @@ public:
     void deinit();
     bool add(const std::string &filename, int index = 0);
     void charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int fontSize = -1);
-    int stringWidth(const std::wstring &str, int fontSize = -1);
+    int stringWidth(std::wstring_view str, int fontSize = -1);
 
     inline int fontSize() const { return fontSize_; }
     void setColor(uint8_t r, uint8_t g, uint8_t b);

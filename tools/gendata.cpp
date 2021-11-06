@@ -130,11 +130,13 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/monsters.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/npcs.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
+    loadJsonLng(jlng, storage, "data:data/local/lng/strings/shrines.json");
 
-    D2TXT levelTxt, objTxt, npcTxt;
+    D2TXT levelTxt, objTxt, npcTxt, shrineTxt;
     loadTxt(levelTxt, storage, "data:data/global/excel/levels.txt");
     loadTxt(objTxt, storage, "data:data/global/excel/objects.txt");
     loadTxt(npcTxt, storage, "data:data/global/excel/monstats.txt");
+    loadTxt(shrineTxt, storage, "data:data/global/excel/shrines.txt");
     CascCloseStorage(storage);
 
     std::map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
@@ -200,6 +202,20 @@ int main(int argc, char *argv[]) {
         if (arr) {
             strings[key] = *arr;
             ofs << id << '=' << ite->second.first << '|' << key << std::endl;
+        }
+    }
+
+    idx0 = shrineTxt.colIndexByName("Code");
+    idx1 = shrineTxt.colIndexByName("StringName");
+    ofs << std::endl << '[' << "shrines" << ']' << std::endl;
+    rows = shrineTxt.rows();
+    for (size_t i = 0; i < rows; ++i) {
+        auto id = shrineTxt.value(i, idx0).second;
+        auto key = shrineTxt.value(i, idx1).first;
+        const auto *arr = jlng.get(key);
+        if (arr) {
+            strings[key] = *arr;
+            ofs << id << '=' << key << std::endl;
         }
     }
 

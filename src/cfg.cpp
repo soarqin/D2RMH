@@ -66,7 +66,10 @@ void loadCfg(const std::string &filename) {
             LOADVALC(portal_color, portalColor)
             LOADVALC(chest_color, chestColor)
             LOADVALC(quest_color, questColor)
+            LOADVALC(shrine_color, shrineColor)
             LOADVALC(well_color, wellColor)
+
+            LOADVALN(show_objects, showObjects)
             break;
         default:
             break;

@@ -21,17 +21,23 @@ struct Cfg {
     int position = 1;
     float scale = 1;
     int mapCentered = 0;
-    uint8_t alpha = 0;
-    uint32_t walkableColor = 0;
-    uint32_t textColor = 0;
-    uint32_t playerInnerColor = 0;
-    uint32_t playerOuterColor = 0;
-    uint32_t lineColor = 0;
-    uint32_t waypointColor = 0;
-    uint32_t portalColor = 0;
-    uint32_t chestColor = 0;
-    uint32_t questColor = 0;
-    uint32_t wellColor = 0;
+    uint8_t alpha = 170;
+#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
+    uint32_t walkableColor = RGBA(50, 50, 50, 255);
+    uint32_t textColor = RGBA(255, 255, 255, 255);
+    uint32_t playerInnerColor = RGBA(255, 128, 128, 255);
+    uint32_t playerOuterColor = RGBA(51, 255, 255, 255);
+    uint32_t lineColor = RGBA(204, 204, 204, 255);
+    uint32_t waypointColor = RGBA(153, 153, 255, 255);
+    uint32_t portalColor = RGBA(255, 153, 255, 255);
+    uint32_t chestColor = RGBA(255, 104, 104, 255);
+    uint32_t questColor = RGBA(104, 104, 255, 255);
+    uint32_t shrineColor = RGBA(255, 51, 178, 255);
+    uint32_t wellColor = RGBA(51, 51, 255, 255);
+#undef RGBA
+
+    int showMonsters = 0;
+    int showObjects = 1;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

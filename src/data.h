@@ -10,6 +10,7 @@
 
 #include <array>
 #include <set>
+#include <vector>
 #include <map>
 #include <unordered_map>
 #include <string>
@@ -30,8 +31,8 @@ struct Data {
         EObjType type;
         std::string name;
     };
-    std::unordered_map<std::string, std::array<std::string, 13>> strings;
-    std::map<int, std::string> levels;
+    std::unordered_map<std::string, std::array<std::wstring, 13>> strings;
+    std::vector<std::string> levels, shrines;
     std::map<int, ObjType> objects[2];
     std::map<int, std::set<int>> guides;
 };

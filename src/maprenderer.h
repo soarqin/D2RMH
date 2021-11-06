@@ -37,11 +37,13 @@ public:
 private:
     void updateWindowPos();
     void updatePlayerPos();
+    void drawObjects();
 
 private:
     Renderer &renderer_;
     PipelineTexture2D mapPipeline_;
     PipelineSquad2D framePipeline_;
+    PipelineSquad2D dynamicPipeline_;
     D2RProcess d2rProcess_;
     TTFRenderGL ttfgl_;
     TTF ttf_;
@@ -60,13 +62,5 @@ private:
     std::vector<std::tuple<float, float, std::wstring, float>> textStrings_;
     std::vector<std::tuple<float, float>> lines_;
 
-    uint32_t objColors_[TypeMax] = {
-        0,
-        RGBA(153, 153, 255, 255),
-        RGBA(255, 153, 255, 255),
-        RGBA(255, 104, 104, 255),
-        RGBA(104, 104, 255, 255),
-        RGBA(255, 51, 178, 255),
-        RGBA(51, 51, 255, 255),
-    };
+    uint32_t objColors_[TypeMax] = {};
 };
