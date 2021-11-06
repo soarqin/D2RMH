@@ -73,12 +73,14 @@ void MapRenderer::update() {
         return;
     }
     bool changed = session_.update(d2rProcess_.seed(), d2rProcess_.difficulty());
-    uint32_t levelId = d2rProcess_.levelId();
-    if (changed || levelId != currLevelId_) {
+    if (uint32_t levelId = d2rProcess_.levelId(); levelId != currLevelId_) {
+        currLevelId_ = levelId;
+        changed = true;
+    }
+    if (changed) {
         textStrings_.clear();
         lines_.clear();
-        currLevelId_ = levelId;
-        currMap_ = session_.getMap(levelId);
+        currMap_ = session_.getMap(currLevelId_);
         if (!currMap_) {
             enabled_ = false;
             return;
@@ -102,7 +104,7 @@ void MapRenderer::update() {
 
         const std::set<int> *guides;
         {
-            auto gdite = gamedata->guides.find(levelId);
+            auto gdite = gamedata->guides.find(currLevelId_);
             if (gdite != gamedata->guides.end()) {
                 guides = &gdite->second;
             } else {
@@ -333,7 +335,7 @@ void MapRenderer::drawObjects() {
                 ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
                 if (mon.enchants[0]) {
                     std::wstring_view svenc = mon.enchants;
-                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 1.8f, false, fontSize);
+                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 2.f, false, fontSize);
                 }
             } else {
                 if (mon.enchants[0]) {
