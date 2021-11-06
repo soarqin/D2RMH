@@ -154,9 +154,11 @@ void MapRenderer::update() {
                     case TypeShrine:
                     case TypeWell: {
                         squadPip.pushQuad(ptx - 4, pty - 4, ptx + 4, pty + 4, objColors_[tp]);
-                        auto strite = gamedata->strings.find(ite->second.name);
-                        std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
-                        textStrings_.emplace_back(ptx - widthf, pty - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);
+                        if (tp != TypeShrine && tp != TypeWell) {
+                            auto strite = gamedata->strings.find(ite->second.name);
+                            std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
+                            textStrings_.emplace_back(ptx - widthf, pty - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);
+                        }
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
                             lines_.emplace_back(ptx - widthf, pty - heightf);
                         }
