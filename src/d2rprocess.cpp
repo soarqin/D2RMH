@@ -65,7 +65,7 @@ void D2RProcess::updateData() {
             }
         }
     } else {
-        time_t now = timeGetTime();
+        auto now = timeGetTime();
         bool searchProcess = int(now - nextSearchTime_) >= 0;
         if (searchProcess) {
             searchForProcess();
@@ -77,19 +77,25 @@ void D2RProcess::updateData() {
 
     if (playerUnitOffset_ == 0) {
         uint64_t playerPtr = baseAddr_ + 0x20546E0;
-        for (uint64_t i = 0; i < 0x80; ++i) {
+        for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
-            uint64_t val;
-            if (READ(playerPtr, paddr) && paddr && READ(paddr + 0xB8, val) && val == 0x100ULL) {
-                playerUnitOffset_ = playerPtr;
-                mapEnablePtr_ = baseAddr_ + 0x20643A2;
+            READ(playerPtr, paddr);
+            while (paddr) {
+                uint64_t val;
+                if (READ(paddr + 0x90, val) && val) {
+                    playerUnitOffset_ = playerPtr;
+                    break;
+                }
+                READ(paddr + 0x150, paddr);
+            }
+            if (playerUnitOffset_) {
                 break;
             }
             playerPtr += 8;
         }
     }
 
-    READ(mapEnablePtr_, mapEnabled_);
+    READ(baseAddr_ + 0x20643A2, mapEnabled_);
 
     uint64_t addr;
     if (!READ(playerUnitOffset_, addr) || !addr) {
@@ -217,7 +223,6 @@ void D2RProcess::resetData() {
     baseSize_ = 0;
 
     playerUnitOffset_ = 0;
-    mapEnablePtr_ = 0;
 
     mapEnabled_ = 0;
     name_[0] = 0;

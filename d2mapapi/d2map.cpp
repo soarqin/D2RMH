@@ -18,7 +18,7 @@ const char *d2MapInit(const char *dir) {
     memset(&D2Client, 0, sizeof(d2client_struct));
     SetCurrentDirectory(D2_DIR);
     if (!defineOffsets()) {
-        return "Diablo II Legacy v1.13c: Failed to loading DLLs!";
+        return "Diablo II Legacy v1.13c: Failed to load DLLs!";
     }
 
     *p_STORM_MPQHashTable = 0;
