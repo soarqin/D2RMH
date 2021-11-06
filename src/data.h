@@ -11,7 +11,6 @@
 #include <array>
 #include <set>
 #include <vector>
-#include <map>
 #include <unordered_map>
 #include <string>
 
@@ -33,8 +32,8 @@ struct Data {
     };
     std::unordered_map<std::string, std::array<std::wstring, 13>> strings;
     std::vector<std::string> levels, shrines;
-    std::map<int, ObjType> objects[2];
-    std::map<int, std::set<int>> guides;
+    std::unordered_map<int, ObjType> objects[2];
+    std::unordered_map<int, std::set<int>> guides;
 };
 
 extern void loadData();
