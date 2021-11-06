@@ -49,6 +49,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeQuest] = cfg->questColor;
     objColors_[TypeShrine] = cfg->shrineColor;
     objColors_[TypeWell] = cfg->wellColor;
+    objColors_[TypeMonster] = cfg->monsterColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
 }
 void MapRenderer::update() {
@@ -310,8 +311,9 @@ void MapRenderer::updatePlayerPos() {
     dynamicPipeline_.setTransform(&transform_.Elements[0][0]);
 }
 void MapRenderer::drawObjects() {
+    auto &mons = d2rProcess_.monsters();
     auto &objs = d2rProcess_.objects();
-    if (!objs.empty()) {
+    if (!mons.empty() || !objs.empty()) {
         auto fontSize = cfg->fontSize;
 
         int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
@@ -321,6 +323,26 @@ void MapRenderer::drawObjects() {
         auto w = float(x1 - x0) * .5f;
         auto h = float(y1 - y0) * .5f;
         dynamicPipeline_.reset();
+        for (const auto &[id, mon]: mons) {
+            auto x = float(mon.x - originX - x0) - w;
+            auto y = float(mon.y - originY - y0) - h;
+            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[TypeMonster]);
+            if (mon.name) {
+                auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
+                std::wstring_view sv = (*mon.name)[lng_];
+                ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+                if (mon.enchants[0]) {
+                    std::wstring_view svenc = mon.enchants;
+                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 1.8f, false, fontSize);
+                }
+            } else {
+                if (mon.enchants[0]) {
+                    auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
+                    std::wstring_view svenc = mon.enchants;
+                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+                }
+            }
+        }
         for (const auto &[id, obj]: objs) {
             auto x = float(obj.x - originX - x0) - w;
             auto y = float(obj.y - originY - y0) - h;

@@ -132,11 +132,12 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/shrines.json");
 
-    D2TXT levelTxt, objTxt, npcTxt, shrineTxt;
+    D2TXT levelTxt, objTxt, npcTxt, shrineTxt, superuTxt;
     loadTxt(levelTxt, storage, "data:data/global/excel/levels.txt");
     loadTxt(objTxt, storage, "data:data/global/excel/objects.txt");
     loadTxt(npcTxt, storage, "data:data/global/excel/monstats.txt");
     loadTxt(shrineTxt, storage, "data:data/global/excel/shrines.txt");
+    loadTxt(superuTxt, storage, "data:data/global/excel/superuniques.txt");
     CascCloseStorage(storage);
 
     std::map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
@@ -212,6 +213,20 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < rows; ++i) {
         auto id = shrineTxt.value(i, idx0).second;
         auto key = shrineTxt.value(i, idx1).first;
+        const auto *arr = jlng.get(key);
+        if (arr) {
+            strings[key] = *arr;
+            ofs << id << '=' << key << std::endl;
+        }
+    }
+
+    idx0 = superuTxt.colIndexByName("hcIdx");
+    idx1 = superuTxt.colIndexByName("Name");
+    ofs << std::endl << '[' << "superuniques" << ']' << std::endl;
+    rows = superuTxt.rows();
+    for (size_t i = 0; i < rows; ++i) {
+        auto id = superuTxt.value(i, idx0).second;
+        auto key = superuTxt.value(i, idx1).first;
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;

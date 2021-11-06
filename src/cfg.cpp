@@ -69,7 +69,10 @@ void loadCfg(const std::string &filename) {
             LOADVALC(shrine_color, shrineColor)
             LOADVALC(well_color, wellColor)
 
+            LOADVALN(show_monsters, showMonsters)
             LOADVALN(show_objects, showObjects)
+            LOADVALN(show_monster_name, showMonsterName)
+            LOADVALN(show_monster_enchant, showMonsterEnchant)
             break;
         default:
             break;

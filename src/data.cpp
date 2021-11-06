@@ -28,7 +28,8 @@ void loadData() {
             else if (!strcmp(section, "objects")) { *isec = 2; }
             else if (!strcmp(section, "npcs")) { *isec = 3; }
             else if (!strcmp(section, "shrines")) { *isec = 4; }
-            else if (!strcmp(section, "strings")) { *isec = 5; }
+            else if (!strcmp(section, "superuniques")) { *isec = 5; }
+            else if (!strcmp(section, "strings")) { *isec = 6; }
             else { *isec = -1; }
             return 1;
         }
@@ -77,6 +78,14 @@ void loadData() {
             break;
         }
         case 5: {
+            auto id = strtol(name, nullptr, 0);
+            if (id >= sgamedata.superUniques.size()) {
+                sgamedata.superUniques.resize(id + 1);
+            }
+            sgamedata.superUniques[id] = value;
+            break;
+        }
+        case 6: {
             const char *pos = strchr(name, '[');
             if (!pos) { break; }
             auto index = strtoul(pos + 1, nullptr, 0);

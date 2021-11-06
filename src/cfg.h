@@ -34,10 +34,13 @@ struct Cfg {
     uint32_t questColor = RGBA(104, 104, 255, 255);
     uint32_t shrineColor = RGBA(255, 51, 178, 255);
     uint32_t wellColor = RGBA(51, 51, 255, 255);
+    uint32_t monsterColor = RGBA(255, 0, 0, 255);
 #undef RGBA
 
-    int showMonsters = 0;
+    int showMonsters = 1;
     int showObjects = 1;
+    int showMonsterName = 1;
+    int showMonsterEnchant = 1;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

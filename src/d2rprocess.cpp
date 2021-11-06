@@ -58,6 +58,53 @@ D2RProcess::~D2RProcess() {
     if (handle_) { CloseHandle(handle_); }
 }
 
+static const wchar_t *enchantStrings[256] = {
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    L"S",
+    L"F",
+    L"C",
+    L"M",
+    L"fe",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    L"le",
+    L"ce",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    L"mb",
+    L"T",
+    L"H",
+    L"ss",
+    L"ms",
+    L"A",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    L"F",
+    nullptr,
+    L"B",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+
 struct DrlgRoom2 {
     uint64_t unk0[2];
     /* 0x10  DrlgRoom2 **pRoomsNear */
@@ -140,6 +187,21 @@ struct DrlgAct {
     uint64_t unk3[9];
     /* DrlgMisc *misc */
     uint64_t miscPtr;
+};
+
+struct MonsterData {
+    /* MonsterTxt *pMonsterTxt */
+    uint64_t monsterTxtPtr;
+    uint8_t components[16];
+    uint16_t nameSeed;
+    uint8_t flag;
+    uint8_t lastMode;
+    uint32_t duriel;
+    uint8_t enchants[9];
+    uint8_t unk0;
+    uint16_t uniqueNo;
+    uint32_t unk1;
+    uint64_t unk2[20];
 };
 
 struct UnitAny {
@@ -283,23 +345,57 @@ void D2RProcess::updateData() {
             if (!READ(baseAddr, paddr)) { break; }
             while (paddr) {
                 UnitAny unit;
-                if (!READ(paddr, unit)) { break; }
-                if (unit.mode != 0 && unit.mode != 12) {
-                    uint8_t flag;
-                    READ(unit.unionPtr + 0x1A, flag);
-                    if (flag & 0x1E) {
-                        DynamicPath path;
-                        if (READ(unit.pathPtr, path)) {
-                            auto &mon = mapMonsters_[unit.unitId];
-                            mon.x = path.posX;
-                            mon.y = path.posY;
-                            if (!mon.txtFileNo) {
-                                mon.txtFileNo = unit.txtFileNo;
-                                mon.flag = flag;
+                do {
+                    if (!READ(paddr, unit)) { break; }
+                    if (unit.mode == 0 || unit.mode == 12) { break; }
+                    MonsterData monData;
+                    if (!READ(unit.unionPtr, monData)) { break; }
+                    /*
+                    for flag:
+                    struct {
+                        BYTE fOther:1;  //set for some champs, uniques
+                        BYTE fUnique:1; //super unique
+                        BYTE fChamp:1;
+                        BYTE fBoss:1;   //unique monster ,usually boss
+                        BYTE fMinion:1;
+                        BYTE fPoss:1;   //possessed
+                        BYTE fGhost:1;  //ghostly
+                        BYTE fMulti:1;  //multishotfiring
+                    };
+                    */
+                    if (!(monData.flag & 0x0E)) { break; }
+                    DynamicPath path;
+                    if (READ(unit.pathPtr, path)) {
+                        auto &mon = mapMonsters_[unit.unitId];
+                        mon.x = path.posX;
+                        mon.y = path.posY;
+                        if (!mon.txtFileNo) {
+                            mon.txtFileNo = unit.txtFileNo;
+                            mon.flag = monData.flag;
+                        }
+                        if (cfg->showMonsterName) {
+                            /* Super unique */
+                            if (monData.flag & 2) {
+                                if (monData.uniqueNo < gamedata->superUniques.size()) {
+                                    auto ite2 = gamedata->strings.find(gamedata->superUniques[monData.uniqueNo]);
+                                    mon.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
+                                }
+                            }
+                        }
+                        if (cfg->showMonsterEnchant) {
+                            int off = 0;
+                            for (int n = 0; n < 9 && monData.enchants[n] != 0; ++n) {
+                                const auto *name = enchantStrings[monData.enchants[n]];
+                                if (!name) { continue; }
+                                mon.enchants[off++] = name[0];
+                                if (name[1]) {
+                                    mon.enchants[off++] = name[1];
+                                }
+                                mon.enchants[off] = 0;
                             }
                         }
                     }
-                }
+                } while (false);
                 paddr = unit.nextPtr;
             }
             baseAddr += 8;
@@ -318,27 +414,37 @@ void D2RProcess::updateData() {
                 if (!READ(paddr, unit)) { break; }
                 if (unit.mode != 2) {
                     auto ite = gamedata->objects[0].find(unit.txtFileNo);
-                    if (ite != gamedata->objects[0].end() && ite->second.type == TypeShrine) {
-                        uint8_t flag;
-                        READ(unit.unionPtr + 8, flag);
-                        StaticPath path;
-                        if (READ(unit.pathPtr, path)) {
-                            auto &obj = mapObjects_[unit.unitId];
-                            if (!obj.txtFileNo) {
-                                obj.txtFileNo = unit.txtFileNo;
-                                obj.type = ite->second.type;
-                                const std::string &name =
-                                    flag < gamedata->shrines.size() ? gamedata->shrines[flag] : ite->second.name;
-                                auto ite2 = gamedata->strings.find(name);
-                                obj.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
-                                obj.x = path.posX;
-                                obj.y = path.posY;
-                                obj.flag = flag;
-                            }
+                    if (ite != gamedata->objects[0].end()) {
+                        auto type = ite->second.type;
+                        switch (type) {
+                        case TypeWell:
+                        case TypeShrine: {
+                            uint8_t flag;
+                            READ(unit.unionPtr + 8, flag);
+                            StaticPath path;
+                            if (!READ(unit.pathPtr, path)) { break; }
+                            auto &obj = mapObjects_[path.posX | (uint32_t(path.posY) << 16)];
+                            if (obj.txtFileNo) { break; }
+                            obj.txtFileNo = unit.txtFileNo;
+                            obj.type = ite->second.type;
+                            const std::string &name = type == TypeShrine && flag < gamedata->shrines.size() ?
+                                gamedata->shrines[flag] : ite->second.name;
+                            auto ite2 = gamedata->strings.find(name);
+                            obj.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
+                            obj.x = path.posX;
+                            obj.y = path.posY;
+                            obj.flag = flag;
+                            break;
+                        }
+                        default:
+                            break;
                         }
                     }
                 } else {
-                    mapObjects_.erase(unit.unitId);
+                    StaticPath path;
+                    if (READ(unit.pathPtr, path)) {
+                        mapObjects_.erase(path.posX | (uint32_t(path.posY) << 16));
+                    }
                 }
                 paddr = unit.nextPtr;
             }

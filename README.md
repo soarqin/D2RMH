@@ -2,6 +2,11 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.5.1
+* add nearby monsters(super-unique/boss/champion only) display
+* fix shrine text stack issue, and remove opened shrines' title
+* fix crash due to memory searching function changes
+
 ## v0.5
 * support D2R 66878 update
 * totally rewritten rendering engine, removes several dependencies(sokol, fontstash)
