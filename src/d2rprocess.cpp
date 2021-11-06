@@ -17,6 +17,11 @@
 #include <shlwapi.h>
 #include <cstdio>
 
+enum {
+    HashTableBase = 0x20546E0,
+    MapEnabledAddr = 0x20643A2,
+};
+
 struct handle_data {
     unsigned long processId;
     HWND hwnd;
@@ -208,21 +213,20 @@ void D2RProcess::updateData() {
     available_ = false;
     if (!handle_) { return; }
 
-    if (playerUnitOffset_ == 0) {
-        uint64_t playerPtr = baseAddr_ + 0x20546E0;
+    if (playerHashOffset_ == 0) {
+        uint64_t playerPtr = baseAddr_ + HashTableBase;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
             if (!READ(playerPtr, paddr)) { return; }
             while (paddr) {
-                uint64_t val;
-                if (READ(paddr + 0x90, val) && val) {
+                UnitAny unit;
+                if (READ(paddr, unit) && unit.actPtr && unit.inventoryPtr && unit.unk5[4] == 0x100) {
                     playerHashOffset_ = playerPtr;
-                    playerUnitOffset_ = paddr;
                     break;
                 }
-                READ(paddr + 0x150, paddr);
+                paddr = unit.nextPtr;
             }
-            if (playerUnitOffset_) {
+            if (playerHashOffset_) {
                 break;
             }
             playerPtr += 8;
@@ -232,39 +236,39 @@ void D2RProcess::updateData() {
     uint64_t addr;
     if (!READ(playerHashOffset_, addr) || !addr) {
         playerHashOffset_ = 0;
-        playerUnitOffset_ = 0;
         return;
     }
-    READ(baseAddr_ + 0x20643A2, mapEnabled_);
-    addr = playerUnitOffset_;
+    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
+    READ(playerHashOffset_, addr);
 
     UnitAny unit;
     if (!READ(addr, unit)) {
         playerHashOffset_ = 0;
-        playerUnitOffset_ = 0;
         return;
     }
     DrlgAct act;
+    if (!READ(unit.actPtr, act)) {
+        playerHashOffset_ = 0;
+        return;
+    }
     name_[0] = 0;
     bool levelChanged = false;
     READ(unit.unionPtr, name_);
-    if (READ(unit.actPtr, act)) {
-        act_ = act.actId;
-        seed_ = act.seed;
-        READ(act.miscPtr + 0x830, difficulty_);
-        DynamicPath path;
-        if (READ(unit.pathPtr, path)) {
-            posX_ = path.posX;
-            posY_ = path.posY;
-            DrlgRoom1 room1;
-            if (READ(path.room1Ptr, room1)) {
-                DrlgRoom2 room2;
-                if (READ(room1.room2Ptr, room2)) {
-                    uint32_t levelId;
-                    if (READ(room2.levelPtr + 0x1F8, levelId) && levelId_ != levelId) {
-                        levelChanged = true;
-                        levelId_ = levelId;
-                    }
+    act_ = act.actId;
+    seed_ = act.seed;
+    READ(act.miscPtr + 0x830, difficulty_);
+    DynamicPath path;
+    if (READ(unit.pathPtr, path)) {
+        posX_ = path.posX;
+        posY_ = path.posY;
+        DrlgRoom1 room1;
+        if (READ(path.room1Ptr, room1)) {
+            DrlgRoom2 room2;
+            if (READ(room1.room2Ptr, room2)) {
+                uint32_t levelId;
+                if (READ(room2.levelPtr + 0x1F8, levelId) && levelId_ != levelId) {
+                    levelChanged = true;
+                    levelId_ = levelId;
                 }
             }
         }
@@ -273,7 +277,7 @@ void D2RProcess::updateData() {
 
     if (cfg->showMonsters) {
         mapMonsters_.clear();
-        uint64_t baseAddr = baseAddr_ + 0x20546E0 + 8 * 0x80;
+        uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x80;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
             if (!READ(baseAddr, paddr)) { break; }
@@ -305,7 +309,7 @@ void D2RProcess::updateData() {
         if (levelChanged) {
             mapObjects_.clear();
         }
-        uint64_t baseAddr = baseAddr_ + 0x20546E0 + 8 * 0x100;
+        uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x100;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
             if (!READ(baseAddr, paddr)) { break; }
@@ -427,7 +431,7 @@ void D2RProcess::resetData() {
     baseAddr_ = 0;
     baseSize_ = 0;
 
-    playerUnitOffset_ = 0;
+    playerHashOffset_ = 0;
 
     mapEnabled_ = 0;
     name_[0] = 0;
@@ -437,4 +441,7 @@ void D2RProcess::resetData() {
     seed_ = 0;
     posX_ = 0;
     posY_ = 0;
+
+    mapMonsters_.clear();
+    mapObjects_.clear();
 }

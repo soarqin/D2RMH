@@ -311,6 +311,7 @@ void MapRenderer::drawObjects() {
     auto &objs = d2rProcess_.objects();
     if (!objs.empty()) {
         auto fontSize = cfg->fontSize;
+
         int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
             y1 = currMap_->cropY2;
         auto originX = currMap_->levelOrigin.x;
