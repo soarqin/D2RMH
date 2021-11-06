@@ -246,6 +246,7 @@ void D2RProcess::updateData() {
     }
     DrlgAct act;
     name_[0] = 0;
+    bool levelChanged = false;
     READ(unit.unionPtr, name_);
     if (READ(unit.actPtr, act)) {
         act_ = act.actId;
@@ -259,7 +260,11 @@ void D2RProcess::updateData() {
             if (READ(path.room1Ptr, room1)) {
                 DrlgRoom2 room2;
                 if (READ(room1.room2Ptr, room2)) {
-                    READ(room2.levelPtr + 0x1F8, levelId_);
+                    uint32_t levelId;
+                    if (READ(room2.levelPtr + 0x1F8, levelId) && levelId_ != levelId) {
+                        levelChanged = true;
+                        levelId_ = levelId;
+                    }
                 }
             }
         }
@@ -297,6 +302,9 @@ void D2RProcess::updateData() {
         }
     }
     if (cfg->showObjects) {
+        if (levelChanged) {
+            mapObjects_.clear();
+        }
         uint64_t baseAddr = baseAddr_ + 0x20546E0 + 8 * 0x100;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
