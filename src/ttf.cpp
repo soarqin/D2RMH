@@ -91,6 +91,9 @@ TTF::TTF(TTFRenderImpl &renderImpl): renderImpl_(renderImpl), rectpacker_(new Re
 #ifdef USE_FREETYPE
     FT_Init_FreeType(&ftLib_);
 #endif
+    memset(altR_, 0xFF, sizeof(altR_));
+    memset(altG_, 0xFF, sizeof(altG_));
+    memset(altB_, 0xFF, sizeof(altB_));
 }
 
 TTF::~TTF() {
@@ -191,8 +194,7 @@ void TTF::setColor(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b) {
-    if (index > 0 && index <= 16) {
-        --index;
+    if (index > 0 && index < 16) {
         altR_[index] = r;
         altG_[index] = g;
         altB_[index] = b;
@@ -224,7 +226,7 @@ void TTF::render(std::wstring_view str, float x, float y, bool shadow, int fontS
         }
         {
             auto x0 = x + fd->ix0, y0 = y + fd->iy0;
-            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, 255, 255, 255, 255);
+            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, altR_[colorIndex], altG_[colorIndex], altB_[colorIndex], 255);
         }
         x += fd->advW;
     }

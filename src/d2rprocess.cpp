@@ -11,52 +11,12 @@
 #include "wow64_process.h"
 #include "cfg.h"
 #include "data.h"
+#include "d2rdefs.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
 #include <shlwapi.h>
 #include <cstdio>
-
-enum {
-    HashTableBase = 0x20546E0,
-    MapEnabledAddr = 0x20643A2,
-};
-
-struct handle_data {
-    unsigned long processId;
-    HWND hwnd;
-};
-
-BOOL isMainWindow(HWND handle) {
-    return GetWindow(handle, GW_OWNER) == (HWND)nullptr && IsWindowVisible(handle);
-}
-
-BOOL CALLBACK enumWindowsCallback(HWND handle, LPARAM lParam) {
-    handle_data &data = *(handle_data *)lParam;
-    unsigned long processId = 0;
-    GetWindowThreadProcessId(handle, &processId);
-    if (data.processId != processId || !isMainWindow(handle))
-        return TRUE;
-    data.hwnd = handle;
-    return FALSE;
-}
-
-HWND findMainWindow(unsigned long processId) {
-    handle_data data = {processId, nullptr };
-    EnumWindows(enumWindowsCallback, (LPARAM)&data);
-    return data.hwnd;
-}
-
-#define READ(a, v) readMemory64(handle_, (a), sizeof(v), &(v))
-
-D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval) {
-    searchForProcess();
-    nextSearchTime_ = timeGetTime() + searchInterval_;
-}
-
-D2RProcess::~D2RProcess() {
-    if (handle_) { CloseHandle(handle_); }
-}
 
 static const wchar_t *enchantStrings[256] = {
     nullptr,
@@ -105,152 +65,59 @@ static const wchar_t *enchantStrings[256] = {
     nullptr,
 };
 
-struct DrlgRoom2 {
-    uint64_t unk0[2];
-    /* 0x10  DrlgRoom2 **pRoomsNear */
-    uint64_t roomsNearListPtr;
-    uint64_t unk1[5];
-    /* 0x40  DWORD *levelDef */
-    uint64_t levelPresetPtr;
-    /* 0x48  DrlgRoom2 *pNext */
-    uint64_t nextPtr;
-    /* 0x50 */
-    uint16_t roomsNear;
-    uint16_t unk2;
-    uint32_t roomTiles;
-    /* 0x58  DrlgRoom1 *room1 */
-    uint64_t room1Ptr;
-    /* 0x60  DWORD dwPosX; DWORD dwPosY; DWORD dwSizeX; DWORD dwSizeY; */
-    uint32_t posX, posY, sizeX, sizeY;
-    /* 0x70 */
-    uint32_t unk3;
-    uint32_t presetType;
-    /* 0x78  RoomTile *pRoomTiles */
-    uint64_t roomTilesPtr;
-    uint64_t unk4[2];
-    /* 0x90  DrlgLevel *pLevel */
-    uint64_t levelPtr;
-    /* 0x98  PresetUnit *pPresetUnits */
-    uint64_t presetUnitsPtr;
+static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
+
+enum {
+    HashTableBase = 0x20546E0,
+    MapEnabledAddr = 0x20643A2,
 };
 
-struct DrlgRoom1 {
-    /* 0x00  DrlgRoom1 **pRoomsNear; */
-    uint64_t roomsNearListPtr;
-    uint64_t unk0[2];
-    /* 0x18  DrlgRoom2 *pRoom2; */
-    uint64_t room2Ptr;
-    uint64_t unk1[4];
-    /* 0x40 */
-    uint32_t roomsNear;
-    uint32_t unk2;
-    /* 0x48  DrlgAct *pAct */
-    uint64_t actAddr;
-    uint64_t unk3[11];
-    /* 0xA8  UnitAny *pUnitFirst */
-    uint64_t unitFirstAddr;
-    /* 0xB0  DrlgRoom1 *pNext */
-    uint64_t nextPtr;
+struct handle_data {
+    unsigned long processId;
+    HWND hwnd;
 };
 
-struct DynamicPath {
-    uint16_t offsetX;
-    uint16_t posX;
-    uint16_t offsetY;
-    uint16_t posY;
-    uint32_t mapPosX;
-    uint32_t mapPosY;
-    uint32_t targetX;
-    uint32_t targetY;
-    uint32_t unk0[2];
-    /* 0x20  DrlgRoom1 *pRoom1 */
-    uint64_t room1Ptr;
-};
+BOOL isMainWindow(HWND handle) {
+    return GetWindow(handle, GW_OWNER) == (HWND)nullptr && IsWindowVisible(handle);
+}
 
-struct StaticPath {
-    /* DrlgRoom1 *pRoom1; */
-    uint64_t room1Ptr;
-    uint32_t mapPosX;
-    uint32_t dwMapPosY;
-    uint32_t posX;
-    uint32_t posY;
-};
+BOOL CALLBACK enumWindowsCallback(HWND handle, LPARAM lParam) {
+    handle_data &data = *(handle_data *)lParam;
+    unsigned long processId = 0;
+    GetWindowThreadProcessId(handle, &processId);
+    if (data.processId != processId || !isMainWindow(handle))
+        return TRUE;
+    data.hwnd = handle;
+    return FALSE;
+}
 
-struct DrlgAct {
-    uint64_t unk0[2];
-    uint32_t unk1;
-    uint32_t seed;
-    /* 0x18 DrlgRoom1 *room1 */
-    uint64_t room1Ptr;
-    uint32_t actId;
-    uint32_t unk2;
-    uint64_t unk3[9];
-    /* DrlgMisc *misc */
-    uint64_t miscPtr;
-};
+HWND findMainWindow(unsigned long processId) {
+    handle_data data = {processId, nullptr };
+    EnumWindows(enumWindowsCallback, (LPARAM)&data);
+    return data.hwnd;
+}
 
-struct MonsterData {
-    /* MonsterTxt *pMonsterTxt */
-    uint64_t monsterTxtPtr;
-    uint8_t components[16];
-    uint16_t nameSeed;
-    uint8_t flag;
-    uint8_t lastMode;
-    uint32_t duriel;
-    uint8_t enchants[9];
-    uint8_t unk0;
-    uint16_t uniqueNo;
-    uint32_t unk1;
-    uint64_t unk2[20];
-};
+#define READ(a, v) readMemory64(handle_, (a), sizeof(v), &(v))
 
-struct UnitAny {
-    uint32_t unitType;
-    uint32_t txtFileNo;
-    uint32_t unitId;
-    uint32_t mode;
-    /* 0x10
-    union {
-        PlayerData *pPlayerData;
-        MonsterData *pMonsterData;
-        ObjectData *pObjectData;
-        ItemData *pItemData;
-        MissileData *pMissileData;
+D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval) {
+    searchForProcess();
+    nextSearchTime_ = timeGetTime() + searchInterval_;
+    std::pair<StatId, uint8_t> statsMappingInit[] = {
+        {StatId::Damageresist, 3},
+        {StatId::Magicresist, 4},
+        {StatId::Fireresist, 5},
+        {StatId::Lightresist, 6},
+        {StatId::Coldresist, 7},
+        {StatId::Poisonresist, 8},
     };
-     */
-    uint64_t unionPtr;
-    uint64_t unk0;
-    /* 0x20  DrlgAct *pAct */
-    uint64_t actPtr;
-    uint64_t seed;
-    /* 0x30 */
-    uint64_t initSeed;
-    /* 0x38  for Player/Monster: DynamicPath *pPath
-     *       for Object:         StaticPath  *pPath */
-    uint64_t pathPtr;
-    /* 0x40 */
-    uint32_t unk2[8];
-    /* 0x60 */
-    uint32_t gfxFrame;
-    uint32_t frameRemain;
-    /* 0x68 */
-    uint32_t frameRate;
-    uint32_t unk3;
-    /* 0x70
-    uint8_t *pGfxUnk;
-    uint32_t *pGfxInfo;
-     */
-    uint64_t gfxUnkPtr;
-    uint64_t gfxInfoPtr;
-    /* 0x80 */
-    uint64_t unk4;
-    /* 0x88 StatList *pStats */
-    uint64_t statsPtr;
-    /* 0x90 Inventory1 *pInventory */
-    uint64_t inventoryPtr;
-    uint64_t unk5[23];
-    uint64_t nextPtr;
-};
+    for (auto[k, v]: statsMappingInit) {
+        statsMapping[size_t(k)] = v;
+    }
+}
+
+D2RProcess::~D2RProcess() {
+    if (handle_) { CloseHandle(handle_); }
+}
 
 void D2RProcess::updateData() {
     if (handle_) {
@@ -387,12 +254,29 @@ void D2RProcess::updateData() {
                             for (int n = 0; n < 9 && monData.enchants[n] != 0; ++n) {
                                 const auto *name = enchantStrings[monData.enchants[n]];
                                 if (!name) { continue; }
+                                mon.enchants[off++] = 2;
                                 mon.enchants[off++] = name[0];
                                 if (name[1]) {
                                     mon.enchants[off++] = name[1];
                                 }
-                                mon.enchants[off] = 0;
                             }
+                            if (StatList stats; READ(unit.statListPtr, stats)) {
+                                static StatEx statEx[64];
+                                auto cnt = std::min(64u, stats.stat.statCount);
+                                if (readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) {
+                                    StatEx *st = statEx;
+                                    for (; cnt; --cnt, ++st) {
+                                        if (st->value < 100) { continue; }
+                                        if (auto statId = st->stateId; statId < uint16_t(StatId::TotalCount)) {
+                                            if (auto mapping = statsMapping[statId]; mapping) {
+                                                mon.enchants[off++] = mapping;
+                                                mon.enchants[off++] = 'i';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            mon.enchants[off] = 0;
                         }
                     }
                 } while (false);

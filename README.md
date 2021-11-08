@@ -2,6 +2,10 @@
 Diablo II Resurrected map revealing tool.
 
 # What's New
+## v0.5.2
+* add monster resist(immune) display
+* minor bug fixes and performance optimizations
+
 ## v0.5.1
 * add nearby monsters(super-unique/boss/champion only) display
 * fix shrine text stack issue, and remove opened shrines' title

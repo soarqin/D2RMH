@@ -51,6 +51,13 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeWell] = cfg->wellColor;
     objColors_[TypeMonster] = cfg->monsterColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
+    ttf_.setAltColor(1, 255, 255, 255);
+    ttf_.setAltColor(2, 201, 182, 123);
+    ttf_.setAltColor(3, 255, 171, 0);
+    ttf_.setAltColor(4, 255, 82, 82);
+    ttf_.setAltColor(5, 255, 255, 104);
+    ttf_.setAltColor(6, 114, 114, 255);
+    ttf_.setAltColor(7, 0, 255, 0);
 }
 void MapRenderer::update() {
     d2rProcess_.updateData();

@@ -41,6 +41,7 @@ struct Cfg {
     int showObjects = 1;
     int showMonsterName = 1;
     int showMonsterEnchant = 1;
+    int showMonsterImmune = 1;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

@@ -19,7 +19,7 @@ public:
         uint32_t txtFileNo;
         uint32_t x, y;
         const std::array<std::wstring, 13> *name;
-        wchar_t enchants[20];
+        wchar_t enchants[32];
         uint8_t flag;
     };
     struct MapObject {
