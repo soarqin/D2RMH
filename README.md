@@ -44,9 +44,10 @@ Diablo II Resurrected map revealing tool.
 * Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
 
 # Usage
-1. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
+1. Download from `Releases` section, or any snapshot packs from `Actions` section. 
+2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
    or just put extracted D2RMH.exe/D2RMH.ini/D2RMH_data.ini to D2 v1.13c folder.
-2. Run D2RMH.exe, enjoy!
+3. Run D2RMH.exe, enjoy!
 
 # How to build
 ## Quick instruction
@@ -56,13 +57,16 @@ Diablo II Resurrected map revealing tool.
 ### MinGW GCC 32bit
 * Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make cmake git mingw-w64-i686-toolchain` in MSYS2 command line to install required components
 * Clone D2RMH source by type `git clone https://github.com/soarqin/D2RMH`
-* type `cd D2RMH && mkdir -p build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON ..`
-* then `make` to get the compiled binary in `bin` foler
+* Type `cd D2RMH && cmake -Bbuild -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON`
+* Then `make -Cbuild` to get the compiled binary in `build/bin` folder
 ### Microsoft Visual Studio 2019
 * Install Visual Studio 2019 Community Edition(or Pro/Ent if you have)
 * Unpack downloaded source code file, or you can use git to Clone D2RMH source by type: `git clone https://github.com/soarqin/D2RMH`. Note: Using git requires [Git for windows](https://git-scm.com/download/win) installed
-* type `md build && cd build && cmake -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON ..`
-* open generated `D2RMH.sln` and build, you can get the compiled binary in `bin` folder
+* Type `cmake -Bbuild -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON`
+* Now you can either:
+    * Type `cmake --build build --config Release`
+    * Open generated `D2RMH.sln` and build
+* Compiled binaries are located in `build\bin` folder
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
