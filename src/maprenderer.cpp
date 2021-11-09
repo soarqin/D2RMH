@@ -120,10 +120,9 @@ void MapRenderer::update() {
         }
 
         PipelineSquad2D squadPip(mapTex_);
-        auto widthf = float(width), heightf = float(height);
-        squadPip.setOrtho(0, widthf, heightf, 0);
+        squadPip.setOrtho(0, float(mapTex_.width()), 0, float(mapTex_.height()));
         auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
-        widthf *= .5f; heightf *= .5f;
+        auto widthf = float(width) * .5f, heightf = float(height) * .5f;
         for (auto &p: currMap_->adjacentLevels) {
             if (p.first >= gamedata->levels.size()) { continue; }
             if (p.second.exits.empty()) {
