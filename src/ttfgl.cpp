@@ -10,8 +10,6 @@
 
 #include "renderer.h"
 
-#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
-
 TTFRenderGL::TTFRenderGL(Renderer &renderer): pipeline_(new PipelineTexture2D(renderer)) {
 }
 TTFRenderGL::TTFRenderGL(Texture &tex): pipeline_(new PipelineTexture2D(tex)) {
@@ -39,7 +37,7 @@ void TTFRenderGL::renderBegin() {
 }
 void TTFRenderGL::render(void *tex,
                          float x0, float y0, float x1, float y1, int u0, int v0, int u1, int v1,
-                         uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+                         uint32_t color) {
     auto *texture = (Texture*)tex;
     if (tex != lastTex_) {
         if (lastTex_) {
@@ -49,12 +47,12 @@ void TTFRenderGL::render(void *tex,
         }
         lastTex_ = tex;
     }
-    float width = float(texture->width());
-    float height = float(texture->height());
+    auto width = float(texture->width());
+    auto height = float(texture->height());
     pipeline_->pushQuad(x0, y0, x1, y1,
-                        (float)u0 / width, (float)v0 / height,
-                        (float)u1 / width, (float)v1 / height,
-                        RGBA(r, g, b, a));
+                        float(u0) / width, float(v0) / height,
+                        float(u1) / width, float(v1) / height,
+                        color);
 }
 void TTFRenderGL::renderEnd() {
     if (lastTex_) {

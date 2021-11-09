@@ -18,51 +18,51 @@
 #include <shlwapi.h>
 #include <cstdio>
 
-static const wchar_t *enchantStrings[256] = {
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    L"S",
-    L"F",
-    L"C",
-    L"M",
-    L"fe",
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    L"le",
-    L"ce",
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    L"mb",
-    L"T",
-    L"H",
-    L"ss",
-    L"ms",
-    L"A",
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    L"F",
-    nullptr,
-    L"B",
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
+static wchar_t enchantStrings[256][4] = {
+    /*  0 */ L"",
+    /*  1 */ L"",
+    /*  2 */ L"",
+    /*  3 */ L"",
+    /*  4 */ L"",
+    /*  5 */ L"S",
+    /*  6 */ L"F",
+    /*  7 */ L"C",
+    /*  8 */ L"M",
+    /*  9 */ L"fe",
+    /* 10 */ L"",
+    /* 11 */ L"",
+    /* 12 */ L"",
+    /* 13 */ L"",
+    /* 14 */ L"",
+    /* 15 */ L"",
+    /* 16 */ L"",
+    /* 17 */ L"le",
+    /* 18 */ L"ce",
+    /* 19 */ L"",
+    /* 20 */ L"",
+    /* 21 */ L"",
+    /* 22 */ L"",
+    /* 23 */ L"",
+    /* 24 */ L"",
+    /* 25 */ L"mb",
+    /* 26 */ L"T",
+    /* 27 */ L"H",
+    /* 28 */ L"ss",
+    /* 29 */ L"ms",
+    /* 30 */ L"A",
+    /* 31 */ L"",
+    /* 32 */ L"",
+    /* 33 */ L"",
+    /* 34 */ L"",
+    /* 35 */ L"",
+    /* 36 */ L"",
+    /* 37 */ L"F",
+    /* 38 */ L"",
+    /* 39 */ L"B",
+    /* 40 */ L"",
+    /* 41 */ L"",
+    /* 42 */ L"",
+    /* 43 */ L"",
 };
 
 static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
@@ -103,12 +103,12 @@ D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval)
     searchForProcess();
     nextSearchTime_ = timeGetTime() + searchInterval_;
     std::pair<StatId, uint8_t> statsMappingInit[] = {
-        {StatId::Damageresist, 3},
-        {StatId::Magicresist, 4},
-        {StatId::Fireresist, 5},
-        {StatId::Lightresist, 6},
-        {StatId::Coldresist, 7},
-        {StatId::Poisonresist, 8},
+        {StatId::Damageresist, 4},
+        {StatId::Magicresist, 8},
+        {StatId::Fireresist, 1},
+        {StatId::Lightresist, 9},
+        {StatId::Coldresist, 3},
+        {StatId::Poisonresist, 2},
     };
     for (auto[k, v]: statsMappingInit) {
         statsMapping[size_t(k)] = v;
@@ -256,11 +256,16 @@ void D2RProcess::updateData() {
                         if (showEnchant) {
                             for (int n = 0; n < 9 && monData.enchants[n] != 0; ++n) {
                                 const auto *name = enchantStrings[monData.enchants[n]];
-                                if (!name) { continue; }
-                                mon.enchants[off++] = 2;
-                                mon.enchants[off++] = name[0];
-                                if (name[1]) {
-                                    mon.enchants[off++] = name[1];
+                                if (!name[0]) { continue; }
+                                if (name[0] < 32) {
+                                    mon.enchants[off++] = name[0];
+                                    ++name;
+                                } else {
+                                    mon.enchants[off++] = 15;
+                                }
+                                mon.enchants[off++] = *name++;
+                                if (*name) {
+                                    mon.enchants[off++] = *name;
                                 }
                             }
                         }

@@ -21,7 +21,7 @@ public:
     virtual void destroyTexture(void *tex) = 0;
     virtual void updateTexture(void *tex, int x, int y, int w, int h, const uint8_t *data) = 0;
     virtual void renderBegin() = 0;
-    virtual void render(void *tex, float x0, float y0, float x1, float y1, int u0, int v0, int u1, int v1, uint8_t r, uint8_t g, uint8_t b, uint8_t a) = 0;
+    virtual void render(void *tex, float x0, float y0, float x1, float y1, int u0, int v0, int u1, int v1, uint32_t color) = 0;
     virtual void renderEnd() = 0;
 };
 
@@ -71,7 +71,7 @@ protected:
 private:
     TTFRenderImpl &renderImpl_;
 
-    uint8_t altR_[16] = {}, altG_[16] = {}, altB_[16] = {};
+    uint32_t altColor_[16] = {};
     std::vector<void*> textures_;
 
     RectPacker *rectpacker_;

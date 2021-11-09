@@ -51,14 +51,23 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeWell] = cfg->wellColor;
     objColors_[TypeMonster] = cfg->monsterColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
-    ttf_.setAltColor(1, 255, 255, 255);
-    ttf_.setAltColor(2, 201, 182, 123);
-    ttf_.setAltColor(3, 255, 171, 0);
-    ttf_.setAltColor(4, 255, 82, 82);
-    ttf_.setAltColor(5, 255, 255, 104);
-    ttf_.setAltColor(6, 114, 114, 255);
-    ttf_.setAltColor(7, 0, 255, 0);
+    ttf_.setAltColor(1, 228, 88, 67);
+    ttf_.setAltColor(2, 31, 255, 0);
+    ttf_.setAltColor(3, 104, 104, 223);
+    ttf_.setAltColor(4, 192, 166, 130);
+    ttf_.setAltColor(5, 104, 104, 104);
+    ttf_.setAltColor(6, 0, 0, 0);
+    ttf_.setAltColor(7, 223, 202, 130);
+    ttf_.setAltColor(8, 255, 171, 41);
+    ttf_.setAltColor(9, 255, 239, 130);
+    ttf_.setAltColor(10, 31, 130, 10);
+    ttf_.setAltColor(11, 213, 41, 255);
+    ttf_.setAltColor(12, 52, 161, 26);
+    ttf_.setAltColor(13, 255, 255, 255);
+    ttf_.setAltColor(14, 255, 255, 255);
+    ttf_.setAltColor(15, 255, 255, 255);
 }
+
 void MapRenderer::update() {
     d2rProcess_.updateData();
     if (!d2rProcess_.available()) {

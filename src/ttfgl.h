@@ -27,7 +27,7 @@ public:
     void renderBegin() override;
     void render(void *tex,
                 float x0, float y0, float x1, float y1, int u0, int v0, int u1, int v1,
-                uint8_t r, uint8_t g, uint8_t b, uint8_t a) override;
+                uint32_t color) override;
     void renderEnd() override;
 
 private:

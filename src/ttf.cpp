@@ -91,9 +91,7 @@ TTF::TTF(TTFRenderImpl &renderImpl): renderImpl_(renderImpl), rectpacker_(new Re
 #ifdef USE_FREETYPE
     FT_Init_FreeType(&ftLib_);
 #endif
-    memset(altR_, 0xFF, sizeof(altR_));
-    memset(altG_, 0xFF, sizeof(altG_));
-    memset(altB_, 0xFF, sizeof(altB_));
+    memset(altColor_, 0xFF, sizeof(altColor_));
 }
 
 TTF::~TTF() {
@@ -189,24 +187,29 @@ int TTF::stringWidth(std::wstring_view str, int fontSize) {
     return res;
 }
 
+#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
+
 void TTF::setColor(uint8_t r, uint8_t g, uint8_t b) {
-    altR_[0] = r; altG_[0] = g; altB_[0] = b;
+    altColor_[0] = RGBA(r, g, b, 255);
 }
 
 void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b) {
     if (index > 0 && index < 16) {
-        altR_[index] = r;
-        altG_[index] = g;
-        altB_[index] = b;
+        altColor_[index] = RGBA(r, g, b, 255);
     }
 }
+
+#undef RGBA
 
 void TTF::render(std::wstring_view str, float x, float y, bool shadow, int fontSize) {
     if (fontSize < 0) fontSize = fontSize_;
     int colorIndex = 0;
     renderImpl_.renderBegin();
     for (auto ch: str) {
-        if (ch > 0 && ch < 17) { colorIndex = ch - 1; continue; }
+        if (ch < 32) {
+            colorIndex = ch & 0x0F;
+            continue;
+        }
         const FontData *fd;
         uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
         auto ite = fontCache_.find(key);
@@ -222,11 +225,11 @@ void TTF::render(std::wstring_view str, float x, float y, bool shadow, int fontS
         auto *tex = textures_[fd->rpidx];
         if (shadow) {
             auto x0 = x + 2.f + fd->ix0, y0 = y + 2.f + fd->iy0;
-            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, 0, 0, 0, 255);
+            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, 0xFF000000u);
         }
         {
             auto x0 = x + fd->ix0, y0 = y + fd->iy0;
-            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, altR_[colorIndex], altG_[colorIndex], altB_[colorIndex], 255);
+            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, altColor_[colorIndex]);
         }
         x += fd->advW;
     }
