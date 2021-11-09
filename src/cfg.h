@@ -13,7 +13,7 @@
 struct Cfg {
     std::string d2Path = ".";
     std::string fontFilePath = R"(C:\Windows\Fonts\Arial.ttf)";
-    float fontSize = 12;
+    int fontSize = 12;
     std::string language = "enUS";
 
     int show = 0;

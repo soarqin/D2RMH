@@ -49,8 +49,8 @@ void TTFRenderGL::render(void *tex,
         }
         lastTex_ = tex;
     }
-    float width = texture->width();
-    float height = texture->height();
+    float width = float(texture->width());
+    float height = float(texture->height());
     pipeline_->pushQuad(x0, y0, x1, y1,
                         (float)u0 / width, (float)v0 / height,
                         (float)u1 / width, (float)v1 / height,

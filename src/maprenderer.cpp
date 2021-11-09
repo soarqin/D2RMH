@@ -120,9 +120,10 @@ void MapRenderer::update() {
         }
 
         PipelineSquad2D squadPip(mapTex_);
-        squadPip.setOrtho(0, mapTex_.width(), 0, mapTex_.height());
+        auto widthf = float(width), heightf = float(height);
+        squadPip.setOrtho(0, widthf, heightf, 0);
         auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
-        auto widthf = float(width) * .5f, heightf = float(height) * .5f;
+        widthf *= .5f; heightf *= .5f;
         for (auto &p: currMap_->adjacentLevels) {
             if (p.first >= gamedata->levels.size()) { continue; }
             if (p.second.exits.empty()) {
@@ -206,7 +207,7 @@ void MapRenderer::updateWindowPos() {
         y1 = currMap_->cropY2;
     int width = x1 - x0;
     int height = y1 - y0;
-    auto windowSize = (int)lroundf(cfg->scale * (float)(width + height) * 0.75) + 8;
+    auto windowSize = (int)lroundf(cfg->scale * (float)(width + height) * 0.75f) + 8;
     const auto bear = 16;
     if (windowSize + bear * 2 > d2rRect.right - d2rRect.left) {
         windowSize = d2rRect.right - d2rRect.left - bear * 2;

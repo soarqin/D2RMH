@@ -207,6 +207,9 @@ void D2RProcess::updateData() {
     if (cfg->showMonsters) {
         mapMonsters_.clear();
         uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x80;
+        auto showName = cfg->showMonsterName;
+        auto showEnchant = cfg->showMonsterEnchant;
+        auto showImmune = cfg->showMonsterImmune;
         for (int i = 0; i < 0x80; ++i) {
             uint64_t paddr;
             if (!READ(baseAddr, paddr)) { break; }
@@ -240,7 +243,7 @@ void D2RProcess::updateData() {
                             mon.txtFileNo = unit.txtFileNo;
                             mon.flag = monData.flag;
                         }
-                        if (cfg->showMonsterName) {
+                        if (showName) {
                             /* Super unique */
                             if (monData.flag & 2) {
                                 if (monData.uniqueNo < gamedata->superUniques.size()) {
@@ -249,8 +252,8 @@ void D2RProcess::updateData() {
                                 }
                             }
                         }
-                        if (cfg->showMonsterEnchant) {
-                            int off = 0;
+                        int off = 0;
+                        if (showEnchant) {
                             for (int n = 0; n < 9 && monData.enchants[n] != 0; ++n) {
                                 const auto *name = enchantStrings[monData.enchants[n]];
                                 if (!name) { continue; }
@@ -260,6 +263,8 @@ void D2RProcess::updateData() {
                                     mon.enchants[off++] = name[1];
                                 }
                             }
+                        }
+                        if (showImmune) {
                             if (StatList stats; READ(unit.statListPtr, stats)) {
                                 static StatEx statEx[64];
                                 auto cnt = std::min(64u, stats.stat.statCount);
