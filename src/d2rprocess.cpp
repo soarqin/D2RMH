@@ -151,6 +151,7 @@ void D2RProcess::updateData() {
                 UnitAny unit;
                 if (READ(paddr, unit) && unit.actPtr && unit.inventoryPtr && unit.unk5[4] == 0x100) {
                     playerHashOffset_ = playerPtr;
+                    playerPtrOffset_ = paddr;
                     break;
                 }
                 paddr = unit.nextPtr;
@@ -162,16 +163,14 @@ void D2RProcess::updateData() {
         }
     }
 
-    uint64_t addr;
-    if (!READ(playerHashOffset_, addr) || !addr) {
+    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
+    if (uint64_t addr; !READ(playerHashOffset_, addr)) {
         playerHashOffset_ = 0;
         return;
     }
-    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
-    READ(playerHashOffset_, addr);
 
     UnitAny unit;
-    if (!READ(addr, unit)) {
+    if (!READ(playerPtrOffset_, unit)) {
         playerHashOffset_ = 0;
         return;
     }

@@ -50,6 +50,7 @@ void loadCfg(const std::string &filename) {
             break;
         case 1:
             if (false) {}
+            LOADVALN(fps, fps)
             LOADVALN(show, show)
             LOADVALN(full_line, fullLine)
             LOADVALN(position, position)

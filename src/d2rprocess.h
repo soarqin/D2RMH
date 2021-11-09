@@ -66,6 +66,7 @@ private:
     uint32_t searchInterval_ = 0;
 
     uint64_t playerHashOffset_ = 0;
+    uint64_t playerPtrOffset_ = 0;
 
     uint8_t mapEnabled_ = 0;
     char name_[16] = {};

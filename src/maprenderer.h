@@ -33,6 +33,7 @@ public:
     explicit MapRenderer(Renderer &renderer);
     void update();
     void render();
+    [[nodiscard]] bool enabled() const { return enabled_; }
 
 private:
     void updateWindowPos();

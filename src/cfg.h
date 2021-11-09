@@ -16,6 +16,7 @@ struct Cfg {
     int fontSize = 12;
     std::string language = "enUS";
 
+    int fps = -1;
     int show = 0;
     int fullLine = 0;
     int position = 1;

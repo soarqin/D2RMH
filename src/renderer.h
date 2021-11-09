@@ -23,10 +23,12 @@ public:
 
     [[nodiscard]] Window *owner();
 
+    static void setSwapInterval(int interval);
+    void limitFPS(uint32_t fps);
     void setClearColor(float r, float g, float b, float a);
+    void prepare();
     void begin();
     void end();
-    void setBackground(int width, int height, const uint32_t *image);
 
     void getDimension(int &width, int &height) const;
 

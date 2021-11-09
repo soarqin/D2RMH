@@ -36,13 +36,21 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
     wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     Renderer renderer(&wnd);
+    if (cfg->fps > 0) {
+        renderer.limitFPS(cfg->fps);
+    } else {
+        Renderer::setSwapInterval(-cfg->fps);
+    }
 
     MapRenderer map(renderer);
     while (wnd.run()) {
+        renderer.prepare();
         map.update();
-        renderer.begin();
-        map.render();
-        renderer.end();
+        if (map.enabled()) {
+            renderer.begin();
+            map.render();
+            renderer.end();
+        }
     }
     return 0;
 }

@@ -13,6 +13,8 @@
 #include "HandmadeMath.h"
 #include <glad/glad_wgl.h>
 #include <windows.h>
+#include <chrono>
+#include <thread>
 #include <stdexcept>
 
 typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTPROC) (HDC hDc);
@@ -31,6 +33,10 @@ struct RendererCtx {
     /* OpenGL-Context related */
     HDC dc = nullptr;
     HGLRC glCtx = nullptr;
+
+    std::chrono::steady_clock::time_point nextRenderTime;
+    std::chrono::steady_clock::duration renderInterval;
+    bool fpsLimit = false;
 
     /* Render related */
     int width = 0, height = 0;
@@ -63,7 +69,6 @@ Renderer::Renderer(Window *wnd): ctx_(new RendererCtx) {
 
     gladLoadGL();
     gladLoadWGL(ctx_->dc);
-    wglSwapIntervalEXT(1);
     wnd->getDimension(ctx_->width, ctx_->height);
     wnd->setSizeCallback([this](int w, int h) {
         ctx_->width = w;
@@ -83,12 +88,37 @@ Window *Renderer::owner() {
     return ctx_->owner;
 }
 
+void Renderer::setSwapInterval(int interval) {
+    wglSwapIntervalEXT(interval);
+}
+void Renderer::limitFPS(uint32_t fps) {
+    if (fps) {
+        ctx_->renderInterval = std::chrono::nanoseconds (1000 * 1000 * 1000) / fps;
+        ctx_->fpsLimit = true;
+    } else {
+        ctx_->fpsLimit = false;
+    }
+}
 void Renderer::setClearColor(float r, float g, float b, float a) {
     auto *c = ctx_->clearColor;
     c[0] = r;
     c[1] = g;
     c[2] = b;
     c[3] = a;
+}
+void Renderer::prepare() {
+    if (ctx_->fpsLimit) {
+        do {
+            auto now = std::chrono::steady_clock::now();
+            if (ctx_->nextRenderTime > now) {
+                std::this_thread::sleep_for(ctx_->nextRenderTime - now);
+                continue;
+            }
+            ctx_->nextRenderTime += ctx_->renderInterval;
+            if (ctx_->nextRenderTime < now) { ctx_->nextRenderTime = now + ctx_->renderInterval; }
+            break;
+        } while(true);
+    }
 }
 void Renderer::begin() {
     glEnable(GL_BLEND);
@@ -101,9 +131,6 @@ void Renderer::begin() {
 }
 void Renderer::end() {
     SwapBuffers(ctx_->dc);
-}
-void Renderer::setBackground(int width, int height, const uint32_t *image) {
-
 }
 void Renderer::getDimension(int &width, int &height) const {
     width = ctx_->width;
