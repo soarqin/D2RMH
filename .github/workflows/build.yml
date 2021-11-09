@@ -1,0 +1,39 @@
+name: CMake
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: CMake Configure
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - run: |
+        copy /y ${{github.workspace}}\build\bin\Release\*.exe ${{github.workspace}}\bin
+        copy /y ${{github.workspace}}\README.md ${{github.workspace}}\bin
+        copy /y ${{github.workspace}}\LICENSE ${{github.workspace}}\bin
+      shell: cmd
+
+    - uses: actions/upload-artifact@v2
+      with: 
+        name: D2RMH-snapshot
+        path: |
+          ${{github.workspace}}/bin
+        retention-days: 7
