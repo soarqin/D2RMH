@@ -46,11 +46,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     while (wnd.run()) {
         renderer.prepare();
         map.update();
-        if (map.enabled()) {
-            renderer.begin();
-            map.render();
-            renderer.end();
-        }
+        renderer.begin();
+        map.render();
+        renderer.end();
     }
     return 0;
 }

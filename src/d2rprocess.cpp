@@ -12,6 +12,7 @@
 #include "cfg.h"
 #include "data.h"
 #include "d2rdefs.h"
+#include "util.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
@@ -25,10 +26,10 @@ static wchar_t enchantStrings[256][4] = {
     /*  3 */ L"",
     /*  4 */ L"",
     /*  5 */ L"S",
-    /*  6 */ L"F",
-    /*  7 */ L"C",
+    /*  6 */ L"\x0FF",
+    /*  7 */ L"\x02C",
     /*  8 */ L"M",
-    /*  9 */ L"fe",
+    /*  9 */ L"\x01FE",
     /* 10 */ L"",
     /* 11 */ L"",
     /* 12 */ L"",
@@ -36,19 +37,19 @@ static wchar_t enchantStrings[256][4] = {
     /* 14 */ L"",
     /* 15 */ L"",
     /* 16 */ L"",
-    /* 17 */ L"le",
-    /* 18 */ L"ce",
+    /* 17 */ L"\x09LE",
+    /* 18 */ L"\x03CE",
     /* 19 */ L"",
     /* 20 */ L"",
     /* 21 */ L"",
     /* 22 */ L"",
     /* 23 */ L"",
     /* 24 */ L"",
-    /* 25 */ L"mb",
+    /* 25 */ L"\x03MB",
     /* 26 */ L"T",
     /* 27 */ L"H",
-    /* 28 */ L"ss",
-    /* 29 */ L"ms",
+    /* 28 */ L"\x04SS",
+    /* 29 */ L"\x0CMS",
     /* 30 */ L"A",
     /* 31 */ L"",
     /* 32 */ L"",
@@ -56,14 +57,54 @@ static wchar_t enchantStrings[256][4] = {
     /* 34 */ L"",
     /* 35 */ L"",
     /* 36 */ L"",
-    /* 37 */ L"F",
+    /* 37 */ L"\x0BF",
     /* 38 */ L"",
-    /* 39 */ L"B",
+    /* 39 */ L"\x04B",
     /* 40 */ L"",
     /* 41 */ L"",
     /* 42 */ L"",
     /* 43 */ L"",
 };
+
+static wchar_t auraStrings[6][4] = {
+    L"\x04i",
+    L"\x08i",
+    L"\x01i",
+    L"\x09i",
+    L"\x03i",
+    L"\x02i",
+};
+
+void loadEncText(wchar_t *output, const std::string &input) {
+    if (input.empty()) {
+        output[0] == 0;
+        return;
+    }
+    const char *inp = input.c_str();
+    std::string out;
+    if (inp[0] != '{') {
+        out.push_back(char(15));
+    }
+    while (*inp) {
+        if (*inp == '{') {
+            char *endptr;
+            out.push_back(char(std::min(15u, uint32_t(std::strtol(inp + 1, &endptr, 0)))));
+            inp = endptr;
+            while (*inp && *inp != '}') ++inp;
+            if (*inp) {
+                ++inp;
+            }
+        } else {
+            out.push_back(*inp++);
+        }
+    }
+    auto outw = utf8toucs4(out);
+    if (outw.length() > 3) { outw.resize(3); }
+    for (auto c: outw) {
+        *output++ = c;
+    }
+    *output = 0;
+}
 
 static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
 
@@ -102,13 +143,34 @@ HWND findMainWindow(unsigned long processId) {
 D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval) {
     searchForProcess();
     nextSearchTime_ = timeGetTime() + searchInterval_;
-    std::pair<StatId, uint8_t> statsMappingInit[] = {
-        {StatId::Damageresist, 4},
-        {StatId::Magicresist, 8},
-        {StatId::Fireresist, 1},
-        {StatId::Lightresist, 9},
-        {StatId::Coldresist, 3},
-        {StatId::Poisonresist, 2},
+    loadEncText(enchantStrings[5], cfg->encTxtExtraStrong);
+    loadEncText(enchantStrings[6], cfg->encTxtExtraFast);
+    loadEncText(enchantStrings[7], cfg->encTxtCursed);
+    loadEncText(enchantStrings[8], cfg->encTxtMagicResistant);
+    loadEncText(enchantStrings[9], cfg->encTxtFireEnchanted);
+    loadEncText(enchantStrings[17], cfg->encTxtLigntningEnchanted);
+    loadEncText(enchantStrings[18], cfg->encTxtColdEnchanted);
+    loadEncText(enchantStrings[25], cfg->encTxtManaBurn);
+    loadEncText(enchantStrings[26], cfg->encTxtTeleportation);
+    loadEncText(enchantStrings[27], cfg->encTxtSpectralHit);
+    loadEncText(enchantStrings[28], cfg->encTxtStoneSkin);
+    loadEncText(enchantStrings[29], cfg->encTxtMultipleShots);
+    loadEncText(enchantStrings[37], cfg->encTxtFanatic);
+    loadEncText(enchantStrings[39], cfg->encTxtBerserker);
+    loadEncText(enchantStrings[30], cfg->encTxtAura);
+    loadEncText(auraStrings[0], cfg->encTxtPhysicalImmunity);
+    loadEncText(auraStrings[1], cfg->encTxtMagicImmunity);
+    loadEncText(auraStrings[2], cfg->encTxtFireImmunity);
+    loadEncText(auraStrings[3], cfg->encTxtLightningImmunity);
+    loadEncText(auraStrings[4], cfg->encTxtColdImmunity);
+    loadEncText(auraStrings[5], cfg->encTxtPoisonImmunity);
+    std::pair<StatId, size_t> statsMappingInit[] = {
+        {StatId::Damageresist, 0},
+        {StatId::Magicresist, 1},
+        {StatId::Fireresist, 2},
+        {StatId::Lightresist, 3},
+        {StatId::Coldresist, 4},
+        {StatId::Poisonresist, 5},
     };
     for (auto[k, v]: statsMappingInit) {
         statsMapping[size_t(k)] = v;
@@ -161,10 +223,13 @@ void D2RProcess::updateData() {
             }
             playerPtr += 8;
         }
+        if (!playerHashOffset_) {
+            return;
+        }
     }
 
     READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
-    if (uint64_t addr; !READ(playerHashOffset_, addr)) {
+    if (uint64_t addr; !READ(playerHashOffset_, addr) || !addr) {
         playerHashOffset_ = 0;
         return;
     }
@@ -254,17 +319,9 @@ void D2RProcess::updateData() {
                         int off = 0;
                         if (showEnchant) {
                             for (int n = 0; n < 9 && monData.enchants[n] != 0; ++n) {
-                                const auto *name = enchantStrings[monData.enchants[n]];
-                                if (!name[0]) { continue; }
-                                if (name[0] < 32) {
-                                    mon.enchants[off++] = name[0];
-                                    ++name;
-                                } else {
-                                    mon.enchants[off++] = 15;
-                                }
-                                mon.enchants[off++] = *name++;
-                                if (*name) {
-                                    mon.enchants[off++] = *name;
+                                const auto *str = enchantStrings[monData.enchants[n]];
+                                while(*str) {
+                                    mon.enchants[off++] = *str++;
                                 }
                             }
                         }
@@ -278,8 +335,10 @@ void D2RProcess::updateData() {
                                         if (st->value < 100) { continue; }
                                         if (auto statId = st->stateId; statId < uint16_t(StatId::TotalCount)) {
                                             if (auto mapping = statsMapping[statId]; mapping) {
-                                                mon.enchants[off++] = mapping;
-                                                mon.enchants[off++] = 'i';
+                                                const wchar_t *str = auraStrings[mapping];
+                                                while(*str) {
+                                                    mon.enchants[off++] = *str++;
+                                                }
                                             }
                                         }
                                     }

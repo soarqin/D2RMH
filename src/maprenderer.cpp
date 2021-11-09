@@ -199,7 +199,6 @@ void MapRenderer::render() {
         updatePlayerPos();
         mapPipeline_.render();
         framePipeline_.render();
-        dynamicPipeline_.render();
         drawObjects();
         auto fontSize = cfg->fontSize;
         for (const auto &[x, y, text, offX]: textStrings_) {

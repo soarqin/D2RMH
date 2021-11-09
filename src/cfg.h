@@ -43,6 +43,28 @@ struct Cfg {
     int showMonsterName = 1;
     int showMonsterEnchant = 1;
     int showMonsterImmune = 1;
+
+    std::string encTxtExtraStrong = "S";
+    std::string encTxtExtraFast = "F";
+    std::string encTxtCursed = "{2}C";
+    std::string encTxtMagicResistant = "M";
+    std::string encTxtFireEnchanted = "{1}FE";
+    std::string encTxtLigntningEnchanted = "{9}LE";
+    std::string encTxtColdEnchanted = "{3}CE";
+    std::string encTxtManaBurn = "{3}MB";
+    std::string encTxtTeleportation = "T";
+    std::string encTxtSpectralHit = "H";
+    std::string encTxtStoneSkin = "{4}SS";
+    std::string encTxtMultipleShots = "{12}MS";
+    std::string encTxtFanatic = "{11}F";
+    std::string encTxtBerserker = "{4}B";
+    std::string encTxtAura = "A";
+    std::string encTxtPhysicalImmunity = "{4}i";
+    std::string encTxtMagicImmunity = "{8}i";
+    std::string encTxtFireImmunity = "{1}i";
+    std::string encTxtLightningImmunity = "{9}i";
+    std::string encTxtColdImmunity = "{3}i";
+    std::string encTxtPoisonImmunity = "{2}i";
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

@@ -37,6 +37,7 @@ void loadCfg(const std::string &filename) {
         if (!name) {
             if (!strcmp(section, "main")) { *(int*)user = 0; }
             else if (!strcmp(section, "ui")) { *(int*)user = 1; }
+            else if (!strcmp(section, "enchants")) { *(int*)user = 2; }
             else { *(int*)user = -1; }
             return 1;
         }
@@ -75,6 +76,30 @@ void loadCfg(const std::string &filename) {
             LOADVALN(show_monster_name, showMonsterName)
             LOADVALN(show_monster_enchant, showMonsterEnchant)
             LOADVALN(show_monster_immune, showMonsterImmune)
+            break;
+        case 2:
+            if (false) {}
+            LOADVAL(extra_strong, encTxtExtraStrong)
+            LOADVAL(extra_fast, encTxtExtraFast)
+            LOADVAL(cursed, encTxtCursed)
+            LOADVAL(magic_resistant, encTxtMagicResistant)
+            LOADVAL(fire_enchanted, encTxtFireEnchanted)
+            LOADVAL(ligntning_enchanted, encTxtLigntningEnchanted)
+            LOADVAL(cold_enchanted, encTxtColdEnchanted)
+            LOADVAL(mana_burn, encTxtManaBurn)
+            LOADVAL(teleportation, encTxtTeleportation)
+            LOADVAL(spectral_hit, encTxtSpectralHit)
+            LOADVAL(stone_skin, encTxtStoneSkin)
+            LOADVAL(multiple_shots, encTxtMultipleShots)
+            LOADVAL(fanatic, encTxtFanatic)
+            LOADVAL(berserker, encTxtBerserker)
+            LOADVAL(aura, encTxtAura)
+            LOADVAL(physical_immunity, encTxtPhysicalImmunity)
+            LOADVAL(magic_immunity, encTxtMagicImmunity)
+            LOADVAL(fire_immunity, encTxtFireImmunity)
+            LOADVAL(lightning_immunity, encTxtLightningImmunity)
+            LOADVAL(cold_immunity, encTxtColdImmunity)
+            LOADVAL(poison_immunity, encTxtPoisonImmunity)
             break;
         default:
             break;
