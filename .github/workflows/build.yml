@@ -3,8 +3,10 @@ name: CMake
 on:
   push:
     branches: [ master ]
+    paths: [ CMakeLists.txt, src, d2mapapi, common, tools, json, inih ]
   pull_request:
     branches: [ master ]
+    paths: [ CMakeLists.txt, src, d2mapapi, common, tools, json, inih ]
 
 env:
   BUILD_TYPE: Release
