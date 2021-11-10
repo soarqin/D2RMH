@@ -1,3 +1,11 @@
+# v0.5.3
+* can detect monster aura type now
+* always show NPCs
+* add show_normal_monster to config ini
+* add enchants display text settings to config ini, uses text color list from d2hackmap
+* add FPS/VSync setting to config ini
+* fix bug that `show_monster_immune` was not processed
+
 # v0.5.2
 * add monster resist(immune) display
 * minor bug fixes and performance optimizations
