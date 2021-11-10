@@ -27,9 +27,10 @@ void loadData() {
             else if (!strcmp(section, "levels")) { *isec = 1; }
             else if (!strcmp(section, "objects")) { *isec = 2; }
             else if (!strcmp(section, "npcs")) { *isec = 3; }
-            else if (!strcmp(section, "shrines")) { *isec = 4; }
-            else if (!strcmp(section, "superuniques")) { *isec = 5; }
-            else if (!strcmp(section, "strings")) { *isec = 6; }
+            else if (!strcmp(section, "monsters")) { *isec = 4; }
+            else if (!strcmp(section, "shrines")) { *isec = 5; }
+            else if (!strcmp(section, "superuniques")) { *isec = 6; }
+            else if (!strcmp(section, "strings")) { *isec = 7; }
             else { *isec = -1; }
             return 1;
         }
@@ -71,13 +72,26 @@ void loadData() {
         }
         case 4: {
             auto id = strtol(name, nullptr, 0);
+            if (id >= sgamedata.monsters.size()) {
+                sgamedata.monsters.resize(id + 1);
+            }
+            const char *pos = strchr(value, '|');
+            if (pos) {
+                sgamedata.monsters[id] = { std::string(value, pos), strtoul(pos + 1, nullptr, 0) > 0 };
+            } else {
+                sgamedata.monsters[id] = { value, false };
+            }
+            break;
+        }
+        case 5: {
+            auto id = strtol(name, nullptr, 0);
             if (id >= sgamedata.shrines.size()) {
                 sgamedata.shrines.resize(id + 1);
             }
             sgamedata.shrines[id] = value;
             break;
         }
-        case 5: {
+        case 6: {
             auto id = strtol(name, nullptr, 0);
             if (id >= sgamedata.superUniques.size()) {
                 sgamedata.superUniques.resize(id + 1);
@@ -85,7 +99,7 @@ void loadData() {
             sgamedata.superUniques[id] = value;
             break;
         }
-        case 6: {
+        case 7: {
             const char *pos = strchr(name, '[');
             if (!pos) { break; }
             auto index = strtoul(pos + 1, nullptr, 0);

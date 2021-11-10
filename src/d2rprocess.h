@@ -21,6 +21,7 @@ public:
         const std::array<std::wstring, 13> *name;
         wchar_t enchants[32];
         uint8_t flag;
+        bool isNpc;
     };
     struct MapObject {
         uint32_t txtFileNo;

@@ -72,6 +72,7 @@ void loadCfg(const std::string &filename) {
             LOADVALC(well_color, wellColor)
 
             LOADVALN(show_monsters, showMonsters)
+            LOADVALN(show_normal_monsters, showNormalMonsters)
             LOADVALN(show_objects, showObjects)
             LOADVALN(show_monster_name, showMonsterName)
             LOADVALN(show_monster_enchant, showMonsterEnchant)
@@ -93,7 +94,15 @@ void loadCfg(const std::string &filename) {
             LOADVAL(multiple_shots, encTxtMultipleShots)
             LOADVAL(fanatic, encTxtFanatic)
             LOADVAL(berserker, encTxtBerserker)
-            LOADVAL(aura, encTxtAura)
+
+            LOADVAL(might_aura, MightAura)
+            LOADVAL(holyFire_aura, HolyFireAura)
+            LOADVAL(blessedAim_aura, BlessedAimAura)
+            LOADVAL(holyFreeze_aura, HolyFreezeAura)
+            LOADVAL(holyShock_aura, HolyShockAura)
+            LOADVAL(conviction_aura, ConvictionAura)
+            LOADVAL(fanaticism_aura, FanaticismAura)
+
             LOADVAL(physical_immunity, encTxtPhysicalImmunity)
             LOADVAL(magic_immunity, encTxtMagicImmunity)
             LOADVAL(fire_immunity, encTxtFireImmunity)

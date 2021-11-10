@@ -50,6 +50,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeShrine] = cfg->shrineColor;
     objColors_[TypeWell] = cfg->wellColor;
     objColors_[TypeMonster] = cfg->monsterColor;
+    objColors_[TypeNpc] = cfg->npcColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
     ttf_.setAltColor(1, 228, 88, 67);
     ttf_.setAltColor(2, 31, 255, 0);
@@ -343,7 +344,7 @@ void MapRenderer::drawObjects() {
         for (const auto &[id, mon]: mons) {
             auto x = float(mon.x - originX - x0) - w;
             auto y = float(mon.y - originY - y0) - h;
-            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[TypeMonster]);
+            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[mon.isNpc ? TypeNpc : TypeMonster]);
             if (mon.name) {
                 auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
                 std::wstring_view sv = (*mon.name)[lng_];

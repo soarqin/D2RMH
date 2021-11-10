@@ -132,10 +132,10 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/shrines.json");
 
-    D2TXT levelTxt, objTxt, npcTxt, shrineTxt, superuTxt;
+    D2TXT levelTxt, objTxt, monTxt, shrineTxt, superuTxt;
     loadTxt(levelTxt, storage, "data:data/global/excel/levels.txt");
     loadTxt(objTxt, storage, "data:data/global/excel/objects.txt");
-    loadTxt(npcTxt, storage, "data:data/global/excel/monstats.txt");
+    loadTxt(monTxt, storage, "data:data/global/excel/monstats.txt");
     loadTxt(shrineTxt, storage, "data:data/global/excel/shrines.txt");
     loadTxt(superuTxt, storage, "data:data/global/excel/superuniques.txt");
     CascCloseStorage(storage);
@@ -189,20 +189,34 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    idx0 = npcTxt.colIndexByName("*hcIdx");
-    idx1 = npcTxt.colIndexByName("NameStr");
+    idx0 = monTxt.colIndexByName("*hcIdx");
+    idx1 = monTxt.colIndexByName("NameStr");
+    idx2 = monTxt.colIndexByName("npc");
     ofs << std::endl << '[' << "npcs" << ']' << std::endl;
-    rows = npcTxt.rows();
+    rows = monTxt.rows();
     for (size_t i = 0; i < rows; ++i) {
-        auto id = npcTxt.value(i, idx0).second;
+        auto id = monTxt.value(i, idx0).second;
         auto ite = parseData.usefulNpcs.find(id);
-        if (ite == parseData.usefulNpcs.end()) { continue; }
+        if (ite == parseData.usefulNpcs.end()) {
+            continue;
+        }
         std::string key = ite->second.second;
-        if (key.empty()) { key = npcTxt.value(i, idx1).first; }
+        if (key.empty()) { key = monTxt.value(i, idx1).first; }
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;
             ofs << id << '=' << ite->second.first << '|' << key << std::endl;
+        }
+    }
+
+    ofs << std::endl << '[' << "monsters" << ']' << std::endl;
+    for (size_t i = 0; i < rows; ++i) {
+        auto id = monTxt.value(i, idx0).second;
+        auto key = monTxt.value(i, idx1).first;
+        const auto *arr = jlng.get(key);
+        if (arr) {
+            strings[key] = *arr;
+            ofs << id << '=' << key << '|' << monTxt.value(i, idx2).second << std::endl;
         }
     }
 

@@ -36,9 +36,11 @@ struct Cfg {
     uint32_t shrineColor = RGBA(255, 51, 178, 255);
     uint32_t wellColor = RGBA(51, 51, 255, 255);
     uint32_t monsterColor = RGBA(255, 0, 0, 255);
+    uint32_t npcColor = RGBA(160, 160, 160, 255);
 #undef RGBA
 
     int showMonsters = 1;
+    int showNormalMonsters = 0;
     int showObjects = 1;
     int showMonsterName = 1;
     int showMonsterEnchant = 1;
@@ -58,7 +60,15 @@ struct Cfg {
     std::string encTxtMultipleShots = "{12}MS";
     std::string encTxtFanatic = "{11}F";
     std::string encTxtBerserker = "{4}B";
-    std::string encTxtAura = "A";
+
+    std::string MightAura = "{4}A";
+    std::string HolyFireAura = "{1}A";
+    std::string BlessedAimAura = "A";
+    std::string HolyFreezeAura = "{3}A";
+    std::string HolyShockAura = "{9}A";
+    std::string ConvictionAura = "{11}A";
+    std::string FanaticismAura = "{5}A";
+
     std::string encTxtPhysicalImmunity = "{4}i";
     std::string encTxtMagicImmunity = "{8}i";
     std::string encTxtFireImmunity = "{1}i";

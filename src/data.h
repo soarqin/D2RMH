@@ -23,6 +23,7 @@ enum EObjType {
     TypeShrine,
     TypeWell,
     TypeMonster,
+    TypeNpc,
     TypeMax,
 };
 
@@ -33,6 +34,7 @@ struct Data {
     };
     std::unordered_map<std::string, std::array<std::wstring, 13>> strings;
     std::vector<std::string> levels, shrines, superUniques;
+    std::vector<std::pair<std::string, bool>> monsters;
     std::unordered_map<int, ObjType> objects[2];
     std::unordered_map<int, std::set<int>> guides;
 };

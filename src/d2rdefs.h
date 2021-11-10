@@ -375,6 +375,8 @@ enum class StatId {
     TotalCount,
 };
 
+#pragma pack(push, 1)
+
 struct DrlgRoom2 {
     uint64_t unk0[2];
     /* 0x10  DrlgRoom2 **pRoomsNear */
@@ -470,8 +472,6 @@ struct MonsterData {
     uint8_t enchants[9];
     uint8_t unk0;
     uint16_t uniqueNo;
-    uint32_t unk1;
-    uint64_t unk2[20];
 };
 
 struct StatEx {
@@ -497,7 +497,15 @@ struct StatList {
         uint64_t statPtr;
         uint32_t statCount;
         uint32_t unk0;
+        uint32_t capacity;
+        uint32_t unk1;
+        uint64_t unk2;
     } stat;
+    uint64_t prevList;
+    uint64_t nextList;
+    uint64_t prevListEx;
+    uint64_t nextListEx;
+    uint64_t padding[20];
 };
 
 struct UnitAny {
@@ -547,3 +555,5 @@ struct UnitAny {
     uint64_t unk5[23];
     uint64_t nextPtr;
 };
+
+#pragma pack(pop)
