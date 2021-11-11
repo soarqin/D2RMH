@@ -405,43 +405,34 @@ void D2RProcess::updateData() {
 
     mapPlayers_.clear();
 
-    uint64_t playerPtr = baseAddr_ + HashTableBase;
-    for (int i = 0; i < 0x80; ++i) {
-        uint64_t paddr;
-        if (!READ(playerPtr, paddr)) { return; }
-        while (paddr) {
-            UnitAny unit;
-            if (READ(paddr, unit) && unit.unitId && unit.actPtr && unit.inventoryPtr) {
-                if (DrlgAct act; READ(unit.actPtr, act)) {
-                    auto &player = mapPlayers_[unit.unitId];
-                    player.name[0] = 0;
-                    bool levelChanged = false;
-                    READ(unit.unionPtr, player.name);
-                    player.levelChanged = player.act != act.actId;
-                    player.act = act.actId;
-                    player.seed = act.seed;
-                    READ(act.miscPtr + 0x830, player.difficulty);
-                    if (DynamicPath path; READ(unit.pathPtr, path)) {
-                        player.posX = path.posX;
-                        player.posY = path.posY;
-                        if (DrlgRoom1 room1; READ(path.room1Ptr, room1)) {
-                            if (DrlgRoom2 room2; READ(room1.room2Ptr, room2)) {
-                                if (uint32_t levelId; READ(room2.levelPtr + 0x1F8, levelId)) {
-                                    if (player.levelId != levelId) {
-                                        player.levelChanged = true;
-                                        player.levelId = levelId;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-            paddr = unit.nextPtr;
-        }
-        playerPtr += 8;
-    }
+    readUnitHashTable(baseAddr_ + HashTableBase, [this](const UnitAny &unit) {
+        if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
+        DrlgAct act;
+        if (!READ(unit.actPtr, act)) { return; }
+        auto &player = mapPlayers_[unit.unitId];
+        player.name[0] = 0;
+        bool levelChanged = false;
+        READ(unit.unionPtr, player.name);
+        uint64_t n[20];
+        READ(unit.unionPtr, n);
+        player.levelChanged = player.act != act.actId;
+        player.act = act.actId;
+        player.seed = act.seed;
+        READ(act.miscPtr + 0x830, player.difficulty);
+        DynamicPath path;
+        if (!READ(unit.pathPtr, path)) { return; }
+        player.posX = path.posX;
+        player.posY = path.posY;
+        DrlgRoom1 room1;
+        if (!READ(path.room1Ptr, room1)) { return; }
+        DrlgRoom2 room2;
+        if (!READ(room1.room2Ptr, room2)) { return; }
+        uint32_t levelId;
+        if (!READ(room2.levelPtr + 0x1F8, levelId)) { return; }
+        if (player.levelId == levelId) { return; }
+        player.levelChanged = true;
+        player.levelId = levelId;
+    });
     if (mapPlayers_.empty()) {
         focusedPlayer_ = 0;
         return;
@@ -465,172 +456,161 @@ void D2RProcess::updateData() {
 
     if (cfg->showMonsters) {
         mapMonsters_.clear();
-        uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x80;
         auto showName = cfg->showMonsterName;
         auto showEnchant = cfg->showMonsterEnchant;
         auto showImmune = cfg->showMonsterImmune;
         auto showNormal = cfg->showNormalMonsters;
         auto monsSize = gamedata->monsters.size();
-        for (int i = 0; i < 0x80; ++i) {
-            uint64_t paddr;
-            if (!READ(baseAddr, paddr)) { break; }
-            while (paddr) {
-                UnitAny unit;
-                do {
-                    if (!READ(paddr, unit)) { break; }
-                    if (unit.mode == 0 || unit.mode == 12 || unit.txtFileNo >= monsSize) { break; }
-                    MonsterData monData;
-                    if (!READ(unit.unionPtr, monData)) { break; }
-                    /*
-                    for flag:
-                    struct {
-                        BYTE fOther:1;  //set for some champs, uniques
-                        BYTE fUnique:1; //super unique
-                        BYTE fChamp:1;
-                        BYTE fBoss:1;   //unique monster ,usually boss
-                        BYTE fMinion:1;
-                        BYTE fPoss:1;   //possessed
-                        BYTE fGhost:1;  //ghostly
-                        BYTE fMulti:1;  //multishotfiring
-                    };
-                    */
-                    auto isUnique = (monData.flag & 0x0E) != 0;
-                    auto &txtData = gamedata->monsters[unit.txtFileNo];
-                    auto isNpc = txtData.second;
-                    if (!showNormal && !isUnique && !isNpc) { break; }
-                    DynamicPath path;
-                    if (READ(unit.pathPtr, path)) {
-                        auto &mon = mapMonsters_[unit.unitId];
-                        mon.x = path.posX;
-                        mon.y = path.posY;
-                        if (!mon.txtFileNo) {
-                            mon.txtFileNo = unit.txtFileNo;
-                            mon.flag = monData.flag;
-                        }
-                        if (showName && (isUnique || isNpc)) {
-                            /* Super unique */
-                            if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {
-                                auto ite2 = gamedata->strings.find(gamedata->superUniques[monData.uniqueNo]);
-                                mon.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
-                            } else {
-                                auto ite2 = gamedata->strings.find(txtData.first);
-                                mon.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
-                                mon.isNpc = isNpc;
-                            }
-                        }
-                        if (isUnique) {
-                            int off = 0;
-                            bool hasAura = false;
-                            if (showEnchant) {
-                                uint8_t id;
-                                for (int n = 0; n < 9 && (id = monData.enchants[n]) != 0; ++n) {
-                                    if (id == 30) { hasAura = true; continue; }
-                                    const auto *str = enchantStrings[id];
-                                    while (*str) {
-                                        mon.enchants[off++] = *str++;
-                                    }
-                                }
-                            }
-                            if (showImmune || hasAura) {
-                                if (StatList stats; READ(unit.statListPtr, stats)) {
-                                    do {
-                                        /* check if this is owner stat or aura */
-                                        if (stats.ownerId == unit.unitId) {
-                                            if (stats.stateNo) {
-                                                if (hasAura) {
-                                                    const wchar_t *str = auraStrings[stats.stateNo];
-                                                    while (*str) {
-                                                        mon.enchants[off++] = *str++;
-                                                    }
-                                                }
-                                            } else if (showImmune) {
-                                                static StatEx statEx[64];
-                                                auto cnt = std::min(64u, stats.stat.statCount);
-                                                if (readMemory64(handle_,
-                                                                 stats.stat.statPtr,
-                                                                 sizeof(StatEx) * cnt,
-                                                                 statEx)) {
-                                                    StatEx *st = statEx;
-                                                    for (; cnt; --cnt, ++st) {
-                                                        if (st->value < 100) { continue; }
-                                                        if (auto statId = st->stateId; statId
-                                                            < uint16_t(StatId::TotalCount)) {
-                                                            if (auto mapping = statsMapping[statId]; mapping) {
-                                                                const wchar_t *str = immunityStrings[mapping];
-                                                                while (*str) {
-                                                                    mon.enchants[off++] = *str++;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        if (!(stats.flag & 0x80000000u)) { break; }
-                                        if (!stats.nextListEx || !READ(stats.nextListEx, stats)) { break; }
-                                    } while (true);
-                                }
-                            }
-                            mon.enchants[off] = 0;
-                        }
-                    }
-                } while (false);
-                paddr = unit.nextPtr;
+        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x80, [this, showName, showEnchant, showImmune, showNormal, monsSize](const UnitAny &unit) {
+            if (unit.mode == 0 || unit.mode == 12 || unit.txtFileNo >= monsSize) { return; }
+            MonsterData monData;
+            if (!READ(unit.unionPtr, monData)) { return; }
+            auto isUnique = (monData.flag & 0x0E) != 0;
+            auto &txtData = gamedata->monsters[unit.txtFileNo];
+            auto isNpc = std::get<1>(txtData);
+            if (!showNormal && !isUnique && !isNpc) { return; }
+            DynamicPath path;
+            if (!READ(unit.pathPtr, path)) { return; }
+            auto &mon = mapMonsters_.emplace_back();
+            mon.x = path.posX;
+            mon.y = path.posY;
+            mon.isNpc = isNpc;
+            mon.isUnique = isUnique;
+            mon.flag = monData.flag;
+            if (showName && (isUnique || isNpc)) {
+                /* Super unique */
+                if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {
+                    mon.name = gamedata->superUniques[monData.uniqueNo].second;
+                } else {
+                    mon.name = std::get<2>(txtData);
+                }
             }
-            baseAddr += 8;
-        }
+            if (!isUnique) { return; }
+            int off = 0;
+            bool hasAura = false;
+            if (showEnchant) {
+                uint8_t id;
+                for (int n = 0; n < 9 && (id = monData.enchants[n]) != 0; ++n) {
+                    if (id == 30) {
+                        hasAura = true;
+                        continue;
+                    }
+                    const auto *str = enchantStrings[id];
+                    while (*str) {
+                        mon.enchants[off++] = *str++;
+                    }
+                }
+            }
+            if (!showImmune && !hasAura) {
+                mon.enchants[off] = 0;
+                return;
+            }
+            readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, showImmune, hasAura](const StatList &stats) {
+                if (stats.stateNo) {
+                    if (!hasAura) { return; }
+                    const wchar_t *str = auraStrings[stats.stateNo];
+                    while (*str) {
+                        mon.enchants[off++] = *str++;
+                    }
+                    return;
+                }
+                if (!showImmune) { return; }
+                static StatEx statEx[64];
+                auto cnt = std::min(64u, stats.stat.statCount);
+                if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+                StatEx *st = statEx;
+                for (; cnt; --cnt, ++st) {
+                    if (st->value < 100) { continue; }
+                    auto statId = st->stateId;
+                    if (statId >= uint16_t(StatId::TotalCount)) { continue; }
+                    auto mapping = statsMapping[statId];
+                    if (!mapping) { continue; }
+                    const wchar_t *str = immunityStrings[mapping];
+                    while (*str) {
+                        mon.enchants[off++] = *str++;
+                    }
+                }
+            });
+            mon.enchants[off] = 0;
+        });
     }
     if (cfg->showObjects) {
         if (currPlayer->levelChanged) {
             mapObjects_.clear();
         }
-        uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x100;
-        for (int i = 0; i < 0x80; ++i) {
-            uint64_t paddr;
-            if (!READ(baseAddr, paddr)) { break; }
-            while (paddr) {
-                UnitAny unit;
-                if (!READ(paddr, unit)) { break; }
-                if (unit.txtFileNo == 59 || unit.txtFileNo == 60 /* Portals */
-                    || unit.mode != 2) {
-                    auto ite = gamedata->objects[0].find(unit.txtFileNo);
-                    if (ite != gamedata->objects[0].end()) {
-                        auto type = ite->second.type;
-                        switch (type) {
-                        case TypePortal:
-                        case TypeWell:
-                        case TypeShrine: {
-                            uint8_t flag;
-                            READ(unit.unionPtr + 8, flag);
-                            StaticPath path;
-                            if (!READ(unit.pathPtr, path)) { break; }
-                            auto &obj = mapObjects_[path.posX | (uint32_t(path.posY) << 16)];
-                            if (obj.txtFileNo) { break; }
-                            obj.txtFileNo = unit.txtFileNo;
-                            obj.type = ite->second.type;
-                            const std::string &name = type == TypeShrine && flag < gamedata->shrines.size() ?
-                                gamedata->shrines[flag] : ite->second.name;
-                            auto ite2 = gamedata->strings.find(name);
-                            obj.name = ite2 != gamedata->strings.end() ? &ite2->second : nullptr;
-                            obj.x = path.posX;
-                            obj.y = path.posY;
-                            obj.flag = flag;
-                            break;
-                        }
-                        default:
-                            break;
-                        }
-                    }
-                } else {
-                    StaticPath path;
-                    if (READ(unit.pathPtr, path)) {
-                        mapObjects_.erase(path.posX | (uint32_t(path.posY) << 16));
-                    }
+        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x100, [this](const UnitAny &unit) {
+            if (/* Portals */ unit.txtFileNo != 59 && unit.txtFileNo != 60 && /* destroyed/opened */ unit.mode == 2) {
+                StaticPath path;
+                if (READ(unit.pathPtr, path)) {
+                    mapObjects_.erase(path.posX | (uint32_t(path.posY) << 16));
                 }
-                paddr = unit.nextPtr;
+                return;
             }
-            baseAddr += 8;
-        }
+            auto ite = gamedata->objects[0].find(unit.txtFileNo);
+            if (ite == gamedata->objects[0].end()) { return; }
+            auto type = std::get<0>(ite->second);
+            switch (type) {
+            case TypePortal:
+            case TypeWell:
+            case TypeShrine: {
+                uint8_t flag;
+                READ(unit.unionPtr + 8, flag);
+                StaticPath path;
+                if (!READ(unit.pathPtr, path)) { break; }
+                auto &obj = mapObjects_[path.posX | (uint32_t(path.posY) << 16)];
+                if (obj.x) { break; }
+                obj.type = std::get<0>(ite->second);
+                obj.name = type == TypeShrine && flag < gamedata->shrines.size() ?
+                    gamedata->shrines[flag].second : std::get<2>(ite->second);
+                obj.x = path.posX;
+                obj.y = path.posY;
+                obj.flag = flag;
+                break;
+            }
+            default:
+                break;
+            }
+        });
+    }
+    if (cfg->showItems) {
+        mapItems_.clear();
+        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x200, [this](const UnitAny &unit) {
+            ItemData item;
+            if (!READ(unit.unionPtr, item) || item.ownerInvPtr || item.location != 0 || item.itemLocation < 5) { return; }
+            /* the item is on the ground */
+            uint32_t sockets = 0;
+            if (item.itemFlags & 0x800u) {
+                readStateList(unit.statListPtr, unit.unitId, [this, &sockets](const StatList &stats) {
+                    if (stats.stateNo) { return; }
+                    static StatEx statEx[64];
+                    auto cnt = std::min(64u, stats.stat.statCount);
+                    if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+                    StatEx *st = statEx;
+                    for (; cnt; --cnt, ++st) {
+                        if (st->stateId != uint16_t(StatId::ItemNumsockets)) { continue; }
+                        sockets = st->value;
+                        break;
+                    }
+                });
+            }
+            auto n = filterItem(&unit, &item, sockets);
+            if (!n) { return; }
+            StaticPath path;
+            if (!READ(unit.pathPtr, path)) { return; }
+            auto &mitem = mapItems_.emplace_back();
+            mitem.x = path.posX;
+            mitem.y = path.posY;
+            mitem.name = unit.txtFileNo < gamedata->items.size() ? gamedata->items[unit.txtFileNo].second : nullptr;
+            mitem.flag = n & 0x0F;
+            auto color = n >> 4;
+            if (color == 0) {
+                if (auto quality = uint32_t(item.quality - 1); quality < 8) {
+                    const uint8_t qualityColors[8] = {15, 15, 5, 3, 2, 9, 4, 8};
+                    color = qualityColors[quality];
+                }
+            }
+            mitem.color = color;
+        });
     }
 }
 
@@ -708,6 +688,8 @@ void D2RProcess::searchForProcess() {
 
 void D2RProcess::resetData() {
     if (handle_) {
+        UnhookWinEvent(HWINEVENTHOOK(hook_));
+        hook_ = nullptr;
         CloseHandle(handle_);
         handle_ = nullptr;
     }
@@ -719,8 +701,38 @@ void D2RProcess::resetData() {
     baseSize_ = 0;
 
     mapEnabled_ = 0;
+    focusedPlayer_ = 0;
+    currPlayer_ = nullptr;
 
     mapPlayers_.clear();
     mapMonsters_.clear();
     mapObjects_.clear();
+    mapItems_.clear();
+}
+
+void D2RProcess::readUnitHashTable(uint64_t addr, const std::function<void(const UnitAny&)> &callback) {
+    for (int i = 0; i < 0x80; ++i) {
+        uint64_t paddr;
+        if (!READ(addr, paddr)) { return; }
+        while (paddr) {
+            UnitAny unit;
+            if (READ(paddr, unit)) {
+                callback(unit);
+            }
+            paddr = unit.nextPtr;
+        }
+        addr += 8;
+    }
+}
+void D2RProcess::readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList &)> &callback) {
+    StatList stats;
+    if (!READ(addr, stats)) { return; }
+    do {
+        /* check if this is owner stat or aura */
+        if (stats.ownerId == unitId) {
+            callback(stats);
+        }
+        if (!(stats.flag & 0x80000000u)) { break; }
+        if (!stats.nextListEx || !READ(stats.nextListEx, stats)) { break; }
+    } while (true);
 }

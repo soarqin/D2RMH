@@ -63,8 +63,8 @@ add_subdirectory(tools)
 
 set(ZIP_OUTPUT "${CMAKE_BINARY_DIR}/bin/D2RMH-snapshot.zip")
 add_custom_command(
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:D2RMH> ${CMAKE_SOURCE_DIR}/bin/D2RMH.ini ${CMAKE_SOURCE_DIR}/bin/D2RMH_data.ini ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_BINARY_DIR}/bin
-    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${ZIP_OUTPUT}" --format=zip -- D2RMH.exe D2RMH.ini D2RMH_data.ini ChangeLog LICENSE README.md
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:D2RMH> ${CMAKE_SOURCE_DIR}/bin/D2RMH.ini ${CMAKE_SOURCE_DIR}/bin/D2RMH_data.ini ${CMAKE_SOURCE_DIR}/bin/D2RMH_item.ini ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_BINARY_DIR}/bin
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${ZIP_OUTPUT}" --format=zip -- D2RMH.exe D2RMH.ini D2RMH_data.ini D2RMH_item.ini ChangeLog LICENSE README.md
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     OUTPUT  "${ZIP_OUTPUT}"
     DEPENDS D2RMH
@@ -79,5 +79,5 @@ add_custom_command(
     DEPENDS gendata
     COMMENT "Zipping to ${ZIP_OUTPUT2}."
 )
-add_custom_target(snapshot-pack ALL
+add_custom_target(snapshot-pack
     DEPENDS "${ZIP_OUTPUT}" "${ZIP_OUTPUT2}")

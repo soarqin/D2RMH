@@ -47,6 +47,7 @@ void loadCfg(const std::string &filename) {
             LOADVAL(d2_path, d2Path)
             LOADVAL(font_file_path, fontFilePath)
             LOADVALN(font_size, fontSize)
+            LOADVALN(msg_font_size, msgFontSize)
             LOADVAL(language, language)
             break;
         case 1:
@@ -70,11 +71,16 @@ void loadCfg(const std::string &filename) {
             LOADVALC(quest_color, questColor)
             LOADVALC(shrine_color, shrineColor)
             LOADVALC(well_color, wellColor)
+            LOADVALC(unique_monster_color, uniqueMonsterColor)
+            LOADVALC(monster_color, monsterColor)
+            LOADVALC(npc_color, npcColor)
+            LOADVALC(msg_bg_color, msgBgColor)
 
             LOADVALN(show_player_names, showPlayerNames)
             LOADVALN(show_monsters, showMonsters)
             LOADVALN(show_normal_monsters, showNormalMonsters)
             LOADVALN(show_objects, showObjects)
+            LOADVALN(show_items, showItems)
             LOADVALN(show_monster_name, showMonsterName)
             LOADVALN(show_monster_enchant, showMonsterEnchant)
             LOADVALN(show_monster_immune, showMonsterImmune)

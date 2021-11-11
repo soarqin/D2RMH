@@ -466,12 +466,57 @@ struct MonsterData {
     uint64_t monsterTxtPtr;
     uint8_t components[16];
     uint16_t nameSeed;
+    /*  struct MonsterFlag {
+            BYTE fOther:1;  //set for some champs, uniques
+            BYTE fUnique:1; //super unique
+            BYTE fChamp:1;
+            BYTE fBoss:1;   //unique monster ,usually boss
+            BYTE fMinion:1;
+            BYTE fPoss:1;   //possessed
+            BYTE fGhost:1;  //ghostly
+            BYTE fMulti:1;  //multishotfiring
+        };
+    */
     uint8_t flag;
     uint8_t lastMode;
     uint32_t duriel;
     uint8_t enchants[9];
     uint8_t unk0;
     uint16_t uniqueNo;
+};
+
+struct ItemData {
+    uint32_t quality;
+    uint32_t seedLow;
+    uint32_t seedHigh;
+    uint32_t ownerId;
+    uint32_t fingerprint;
+    uint32_t commandFlags;
+    uint32_t itemFlags;
+    uint64_t unk0[2];
+    uint64_t actionStamp;
+    uint32_t fileIndex; /* index from data files UniqueItems.txt, SetItems.txt, QualityItems.txt, LowQualityItems.txt */
+    uint32_t itemLevel;
+    uint16_t format;
+    uint16_t rarePrefix;
+    uint16_t rareSuffix;
+    uint16_t autoPrefix;
+    uint16_t magicPrefix[3];
+    uint16_t magicSuffix[3];
+    uint8_t bodyLocation; /* Id from BodyLocs.txt */
+    uint8_t itemLocation; /* 0x80-ground  0xFF-equiped or on-hand  0-inv  3-cube  4-stash */
+    uint16_t unk1;
+    uint32_t unk2;
+    uint16_t earLevel;
+    uint8_t invGfxIdx;
+    char playerName[16];
+    uint8_t unk3[5];
+    uint64_t ownerInvPtr;
+    uint64_t prevItemPtr;
+    uint64_t nextItemPtr;
+    uint8_t unk4;
+    uint8_t location; /* 0-ground 1-cube/stash/inv 2-belt 3-body 4-2nd hand */
+    uint8_t unk5[6];
 };
 
 struct StatEx {
@@ -505,7 +550,6 @@ struct StatList {
     uint64_t nextList;
     uint64_t prevListEx;
     uint64_t nextListEx;
-    uint64_t padding[20];
 };
 
 struct UnitAny {

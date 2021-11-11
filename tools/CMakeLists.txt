@@ -1,6 +1,6 @@
 add_subdirectory(CascLib)
 
-add_executable(gendata gendata.cpp)
+add_executable(gendata EXCLUDE_FROM_ALL gendata.cpp)
 target_compile_definitions(gendata PRIVATE CASCLIB_NO_AUTO_LINK_LIBRARY)
 target_include_directories(gendata PRIVATE ../json)
 target_link_libraries(gendata inih common casc)

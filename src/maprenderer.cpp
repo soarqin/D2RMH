@@ -33,6 +33,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     mapPipeline_(renderer),
     framePipeline_(renderer),
     dynamicPipeline_(renderer),
+    messagePipeline_(renderer),
     ttfgl_(renderer),
     ttf_(ttfgl_),
     walkableColor_(cfg->walkableColor) {
@@ -50,6 +51,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeShrine] = cfg->shrineColor;
     objColors_[TypeWell] = cfg->wellColor;
     objColors_[TypeMonster] = cfg->monsterColor;
+    objColors_[TypeUniqueMonster] = cfg->uniqueMonsterColor;
     objColors_[TypeNpc] = cfg->npcColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
     ttf_.setAltColor(1, 228, 88, 67);
@@ -145,8 +147,8 @@ void MapRenderer::update() {
             auto &e = p.second.exits[0];
             auto px = float(e.x - originX - x0);
             auto py = float(e.y - originY - y0);
-            auto strite = gamedata->strings.find(gamedata->levels[p.first]);
-            std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
+            const auto *lngarr = gamedata->levels[p.first].second;
+            std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
             /* Check for TalTombs */
             if (p.first >= 66 && p.first <= 72) {
                 auto *m = session_.getMap(p.first);
@@ -169,7 +171,7 @@ void MapRenderer::update() {
                 for (auto &pt: vec) {
                     auto ptx = float(pt.x - originX - x0);
                     auto pty = float(pt.y - originY - y0);
-                    auto tp = ite->second.type;
+                    auto tp = std::get<0>(ite->second);
                     switch (tp) {
                     case TypeWayPoint:
                     case TypeQuest:
@@ -179,8 +181,8 @@ void MapRenderer::update() {
                     case TypeWell: {
                         squadPip.pushQuad(ptx - 4, pty - 4, ptx + 4, pty + 4, objColors_[tp]);
                         if (tp != TypeShrine && tp != TypeWell) {
-                            auto strite = gamedata->strings.find(ite->second.name);
-                            std::wstring name = strite != gamedata->strings.end() ? strite->second[lng_] : L"";
+                            const auto *lngarr = std::get<2>(ite->second);
+                            std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
                             textStrings_.emplace_back(ptx - widthf, pty - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);
                         }
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
@@ -205,10 +207,13 @@ void MapRenderer::render() {
     if (enabled_) {
         dynamicTextStrings_.clear();
         dynamicPipeline_.reset();
+        messagePipeline_.reset();
         updatePlayerPos();
         mapPipeline_.render();
         framePipeline_.render();
         drawObjects();
+        dynamicPipeline_.render();
+        messagePipeline_.render();
         auto fontSize = cfg->fontSize;
         for (const auto &[x, y, text, offX]: textStrings_) {
             if (text.empty()) { continue; }
@@ -219,6 +224,10 @@ void MapRenderer::render() {
             auto coord = transform_ * HMM_Vec4(s.x - 4.f, s.y - 4.f, 0, 1);
             ttf_.render(std::string_view(s.text), coord.X - s.offX, coord.Y - fontSize, false, fontSize);
         }
+        for (auto [sv, x, y, fsize, color]: textToDraw_) {
+            ttf_.render(sv, x, y, false, fsize, color);
+        }
+        textToDraw_.clear();
     }
 }
 void MapRenderer::updateWindowPos() {
@@ -261,6 +270,8 @@ void MapRenderer::updateWindowPos() {
     framePipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
     dynamicPipeline_.reset();
     dynamicPipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
+    messagePipeline_.reset();
+    messagePipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
     ttfgl_.pipeline()->setOrtho(-w / 2, w / 2, h / 2, -h / 2);
     updatePlayerPos();
 }
@@ -350,36 +361,37 @@ void MapRenderer::updatePlayerPos() {
 void MapRenderer::drawObjects() {
     auto &mons = d2rProcess_.monsters();
     auto &objs = d2rProcess_.objects();
-    if (!mons.empty() || !objs.empty()) {
-        auto fontSize = cfg->fontSize;
-
+    auto &items = d2rProcess_.items();
+    auto fontSize = cfg->fontSize;
+    if (!mons.empty() || !objs.empty() || !items.empty()) {
         int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
             y1 = currMap_->cropY2;
         auto originX = currMap_->levelOrigin.x;
         auto originY = currMap_->levelOrigin.y;
         auto w = float(x1 - x0) * .5f;
         auto h = float(y1 - y0) * .5f;
-        for (const auto &[id, mon]: mons) {
+        for (const auto &mon: mons) {
             auto x = float(mon.x - originX - x0) - w;
             auto y = float(mon.y - originY - y0) - h;
-            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[mon.isNpc ? TypeNpc : TypeMonster]);
+            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[mon.isNpc ? TypeNpc : mon.isUnique ? TypeUniqueMonster : TypeMonster]);
             if (mon.name) {
                 auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
                 std::wstring_view sv = (*mon.name)[lng_];
-                ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+                textToDraw_.emplace_back(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
                 if (mon.enchants[0]) {
                     std::wstring_view svenc = mon.enchants;
-                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 2.f, false, fontSize);
+                    textToDraw_.emplace_back(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 2.f, fontSize, 0);
                 }
             } else {
                 if (mon.enchants[0]) {
                     auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
                     std::wstring_view svenc = mon.enchants;
-                    ttf_.render(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+                    textToDraw_.emplace_back(svenc, coord.X - float(ttf_.stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
                 }
             }
         }
-        for (const auto &[id, obj]: objs) {
+        for (const auto &p: objs) {
+            const auto &obj = p.second;
             auto x = float(obj.x - originX - x0) - w;
             auto y = float(obj.y - originY - y0) - h;
             dynamicPipeline_.pushQuad(x - 4, y - 4, x + 4, y + 4, objColors_[obj.type]);
@@ -388,14 +400,37 @@ void MapRenderer::drawObjects() {
                 std::wstring_view sv = (*obj.name)[lng_];
                 /* if type is Portal, the portal target level is stored in field `flag` */
                 if (obj.type == TypePortal && obj.flag < gamedata->levels.size()) {
-                    auto ite = gamedata->strings.find(gamedata->levels[obj.flag]);
-                    if (ite != gamedata->strings.end()) {
-                        sv = ite->second[lng_];
+                    const auto *lngarr = gamedata->levels[obj.flag].second;
+                    if (lngarr) {
+                        sv = (*lngarr)[lng_];
                     }
                 }
-                ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
+                textToDraw_.emplace_back(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
             }
         }
-        dynamicPipeline_.render();
+        if (!items.empty()) {
+            int vw, vh;
+            renderer_.getDimension(vw, vh);
+            auto cx = float(fontSize + (vw >> 2));
+            auto cy = float(fontSize - (vh >> 2));
+            auto fontSize2 = cfg->msgFontSize;
+            for (const auto &item: items) {
+                std::wstring_view sv = (*item.name)[lng_];
+                if (item.flag & 1) {
+                    auto x = float(item.x - originX - x0) - w;
+                    auto y = float(item.y - originY - y0) - h;
+                    dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, 0xFFFFFFFF);
+                    if (item.name) {
+                        auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
+                        textToDraw_.emplace_back(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, item.color);
+                    }
+                }
+                if (item.flag & 2) {
+                    messagePipeline_.pushQuad(cx - 1, cy - 1, cx + 1 + ttf_.stringWidth(sv, fontSize2), cy + 1 + fontSize2, cfg->msgBgColor);
+                    textToDraw_.emplace_back(sv, cx, cy, fontSize2, item.color);
+                    cy = cy + fontSize2 + 2;
+                }
+            }
+        }
     }
 }

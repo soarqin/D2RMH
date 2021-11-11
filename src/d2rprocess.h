@@ -13,6 +13,9 @@
 #include <functional>
 #include <cstdint>
 
+struct UnitAny;
+struct StatList;
+
 class D2RProcess final {
 public:
     struct MapPlayer {
@@ -25,19 +28,24 @@ public:
         bool levelChanged;
     };
     struct MapMonster {
-        uint32_t txtFileNo;
         uint32_t x, y;
         const std::array<std::wstring, 13> *name;
         wchar_t enchants[32];
         uint8_t flag;
         bool isNpc;
+        bool isUnique;
     };
     struct MapObject {
-        uint32_t txtFileNo;
         uint32_t x, y;
         const std::array<std::wstring, 13> *name;
         uint8_t type;
         uint8_t flag;
+    };
+    struct MapItem {
+        uint32_t x, y;
+        const std::array<std::wstring, 13> *name;
+        uint8_t flag;
+        uint8_t color;
     };
 public:
     explicit D2RProcess(uint32_t searchInterval = 500);
@@ -52,12 +60,15 @@ public:
 
     [[nodiscard]] inline const MapPlayer *currPlayer() const { return currPlayer_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return mapPlayers_; }
-    [[nodiscard]] inline const std::unordered_map<uint32_t, MapMonster> &monsters() const { return mapMonsters_; }
+    [[nodiscard]] inline const std::vector<MapMonster> &monsters() const { return mapMonsters_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return mapObjects_; }
+    [[nodiscard]] inline const std::vector<MapItem> &items() const { return mapItems_; }
 
 private:
     void searchForProcess();
     void resetData();
+    void readUnitHashTable(uint64_t addr, const std::function<void(const UnitAny&)> &callback);
+    void readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList&)> &callback);
 
 private:
     void *handle_ = nullptr;
@@ -76,6 +87,7 @@ private:
 
     const MapPlayer *currPlayer_ = nullptr;
     std::unordered_map<uint32_t, MapPlayer> mapPlayers_;
-    std::unordered_map<uint32_t, MapMonster> mapMonsters_;
+    std::vector<MapMonster> mapMonsters_;
     std::unordered_map<uint32_t, MapObject> mapObjects_;
+    std::vector<MapItem> mapItems_;
 };

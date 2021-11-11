@@ -44,6 +44,7 @@ private:
     PipelineTexture2D mapPipeline_;
     PipelineSquad2D framePipeline_;
     PipelineSquad2D dynamicPipeline_;
+    PipelineSquad2D messagePipeline_;
     D2RProcess d2rProcess_;
     TTFRenderGL ttfgl_;
     TTF ttf_;
@@ -66,6 +67,7 @@ private:
         float offX;
     };
     std::vector<DynamicTextString> dynamicTextStrings_;
+    std::vector<std::tuple<std::wstring_view, float, float, int, uint8_t>> textToDraw_;
     std::vector<std::tuple<float, float>> lines_;
 
     uint32_t objColors_[TypeMax] = {};

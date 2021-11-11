@@ -14,6 +14,7 @@ struct Cfg {
     std::string d2Path = ".";
     std::string fontFilePath = R"(C:\Windows\Fonts\Arial.ttf)";
     int fontSize = 12;
+    int msgFontSize = 24;
     std::string language = "enUS";
 
     int fps = -1;
@@ -35,14 +36,17 @@ struct Cfg {
     uint32_t questColor = RGBA(104, 104, 255, 255);
     uint32_t shrineColor = RGBA(255, 51, 178, 255);
     uint32_t wellColor = RGBA(51, 51, 255, 255);
+    uint32_t uniqueMonsterColor = RGBA(192, 166, 130, 255);
     uint32_t monsterColor = RGBA(255, 0, 0, 255);
     uint32_t npcColor = RGBA(160, 160, 160, 255);
+    uint32_t msgBgColor = RGBA(1, 1, 1, 255);
 #undef RGBA
 
     int showPlayerNames = 1;
     int showMonsters = 1;
     int showNormalMonsters = 0;
     int showObjects = 1;
+    int showItems = 1;
     int showMonsterName = 1;
     int showMonsterEnchant = 1;
     int showMonsterImmune = 1;

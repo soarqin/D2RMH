@@ -2,6 +2,8 @@ add_subdirectory(glad)
 
 file(GLOB D2RMH_SRC_FILES *.cpp *.h *.rc)
 add_executable(D2RMH WIN32 ${D2RMH_SRC_FILES})
+add_custom_target(D2RMH_RES DEPENDS D2RMH.ico)
+add_dependencies(D2RMH D2RMH_RES)
 target_include_directories(D2RMH PRIVATE ../d2mapapi stb)
 target_link_libraries(D2RMH glad inih d2mapapi shlwapi winmm)
 if(MSVC)

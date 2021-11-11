@@ -69,9 +69,9 @@ public:
     void setAltColor(int index, uint8_t r, uint8_t g, uint8_t b);
 
     template<typename T>
-    void render(const T &str, float x, float y, bool shadow, int fontSize = -1) {
+    void render(const T &str, float x, float y, bool shadow, int fontSize = -1, int preSelColorIndex = 0) {
         if (fontSize < 0) fontSize = fontSize_;
-        int colorIndex = 0;
+        int colorIndex = preSelColorIndex;
         renderImpl_.renderBegin();
         for (auto ch: str) {
             if (ch < 32) {

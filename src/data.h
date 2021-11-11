@@ -23,22 +23,25 @@ enum EObjType {
     TypeShrine,
     TypeWell,
     TypeMonster,
+    TypeUniqueMonster,
     TypeNpc,
     TypeMax,
 };
 
 struct Data {
-    struct ObjType {
-        EObjType type;
-        std::string name;
-    };
-    std::unordered_map<std::string, std::array<std::wstring, 13>> strings;
-    std::vector<std::string> levels, shrines, superUniques;
-    std::vector<std::pair<std::string, bool>> monsters;
-    std::unordered_map<int, ObjType> objects[2];
+    using LngString = std::array<std::wstring, 13>;
+    std::unordered_map<std::string, LngString> strings;
+    std::vector<std::pair<std::string, const LngString*>> levels, shrines, superUniques, items;
+    std::vector<std::tuple<std::string, bool, const LngString*>> monsters;
+    std::unordered_map<std::string, uint32_t> itemIdByCode;
+    std::unordered_map<int, std::tuple<EObjType, std::string, const LngString*>> objects[2];
     std::unordered_map<int, std::set<int>> guides;
 };
 
+struct UnitAny;
+struct ItemData;
+
 extern void loadData();
+extern uint8_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets);
 
 extern const Data *gamedata;
