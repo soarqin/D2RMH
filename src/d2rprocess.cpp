@@ -595,11 +595,13 @@ void D2RProcess::updateData() {
             while (paddr) {
                 UnitAny unit;
                 if (!READ(paddr, unit)) { break; }
-                if (unit.mode != 2) {
+                if (unit.txtFileNo == 59 || unit.txtFileNo == 60 /* Portals */
+                    || unit.mode != 2) {
                     auto ite = gamedata->objects[0].find(unit.txtFileNo);
                     if (ite != gamedata->objects[0].end()) {
                         auto type = ite->second.type;
                         switch (type) {
+                        case TypePortal:
                         case TypeWell:
                         case TypeShrine: {
                             uint8_t flag;

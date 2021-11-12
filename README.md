@@ -1,6 +1,10 @@
 # D2RMH
 Diablo II Resurrected map revealing tool.
 
+# Disclaimer
+**D2RMH is only reading process memory from D2R, without injects, hooks or memory writes,  
+but it is not guarenteed that it is totally ban-free, use at your own risk.**
+
 # What's New
 Check [ChangeLog](ChangeLog)
 

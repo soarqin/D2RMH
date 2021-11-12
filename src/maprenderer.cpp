@@ -368,6 +368,13 @@ void MapRenderer::drawObjects() {
             if (obj.name) {
                 auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
                 std::wstring_view sv = (*obj.name)[lng_];
+                /* if type is Portal, the portal target level is stored in field `flag` */
+                if (obj.type == TypePortal && obj.flag < gamedata->levels.size()) {
+                    auto ite = gamedata->strings.find(gamedata->levels[obj.flag]);
+                    if (ite != gamedata->strings.end()) {
+                        sv = ite->second[lng_];
+                    }
+                }
                 ttf_.render(sv, coord.X - float(ttf_.stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, false, fontSize);
             }
         }
