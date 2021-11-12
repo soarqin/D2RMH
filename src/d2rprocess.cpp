@@ -299,8 +299,8 @@ void loadEncText(wchar_t *output, const std::string &input) {
 static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
 
 enum {
-    HashTableBase = 0x20546E0,
-    MapEnabledAddr = 0x20643A2,
+    HashTableBase = 0x20AF660,
+    MapEnabledAddr = 0x20BF322,
 };
 
 struct handle_data {
