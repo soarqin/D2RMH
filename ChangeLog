@@ -1,3 +1,10 @@
+# v0.5.4
+* show all players(including corpse) now
+* add show_player_names to config ini
+* show player's town portals and permanent portals now
+* support 67005
+* a potential crash and other bugs fix
+
 # v0.5.3
 * can detect monster aura type now
 * always show NPCs

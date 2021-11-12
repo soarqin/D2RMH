@@ -459,6 +459,7 @@ void D2RProcess::updateData() {
         }
         currPlayer = &ite->second;
     }
+    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
     available_ = true;
     currPlayer_ = currPlayer;
 
