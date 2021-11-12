@@ -15,6 +15,15 @@
 
 class D2RProcess final {
 public:
+    struct MapPlayer {
+        uint32_t act;
+        uint32_t seed;
+        uint32_t levelId;
+        uint16_t posX, posY;
+        char name[16];
+        uint8_t difficulty;
+        bool levelChanged;
+    };
     struct MapMonster {
         uint32_t txtFileNo;
         uint32_t x, y;
@@ -40,14 +49,9 @@ public:
     void *hwnd() { return hwnd_; }
     [[nodiscard]] inline bool available() const { return available_; }
     [[nodiscard]] inline bool mapEnabled() const { return mapEnabled_ != 0; }
-    [[nodiscard]] inline const char *name() const { return name_; }
-    [[nodiscard]] inline uint32_t act() const { return act_; }
-    [[nodiscard]] inline uint8_t difficulty() const { return difficulty_; }
-    [[nodiscard]] inline uint32_t levelId() const { return levelId_; }
-    [[nodiscard]] inline uint32_t seed() const { return seed_; }
-    [[nodiscard]] inline uint16_t posX() const { return posX_; }
-    [[nodiscard]] inline uint16_t posY() const { return posY_; }
 
+    [[nodiscard]] inline const MapPlayer *currPlayer() const { return currPlayer_; }
+    [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return mapPlayers_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapMonster> &monsters() const { return mapMonsters_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return mapObjects_; }
 
@@ -66,17 +70,12 @@ private:
     uint32_t nextSearchTime_ = 0;
     uint32_t searchInterval_ = 0;
 
-    uint64_t playerHashOffset_ = 0;
-    uint64_t playerPtrOffset_ = 0;
-
     uint8_t mapEnabled_ = 0;
-    char name_[16] = {};
-    uint32_t act_ = 0;
-    uint8_t difficulty_ = 0;
-    uint32_t levelId_ = 0;
-    uint32_t seed_ = 0;
-    uint16_t posX_ = 0, posY_ = 0;
 
+    uint32_t focusedPlayer_ = 0;
+
+    const MapPlayer *currPlayer_ = nullptr;
+    std::unordered_map<uint32_t, MapPlayer> mapPlayers_;
     std::unordered_map<uint32_t, MapMonster> mapMonsters_;
     std::unordered_map<uint32_t, MapObject> mapObjects_;
 };

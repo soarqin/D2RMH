@@ -71,6 +71,7 @@ void loadCfg(const std::string &filename) {
             LOADVALC(shrine_color, shrineColor)
             LOADVALC(well_color, wellColor)
 
+            LOADVALN(show_player_names, showPlayerNames)
             LOADVALN(show_monsters, showMonsters)
             LOADVALN(show_normal_monsters, showNormalMonsters)
             LOADVALN(show_objects, showObjects)

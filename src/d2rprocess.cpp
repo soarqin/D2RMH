@@ -403,69 +403,64 @@ void D2RProcess::updateData() {
     available_ = false;
     if (!handle_) { return; }
 
-    if (playerHashOffset_ == 0) {
-        uint64_t playerPtr = baseAddr_ + HashTableBase;
-        for (int i = 0; i < 0x80; ++i) {
-            uint64_t paddr;
-            if (!READ(playerPtr, paddr)) { return; }
-            while (paddr) {
-                UnitAny unit;
-                if (READ(paddr, unit) && unit.actPtr && unit.inventoryPtr && unit.unk5[4] == 0x100) {
-                    playerHashOffset_ = playerPtr;
-                    playerPtrOffset_ = paddr;
-                    break;
+    mapPlayers_.clear();
+
+    uint64_t playerPtr = baseAddr_ + HashTableBase;
+    for (int i = 0; i < 0x80; ++i) {
+        uint64_t paddr;
+        if (!READ(playerPtr, paddr)) { return; }
+        while (paddr) {
+            UnitAny unit;
+            if (READ(paddr, unit) && unit.unitId && unit.actPtr && unit.inventoryPtr) {
+                if (DrlgAct act; READ(unit.actPtr, act)) {
+                    auto &player = mapPlayers_[unit.unitId];
+                    player.name[0] = 0;
+                    bool levelChanged = false;
+                    READ(unit.unionPtr, player.name);
+                    player.levelChanged = player.act != act.actId;
+                    player.act = act.actId;
+                    player.seed = act.seed;
+                    READ(act.miscPtr + 0x830, player.difficulty);
+                    if (DynamicPath path; READ(unit.pathPtr, path)) {
+                        player.posX = path.posX;
+                        player.posY = path.posY;
+                        if (DrlgRoom1 room1; READ(path.room1Ptr, room1)) {
+                            if (DrlgRoom2 room2; READ(room1.room2Ptr, room2)) {
+                                if (uint32_t levelId; READ(room2.levelPtr + 0x1F8, levelId)) {
+                                    if (player.levelId != levelId) {
+                                        player.levelChanged = true;
+                                        player.levelId = levelId;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                paddr = unit.nextPtr;
-            }
-            if (playerHashOffset_) {
                 break;
             }
-            playerPtr += 8;
+            paddr = unit.nextPtr;
         }
-        if (!playerHashOffset_) {
-            return;
-        }
+        playerPtr += 8;
     }
-
-    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
-    if (uint64_t addr; !READ(playerHashOffset_, addr) || !addr) {
-        playerHashOffset_ = 0;
+    if (mapPlayers_.empty()) {
+        focusedPlayer_ = 0;
         return;
     }
-
-    UnitAny unit;
-    if (!READ(playerPtrOffset_, unit)) {
-        playerHashOffset_ = 0;
-        return;
-    }
-    DrlgAct act;
-    if (!READ(unit.actPtr, act)) {
-        playerHashOffset_ = 0;
-        return;
-    }
-    name_[0] = 0;
-    bool levelChanged = false;
-    READ(unit.unionPtr, name_);
-    act_ = act.actId;
-    seed_ = act.seed;
-    READ(act.miscPtr + 0x830, difficulty_);
-    DynamicPath path;
-    if (READ(unit.pathPtr, path)) {
-        posX_ = path.posX;
-        posY_ = path.posY;
-        DrlgRoom1 room1;
-        if (READ(path.room1Ptr, room1)) {
-            DrlgRoom2 room2;
-            if (READ(room1.room2Ptr, room2)) {
-                uint32_t levelId;
-                if (READ(room2.levelPtr + 0x1F8, levelId) && levelId_ != levelId) {
-                    levelChanged = true;
-                    levelId_ = levelId;
-                }
-            }
+    MapPlayer *currPlayer;
+    if (!focusedPlayer_) {
+        auto ite = mapPlayers_.begin();
+        focusedPlayer_ = ite->first;
+        currPlayer = &ite->second;
+    } else {
+        auto ite = mapPlayers_.find(focusedPlayer_);
+        if (ite == mapPlayers_.end()) {
+            ite = mapPlayers_.begin();
+            focusedPlayer_ = ite->first;
         }
+        currPlayer = &ite->second;
     }
     available_ = true;
+    currPlayer_ = currPlayer;
 
     if (cfg->showMonsters) {
         mapMonsters_.clear();
@@ -585,7 +580,7 @@ void D2RProcess::updateData() {
         }
     }
     if (cfg->showObjects) {
-        if (levelChanged) {
+        if (currPlayer->levelChanged) {
             mapObjects_.clear();
         }
         uint64_t baseAddr = baseAddr_ + HashTableBase + 8 * 0x100;
@@ -722,17 +717,9 @@ void D2RProcess::resetData() {
     baseAddr_ = 0;
     baseSize_ = 0;
 
-    playerHashOffset_ = 0;
-
     mapEnabled_ = 0;
-    name_[0] = 0;
-    act_ = 0;
-    difficulty_ = 0;
-    levelId_ = 0;
-    seed_ = 0;
-    posX_ = 0;
-    posY_ = 0;
 
+    mapPlayers_.clear();
     mapMonsters_.clear();
     mapObjects_.clear();
 }

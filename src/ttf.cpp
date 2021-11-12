@@ -175,18 +175,6 @@ void TTF::charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int f
     b = fd->iy0 + fd->h;
 }
 
-int TTF::stringWidth(std::wstring_view str, int fontSize) {
-    uint8_t w;
-    int8_t t, b;
-    int res = 0;
-    for (auto &ch: str) {
-        if (ch < 32) { continue; }
-        charDimension(ch, w, t, b, fontSize);
-        res += int(uint32_t(w));
-    }
-    return res;
-}
-
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
 
 void TTF::setColor(uint8_t r, uint8_t g, uint8_t b) {
@@ -200,41 +188,6 @@ void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b) {
 }
 
 #undef RGBA
-
-void TTF::render(std::wstring_view str, float x, float y, bool shadow, int fontSize) {
-    if (fontSize < 0) fontSize = fontSize_;
-    int colorIndex = 0;
-    renderImpl_.renderBegin();
-    for (auto ch: str) {
-        if (ch < 32) {
-            colorIndex = ch & 0x0F;
-            continue;
-        }
-        const FontData *fd;
-        uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
-        auto ite = fontCache_.find(key);
-        if (ite == fontCache_.end()) {
-            fd = makeCache(ch, fontSize);
-            if (!fd) {
-                continue;
-            }
-        } else {
-            fd = &ite->second;
-            if (fd->advW == 0) continue;
-        }
-        auto *tex = textures_[fd->rpidx];
-        if (shadow) {
-            auto x0 = x + 2.f + fd->ix0, y0 = y + 2.f + fd->iy0;
-            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, 0xFF000000u);
-        }
-        {
-            auto x0 = x + fd->ix0, y0 = y + fd->iy0;
-            renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, altColor_[colorIndex]);
-        }
-        x += fd->advW;
-    }
-    renderImpl_.renderEnd();
-}
 
 const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
     if (fontSize < 0) fontSize = fontSize_;

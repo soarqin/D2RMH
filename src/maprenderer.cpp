@@ -89,8 +89,12 @@ void MapRenderer::update() {
     if (!enabled_) {
         return;
     }
-    bool changed = session_.update(d2rProcess_.seed(), d2rProcess_.difficulty());
-    if (uint32_t levelId = d2rProcess_.levelId(); levelId != currLevelId_) {
+    const auto *currPlayer = d2rProcess_.currPlayer();
+    if (!currPlayer) {
+        return;
+    }
+    bool changed = session_.update(currPlayer->seed, currPlayer->difficulty);
+    if (uint32_t levelId = currPlayer->levelId; levelId != currLevelId_) {
         currLevelId_ = levelId;
         changed = true;
     }
@@ -192,11 +196,15 @@ void MapRenderer::update() {
         }
         squadPip.render();
         updateWindowPos();
+        enabled_ = true;
+    } else {
+        enabled_ = currMap_ != nullptr;
     }
-    enabled_ = true;
 }
 void MapRenderer::render() {
     if (enabled_) {
+        dynamicTextStrings_.clear();
+        dynamicPipeline_.reset();
         updatePlayerPos();
         mapPipeline_.render();
         framePipeline_.render();
@@ -206,6 +214,10 @@ void MapRenderer::render() {
             if (text.empty()) { continue; }
             auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
             ttf_.render(text, coord.X - offX, coord.Y - fontSize, false, fontSize);
+        }
+        for (const auto &s: dynamicTextStrings_) {
+            auto coord = transform_ * HMM_Vec4(s.x - 4.f, s.y - 4.f, 0, 1);
+            ttf_.render(std::string_view(s.text), coord.X - s.offX, coord.Y - fontSize, false, fontSize);
         }
     }
 }
@@ -253,80 +265,87 @@ void MapRenderer::updateWindowPos() {
     updatePlayerPos();
 }
 void MapRenderer::updatePlayerPos() {
-    if (!currMap_) { return; }
-    auto posX = d2rProcess_.posX();
-    auto posY = d2rProcess_.posY();
-    if (posX == playerPosX_ && posY == playerPosY_) {
-        return;
-    }
-    playerPosX_ = posX;
-    playerPosY_ = posY;
     int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
         y1 = currMap_->cropY2;
     auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
-    posX -= originX + x0;
-    posY -= originY + y0;
     auto widthf = (float)(x1 - x0) * 0.5f, heightf = (float)(y1 - y0) * 0.5f;
-    auto oxf = float(posX) - widthf;
-    auto oyf = float(posY) - heightf;
-    framePipeline_.reset();
-    framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
-    framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
-
-    auto c = cfg->lineColor;
-    for (auto [x, y]: lines_) {
-        if (cfg->fullLine) {
-            auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
-            auto len = HMM_Length(line);
-            auto sx = oxf + line.X / len * 8.f;
-            auto sy = oyf + line.Y / len * 8.f;
-            auto ex = x - line.X / len * 8.f;
-            auto ey = y - line.Y / len * 8.f;
-            if (len < 17.f) {
-                ex = sx; ey = sy;
+    const auto *currPlayer = d2rProcess_.currPlayer();
+    bool showPlayerNames = cfg->showPlayerNames;
+    for (const auto &[id, plr]: d2rProcess_.players()) {
+        auto posX = plr.posX;
+        auto posY = plr.posY;
+        auto oxf = float(posX - originX - x0) - widthf;
+        auto oyf = float(posY - originY - y0) - heightf;
+        if (showPlayerNames && plr.name[0]) {
+            dynamicTextStrings_.emplace_back(DynamicTextString { oxf, oyf, plr.name, float(ttf_.stringWidth(plr.name, cfg->fontSize)) * .5f });
+        }
+        if (&plr == currPlayer) {
+            if (posX == playerPosX_ && posY == playerPosY_) {
+                continue;
             }
-            framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
+            playerPosX_ = posX;
+            playerPosY_ = posY;
+            framePipeline_.reset();
+            framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
+            framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
+            auto c = cfg->lineColor;
+            for (auto [x, y]: lines_) {
+                if (cfg->fullLine) {
+                    auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
+                    auto len = HMM_Length(line);
+                    auto sx = oxf + line.X / len * 8.f;
+                    auto sy = oyf + line.Y / len * 8.f;
+                    auto ex = x - line.X / len * 8.f;
+                    auto ey = y - line.Y / len * 8.f;
+                    if (len < 17.f) {
+                        ex = sx; ey = sy;
+                    }
+                    framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
+                } else {
+                    const float mlen = 78.f;
+                    const float gap = 12.f;
+                    float sx, sy, ex, ey;
+                    auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
+                    auto len = HMM_Length(line);
+                    sx = oxf + line.X / len * 8.f;
+                    sy = oyf + line.Y / len * 8.f;
+                    if (len > mlen) {
+                        ex = oxf + line.X / len * (mlen - gap);
+                        ey = oyf + line.Y / len * (mlen - gap);
+                    } else if (len > gap) {
+                        ex = x - line.X / len * gap;
+                        ey = y - line.Y / len * gap;
+                    } else {
+                        ex = sx;
+                        ey = sy;
+                    }
+
+                    /* Draw the line */
+                    framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
+
+                    /* Draw the dot */
+                    if (ex != sx) {
+                        ex += line.X / len * gap;
+                        ey += line.Y / len * gap;
+                        framePipeline_.pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
+                    }
+                }
+            }
+
+            transform_ = HMM_Scale(HMM_Vec3(1, .5f, 1.f))
+                * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1))
+                * HMM_Scale(HMM_Vec3(cfg->scale, cfg->scale, 1));
+            if (cfg->mapCentered) {
+                transform_ = transform_ * HMM_Translate(HMM_Vec3(-oxf, -oyf, 0));
+            }
+            mapPipeline_.setTransform(&transform_.Elements[0][0]);
+            framePipeline_.setTransform(&transform_.Elements[0][0]);
+            dynamicPipeline_.setTransform(&transform_.Elements[0][0]);
         } else {
-            const float mlen = 78.f;
-            const float gap = 12.f;
-            float sx, sy, ex, ey;
-            auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
-            auto len = HMM_Length(line);
-            sx = oxf + line.X / len * 8.f;
-            sy = oyf + line.Y / len * 8.f;
-            if (len > mlen) {
-                ex = oxf + line.X / len * (mlen - gap);
-                ey = oyf + line.Y / len * (mlen - gap);
-            } else if (len > gap) {
-                ex = x - line.X / len * gap;
-                ey = y - line.Y / len * gap;
-            } else {
-                ex = sx;
-                ey = sy;
-            }
-
-            const float angle = 35.f;
-            /* Draw the line */
-            framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
-
-            /* Draw the dot */
-            if (ex != sx) {
-                ex += line.X / len * gap;
-                ey += line.Y / len * gap;
-                framePipeline_.pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
-            }
+            dynamicPipeline_.pushQuad(oxf - 4, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
+            dynamicPipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
         }
     }
-
-    transform_ = HMM_Scale(HMM_Vec3(1, .5f, 1.f))
-        * HMM_Rotate(45.f, HMM_Vec3(0, 0, 1))
-        * HMM_Scale(HMM_Vec3(cfg->scale, cfg->scale, 1));
-    if (cfg->mapCentered) {
-        transform_ = transform_ * HMM_Translate(HMM_Vec3(-oxf, -oyf, 0));
-    }
-    mapPipeline_.setTransform(&transform_.Elements[0][0]);
-    framePipeline_.setTransform(&transform_.Elements[0][0]);
-    dynamicPipeline_.setTransform(&transform_.Elements[0][0]);
 }
 void MapRenderer::drawObjects() {
     auto &mons = d2rProcess_.monsters();
@@ -340,7 +359,6 @@ void MapRenderer::drawObjects() {
         auto originY = currMap_->levelOrigin.y;
         auto w = float(x1 - x0) * .5f;
         auto h = float(y1 - y0) * .5f;
-        dynamicPipeline_.reset();
         for (const auto &[id, mon]: mons) {
             auto x = float(mon.x - originX - x0) - w;
             auto y = float(mon.y - originY - y0) - h;

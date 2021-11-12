@@ -51,13 +51,58 @@ public:
     void deinit();
     bool add(const std::string &filename, int index = 0);
     void charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int fontSize = -1);
-    int stringWidth(std::wstring_view str, int fontSize = -1);
+    template<typename T>
+    int stringWidth(const T &str, int fontSize = -1) {
+        uint8_t w;
+        int8_t t, b;
+        int res = 0;
+        for (auto &ch: str) {
+            if (ch < 32) { continue; }
+            charDimension(ch, w, t, b, fontSize);
+            res += int(uint32_t(w));
+        }
+        return res;
+    }
 
     inline int fontSize() const { return fontSize_; }
     void setColor(uint8_t r, uint8_t g, uint8_t b);
     void setAltColor(int index, uint8_t r, uint8_t g, uint8_t b);
 
-    void render(std::wstring_view str, float x, float y, bool shadow, int fontSize = -1);
+    template<typename T>
+    void render(const T &str, float x, float y, bool shadow, int fontSize = -1) {
+        if (fontSize < 0) fontSize = fontSize_;
+        int colorIndex = 0;
+        renderImpl_.renderBegin();
+        for (auto ch: str) {
+            if (ch < 32) {
+                colorIndex = ch & 0x0F;
+                continue;
+            }
+            const FontData *fd;
+            uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
+            auto ite = fontCache_.find(key);
+            if (ite == fontCache_.end()) {
+                fd = makeCache(ch, fontSize);
+                if (!fd) {
+                    continue;
+                }
+            } else {
+                fd = &ite->second;
+                if (fd->advW == 0) continue;
+            }
+            auto *tex = textures_[fd->rpidx];
+            if (shadow) {
+                auto x0 = x + 2.f + fd->ix0, y0 = y + 2.f + fd->iy0;
+                renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, 0xFF000000u);
+            }
+            {
+                auto x0 = x + fd->ix0, y0 = y + fd->iy0;
+                renderImpl_.render(tex, x0, y0, x0 + fd->w, y0 + fd->h, fd->rpx, fd->rpy, fd->rpx + fd->w, fd->rpy + fd->h, altColor_[colorIndex]);
+            }
+            x += fd->advW;
+        }
+        renderImpl_.renderEnd();
+    }
 
 private:
     const FontData *makeCache(uint32_t ch, int fontSize = - 1);

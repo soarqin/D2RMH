@@ -39,6 +39,7 @@ struct Cfg {
     uint32_t npcColor = RGBA(160, 160, 160, 255);
 #undef RGBA
 
+    int showPlayerNames = 1;
     int showMonsters = 1;
     int showNormalMonsters = 0;
     int showObjects = 1;

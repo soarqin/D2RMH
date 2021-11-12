@@ -60,6 +60,12 @@ private:
     uint16_t playerPosX_ = 0, playerPosY_ = 0;
 
     std::vector<std::tuple<float, float, std::wstring, float>> textStrings_;
+    struct DynamicTextString {
+        float x, y;
+        const char *text;
+        float offX;
+    };
+    std::vector<DynamicTextString> dynamicTextStrings_;
     std::vector<std::tuple<float, float>> lines_;
 
     uint32_t objColors_[TypeMax] = {};
