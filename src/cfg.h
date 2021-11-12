@@ -30,7 +30,7 @@ struct Cfg {
     uint32_t playerOuterColor = RGBA(51, 255, 255, 255);
     uint32_t lineColor = RGBA(204, 204, 204, 255);
     uint32_t waypointColor = RGBA(153, 153, 255, 255);
-    uint32_t portalColor = RGBA(255, 255, 153, 255);
+    uint32_t portalColor = RGBA(255, 255, 102, 255);
     uint32_t chestColor = RGBA(255, 104, 104, 255);
     uint32_t questColor = RGBA(104, 104, 255, 255);
     uint32_t shrineColor = RGBA(255, 51, 178, 255);
