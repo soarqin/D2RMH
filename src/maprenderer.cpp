@@ -411,8 +411,9 @@ void MapRenderer::drawObjects() {
         if (!items.empty()) {
             int vw, vh;
             renderer_.getDimension(vw, vh);
-            auto cx = float(fontSize + (vw >> 2));
-            auto cy = float(fontSize - (vh >> 2));
+            auto cx = float(vw) * cfg->msgPositionX;
+            auto cy = float(vh) * cfg->msgPositionY;
+            auto align = cfg->msgAlign;
             auto fontSize2 = cfg->msgFontSize;
             for (const auto &item: items) {
                 std::wstring_view sv = (*item.name)[lng_];
@@ -426,8 +427,21 @@ void MapRenderer::drawObjects() {
                     }
                 }
                 if (item.flag & 2) {
-                    messagePipeline_.pushQuad(cx - 1, cy - 1, cx + 1 + ttf_.stringWidth(sv, fontSize2), cy + 1 + fontSize2, cfg->msgBgColor);
-                    textToDraw_.emplace_back(sv, cx, cy, fontSize2, item.color);
+                    auto txtw = float(ttf_.stringWidth(sv, fontSize2));
+                    float nx;
+                    switch (align) {
+                    case 1:
+                        nx = cx - txtw * .5f;
+                        break;
+                    case 2:
+                        nx = cx - txtw;
+                        break;
+                    default:
+                        nx = cx;
+                        break;
+                    }
+                    messagePipeline_.pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
+                    textToDraw_.emplace_back(sv, nx, cy, fontSize2, item.color);
                     cy = cy + fontSize2 + 2;
                 }
             }

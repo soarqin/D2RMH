@@ -22,20 +22,6 @@ const Data *gamedata = &sgamedata;
 /* [id][quality-1][ethereal][sockets] */
 static uint8_t itemFilters[1000][8][2][7] = {};
 
-static std::vector<std::string> splitString(const std::string &str, char c) {
-    typename std::string::size_type pos = 0;
-    std::vector<std::string> result;
-    while (true) {
-        auto epos = str.find(c, pos);
-        result.emplace_back(str.substr(pos, epos - pos));
-        if (epos == std::string::npos) {
-            break;
-        }
-        pos = epos + 1;
-    }
-    return result;
-}
-
 static inline uint32_t strToUInt(const std::string &str, bool searchItemCode) {
     if (!searchItemCode) {
         return uint32_t(strtoul(str.c_str(), nullptr, 0));

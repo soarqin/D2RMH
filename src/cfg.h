@@ -41,6 +41,10 @@ struct Cfg {
     uint32_t npcColor = RGBA(160, 160, 160, 255);
     uint32_t msgBgColor = RGBA(1, 1, 1, 255);
 #undef RGBA
+    std::string msgPosition;
+    float msgPositionX = .95f;
+    float msgPositionY = .25f;
+    int msgAlign = 2;
 
     int showPlayerNames = 1;
     int showMonsters = 1;

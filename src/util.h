@@ -9,5 +9,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 std::wstring utf8toucs4(const std::string &s);
+std::vector<std::string> splitString(const std::string &str, char c);

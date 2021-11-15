@@ -8,7 +8,10 @@
 
 #include "cfg.h"
 
+#include "util.h"
 #include "ini.h"
+
+#include <algorithm>
 #include <cstring>
 
 static Cfg sCfg;
@@ -75,6 +78,7 @@ void loadCfg(const std::string &filename) {
             LOADVALC(monster_color, monsterColor)
             LOADVALC(npc_color, npcColor)
             LOADVALC(msg_bg_color, msgBgColor)
+            LOADVAL(msg_position, msgPosition)
 
             LOADVALN(show_player_names, showPlayerNames)
             LOADVALN(show_monsters, showMonsters)
@@ -122,6 +126,16 @@ void loadCfg(const std::string &filename) {
         }
         return 1;
     }, &section);
-    if (sCfg.scale < 1.f) { sCfg.scale = 1.f; }
-    else if (sCfg.scale > 4.f) { sCfg.scale = 4.f; }
+    sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
+    auto vec = splitString(sCfg.msgPosition, ',');
+    auto sz = vec.size();
+    if (sz > 0) {
+        sCfg.msgPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;
+    }
+    if (sz > 1) {
+        sCfg.msgPositionY = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f) - .5f;
+    }
+    if (sz > 2) {
+        sCfg.msgAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
+    }
 }

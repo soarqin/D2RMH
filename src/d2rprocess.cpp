@@ -576,7 +576,7 @@ void D2RProcess::updateData() {
         mapItems_.clear();
         readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x200, [this](const UnitAny &unit) {
             ItemData item;
-            if (!READ(unit.unionPtr, item) || item.ownerInvPtr || item.location != 0 || item.itemLocation < 5) { return; }
+            if (!READ(unit.unionPtr, item) || item.ownerInvPtr || item.location != 0 || (item.itemLocation > 0 && item.itemLocation < 5)) { return; }
             /* the item is on the ground */
             uint32_t sockets = 0;
             if (item.itemFlags & 0x800u) {
