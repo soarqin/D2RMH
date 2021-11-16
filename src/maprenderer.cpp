@@ -122,25 +122,13 @@ void MapRenderer::update() {
             for (int x = x0; x < x1; ++x) {
                 bool blocked = currMap_->map[idx] & 1;
                 uint32_t clr = blocked ? 0 : walkableColor_;
-                if (hasEdge && !blocked) {
-                    do {
-                        if (x > x0 && (currMap_->map[idx - 1] & 1)) {
-                            clr = edgeColor;
-                            break;
-                        }
-                        if (x + 1 < x1 && (currMap_->map[idx + 1] & 1)) {
-                            clr = edgeColor;
-                            break;
-                        }
-                        if (y > y0 && (currMap_->map[idx - totalWidth] & 1)) {
-                            clr = edgeColor;
-                            break;
-                        }
-                        if (y + 1 < y1 && (currMap_->map[idx + totalWidth] & 1)) {
-                            clr = edgeColor;
-                            break;
-                        }
-                    } while (false);
+                if (hasEdge && !blocked && (
+                    (x > x0 && (currMap_->map[idx - 1] & 1))
+                    || (x + 1 < x1 && (currMap_->map[idx + 1] & 1))
+                    || (y > y0 && (currMap_->map[idx - totalWidth] & 1))
+                    || (y + 1 < y1 && (currMap_->map[idx + totalWidth] & 1))
+                )) {
+                    clr = edgeColor;
                 }
                 *ptr++ = clr;
                 ++idx;
