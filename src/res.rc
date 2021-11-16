@@ -1,1 +1,16 @@
 1 ICON "D2RMH.ico"
+1 24 "D2RMH.manifest"
+
+#include "afxres.h"
+
+101 DIALOG DISCARDABLE  0, 0, 240, 130
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About D2RMH"
+FONT 10, "Arial Bold"
+BEGIN
+    LTEXT           "D2RMH, a map revealing tool for Diablo II Resurrected",IDC_STATIC,20,20,200,10
+    LTEXT           "by Soar Qin <soarchin@gmail.com>",IDC_STATIC,70,35,150,10
+    DEFPUSHBUTTON   "OK",IDOK,100,103,40,12
+    CONTROL         "Project page: <a href=""https://github.com/soarqin/D2RMH"">https://github.com/soarqin/D2RMH</a>",1001,"SysLink",WS_TABSTOP,20,65,200,10
+    CONTROL         "New releases: <a href=""https://github.com/soarqin/D2RMH/releases"">https://github.com/soarqin/D2RMH/releases</a>",1001,"SysLink",WS_TABSTOP,20,80,200,10
+END

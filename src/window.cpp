@@ -11,6 +11,7 @@
 #include "cfg.h"
 
 #include <windows.h>
+#include <commctrl.h>
 #include <stdexcept>
 #include <map>
 
@@ -83,6 +84,7 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
+    InitCommonControls();
     auto inst = HINST_THISCOMPONENT;
     auto icon = LoadIconW(inst, MAKEINTRESOURCEW(1));
 
@@ -119,6 +121,48 @@ Window::~Window() {
         DestroyWindow(ctx_->hwnd);
     }
     delete ctx_;
+}
+
+BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDOK:
+            EndDialog(hWnd, TRUE);
+            break;
+        }
+        break;
+    case WM_NOTIFY: {
+        auto *nmhdr = LPNMHDR(lParam);
+        switch (nmhdr->code) {
+        case NM_CLICK:
+        case NM_RETURN: {
+            if (nmhdr->idFrom == 1001) {
+                auto pNMLink = PNMLINK(lParam);
+                auto item = pNMLink->item;
+                if (item.iLink == 0) {
+                    ShellExecuteW(nullptr, L"open", item.szUrl, nullptr, nullptr, SW_SHOW);
+                }
+            }
+            break;
+        }
+        }
+        break;
+    }
+    case WM_INITDIALOG: {
+        RECT rc, rc2;
+        GetWindowRect(GetDesktopWindow(), &rc);
+        GetWindowRect(hWnd, &rc2);
+        auto width = rc2.right - rc2.left;
+        auto height = rc2.bottom - rc2.top;
+        MoveWindow(hWnd, (rc.right + rc.left - width) / 2, (rc.top + rc.bottom - height) / 2, width, height, FALSE);
+        break;
+    }
+    default:
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip, const wchar_t *info, const wchar_t *infoTitle) {
@@ -159,6 +203,9 @@ void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip
     Shell_NotifyIconW(NIM_ADD, &ctx_->nid);
 
     ctx_->trayMenu = CreatePopupMenu();
+    addTrayMenuItem(L"About", -1, 0, [] {
+        DialogBox(HINST_THISCOMPONENT, MAKEINTRESOURCE(101), nullptr, dialogProc);
+    });
 }
 
 int Window::addTrayMenuItem(const wchar_t *name, int parent, unsigned flags, const std::function<void()> &cb) {

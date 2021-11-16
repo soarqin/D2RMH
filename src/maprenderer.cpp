@@ -115,11 +115,35 @@ void MapRenderer::update() {
         auto totalWidth = currMap_->totalWidth;
         auto *pixels = new uint32_t[width * height];
         auto *ptr = pixels;
+        auto edgeColor = cfg->edgeColor;
+        bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
         for (int y = y0; y < y1; ++y) {
             int idx = y * totalWidth + x0;
             for (int x = x0; x < x1; ++x) {
-                auto clr = currMap_->map[idx++] & 1 ? 0 : walkableColor_;
+                bool blocked = currMap_->map[idx] & 1;
+                uint32_t clr = blocked ? 0 : walkableColor_;
+                if (hasEdge && !blocked) {
+                    do {
+                        if (x > x0 && (currMap_->map[idx - 1] & 1)) {
+                            clr = edgeColor;
+                            break;
+                        }
+                        if (x + 1 < x1 && (currMap_->map[idx + 1] & 1)) {
+                            clr = edgeColor;
+                            break;
+                        }
+                        if (y > y0 && (currMap_->map[idx - totalWidth] & 1)) {
+                            clr = edgeColor;
+                            break;
+                        }
+                        if (y + 1 < y1 && (currMap_->map[idx + totalWidth] & 1)) {
+                            clr = edgeColor;
+                            break;
+                        }
+                    } while (false);
+                }
                 *ptr++ = clr;
+                ++idx;
             }
         }
         mapTex_.setData(width, height, pixels);

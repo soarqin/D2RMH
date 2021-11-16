@@ -25,7 +25,8 @@ struct Cfg {
     int mapCentered = 0;
     uint8_t alpha = 170;
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
-    uint32_t walkableColor = RGBA(50, 50, 50, 255);
+    uint32_t walkableColor = RGBA(20, 20, 20, 255);
+    uint32_t edgeColor = RGBA(128, 128, 128, 255);
     uint32_t textColor = RGBA(255, 255, 255, 255);
     uint32_t playerInnerColor = RGBA(255, 128, 128, 255);
     uint32_t playerOuterColor = RGBA(51, 255, 255, 255);

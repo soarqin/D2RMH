@@ -64,6 +64,7 @@ void loadCfg(const std::string &filename) {
 
             LOADVALN(alpha, alpha)
             LOADVALC(walkable_color, walkableColor)
+            LOADVALC(edge_color, edgeColor)
             LOADVALC(text_color, textColor)
             LOADVALC(player_inner_color, playerInnerColor)
             LOADVALC(player_outer_color, playerOuterColor)
@@ -127,15 +128,17 @@ void loadCfg(const std::string &filename) {
         return 1;
     }, &section);
     sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
-    auto vec = splitString(sCfg.msgPosition, ',');
-    auto sz = vec.size();
-    if (sz > 0) {
-        sCfg.msgPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;
-    }
-    if (sz > 1) {
-        sCfg.msgPositionY = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f) - .5f;
-    }
-    if (sz > 2) {
-        sCfg.msgAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
+    if (!sCfg.msgPosition.empty()) {
+        auto vec = splitString(sCfg.msgPosition, ',');
+        auto sz = vec.size();
+        if (sz > 0) {
+            sCfg.msgPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;
+        }
+        if (sz > 1) {
+            sCfg.msgPositionY = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f) - .5f;
+        }
+        if (sz > 2) {
+            sCfg.msgAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
+        }
     }
 }
