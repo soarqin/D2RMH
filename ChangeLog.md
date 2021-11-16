@@ -1,3 +1,22 @@
+# v0.6
+* add edge line to map, and dim color for walkable area in default config
+* add dropped item filter, with `show_items`, `msg_font_size`, `msg_bg_color` added to config ini
+* add D2RMH_item.ini as item filter config, check comments inside for detail
+* add `monster_color`, `unique_monster_color`, `npc_color`, `show_npc_name` to config ini
+* add `msg_position` to config ini for message list position
+* try a new way to locate current player in multiplayer games
+* add reading installation path from registry as fallback
+* change default config values (better for common use):
+    * font_size: 12->14
+    * position: 1->2
+    * scale: 1.0->2.0
+    * map_centered: 0->1
+    * show_monster_name: 1->0
+* fix bug that running D2RMH before D2R(windowed) causes overlay window shown out of window
+* add an about dialog
+* refactoring some remote mem reading codes to make it more readable
+* refactoring string matching codes to improve performance
+
 # v0.5.4
 * show all players(including corpse) now
 * add show_player_names to config ini

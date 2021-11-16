@@ -6,7 +6,7 @@ Diablo II Resurrected map revealing tool.
 but it is not guarenteed that it is totally ban-free, use at your own risk.**
 
 # What's New
-Check [ChangeLog](ChangeLog)
+Check [ChangeLog](ChangeLog.md)
 
 # Prerequisite
 * Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
@@ -16,6 +16,9 @@ Check [ChangeLog](ChangeLog)
 2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
    or just put extracted D2RMH.exe/D2RMH.ini/D2RMH_data.ini to D2 v1.13c folder.
 3. Run D2RMH.exe, enjoy!
+
+# TODO
+Check [TODO](TODO.md)
 
 # How to build
 ## Quick instruction
