@@ -26,7 +26,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
     loadCfg();
-    const auto *errstr = d2MapInit(utf8toucs4(cfg->d2Path).c_str());
+    const auto *errstr = d2MapInit(cfg->d2Path.c_str());
     if (errstr) {
         do {
             HKEY key;

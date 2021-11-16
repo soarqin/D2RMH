@@ -11,7 +11,7 @@
 #include <string>
 
 struct Cfg {
-    std::string d2Path = ".";
+    std::wstring d2Path = L".";
     std::string fontFilePath = R"(C:\Windows\Fonts\Arial.ttf)";
     int fontSize = 14;
     int msgFontSize = 24;
@@ -57,35 +57,35 @@ struct Cfg {
     int showMonsterEnchant = 1;
     int showMonsterImmune = 1;
 
-    std::string encTxtExtraStrong = "S";
-    std::string encTxtExtraFast = "F";
-    std::string encTxtCursed = "{2}C";
-    std::string encTxtMagicResistant = "M";
-    std::string encTxtFireEnchanted = "{1}FE";
-    std::string encTxtLigntningEnchanted = "{9}LE";
-    std::string encTxtColdEnchanted = "{3}CE";
-    std::string encTxtManaBurn = "{3}MB";
-    std::string encTxtTeleportation = "T";
-    std::string encTxtSpectralHit = "H";
-    std::string encTxtStoneSkin = "{4}SS";
-    std::string encTxtMultipleShots = "{12}MS";
-    std::string encTxtFanatic = "{11}F";
-    std::string encTxtBerserker = "{4}B";
+    std::wstring encTxtExtraStrong = L"S";
+    std::wstring encTxtExtraFast = L"F";
+    std::wstring encTxtCursed = L"{2}C";
+    std::wstring encTxtMagicResistant = L"M";
+    std::wstring encTxtFireEnchanted = L"{1}FE";
+    std::wstring encTxtLigntningEnchanted = L"{9}LE";
+    std::wstring encTxtColdEnchanted = L"{3}CE";
+    std::wstring encTxtManaBurn = L"{3}MB";
+    std::wstring encTxtTeleportation = L"T";
+    std::wstring encTxtSpectralHit = L"H";
+    std::wstring encTxtStoneSkin = L"{4}SS";
+    std::wstring encTxtMultipleShots = L"{12}MS";
+    std::wstring encTxtFanatic = L"{11}F";
+    std::wstring encTxtBerserker = L"{4}B";
 
-    std::string MightAura = "{4}A";
-    std::string HolyFireAura = "{1}A";
-    std::string BlessedAimAura = "A";
-    std::string HolyFreezeAura = "{3}A";
-    std::string HolyShockAura = "{9}A";
-    std::string ConvictionAura = "{11}A";
-    std::string FanaticismAura = "{5}A";
+    std::wstring MightAura = L"{4}A";
+    std::wstring HolyFireAura = L"{1}A";
+    std::wstring BlessedAimAura = L"A";
+    std::wstring HolyFreezeAura = L"{3}A";
+    std::wstring HolyShockAura = L"{9}A";
+    std::wstring ConvictionAura = L"{11}A";
+    std::wstring FanaticismAura = L"{5}A";
 
-    std::string encTxtPhysicalImmunity = "{4}i";
-    std::string encTxtMagicImmunity = "{8}i";
-    std::string encTxtFireImmunity = "{1}i";
-    std::string encTxtLightningImmunity = "{9}i";
-    std::string encTxtColdImmunity = "{3}i";
-    std::string encTxtPoisonImmunity = "{2}i";
+    std::wstring encTxtPhysicalImmunity = L"{4}i";
+    std::wstring encTxtMagicImmunity = L"{8}i";
+    std::wstring encTxtFireImmunity = L"{1}i";
+    std::wstring encTxtLightningImmunity = L"{9}i";
+    std::wstring encTxtColdImmunity = L"{3}i";
+    std::wstring encTxtPoisonImmunity = L"{2}i";
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

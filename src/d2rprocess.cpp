@@ -265,20 +265,20 @@ static wchar_t immunityStrings[6][4] = {
     L"\x02" L"i",
 };
 
-void loadEncText(wchar_t *output, const std::string &input) {
+void loadEncText(wchar_t *output, const std::wstring &input) {
     if (input.empty()) {
         output[0] == 0;
         return;
     }
-    const char *inp = input.c_str();
+    const wchar_t *inp = input.c_str();
     std::string out;
     if (inp[0] != '{') {
         out.push_back(char(15));
     }
     while (*inp) {
         if (*inp == '{') {
-            char *endptr;
-            out.push_back(char(std::min(15u, uint32_t(std::strtol(inp + 1, &endptr, 0)))));
+            wchar_t *endptr;
+            out.push_back(char(std::min(15u, uint32_t(std::wcstol(inp + 1, &endptr, 0)))));
             inp = endptr;
             while (*inp && *inp != '}') ++inp;
             if (*inp) {
@@ -288,9 +288,8 @@ void loadEncText(wchar_t *output, const std::string &input) {
             out.push_back(*inp++);
         }
     }
-    auto outw = utf8toucs4(out);
-    if (outw.length() > 3) { outw.resize(3); }
-    for (auto c: outw) {
+    if (out.length() > 3) { out.resize(3); }
+    for (auto c: out) {
         *output++ = c;
     }
     *output = 0;

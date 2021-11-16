@@ -18,6 +18,7 @@ static Cfg sCfg;
 const Cfg *cfg = &sCfg;
 
 #define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
+#define LOADVALW(n, m) else if (!strcmp(name, #n)) { sCfg.m = utf8toucs4(value); }
 #define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtoul(value, nullptr, 0); }
 #define LOADVALF(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtof(value, nullptr); }
 #define LOADVALC(n, m) else if (!strcmp(name, #n)) { sCfg.m = calcColor(value); }
@@ -47,7 +48,7 @@ void loadCfg(const std::string &filename) {
         switch (*(int*)user) {
         case 0:
             if (false) {}
-            LOADVAL(d2_path, d2Path)
+            LOADVALW(d2_path, d2Path)
             LOADVAL(font_file_path, fontFilePath)
             LOADVALN(font_size, fontSize)
             LOADVALN(msg_font_size, msgFontSize)
@@ -93,35 +94,35 @@ void loadCfg(const std::string &filename) {
             break;
         case 2:
             if (false) {}
-            LOADVAL(extra_strong, encTxtExtraStrong)
-            LOADVAL(extra_fast, encTxtExtraFast)
-            LOADVAL(cursed, encTxtCursed)
-            LOADVAL(magic_resistant, encTxtMagicResistant)
-            LOADVAL(fire_enchanted, encTxtFireEnchanted)
-            LOADVAL(ligntning_enchanted, encTxtLigntningEnchanted)
-            LOADVAL(cold_enchanted, encTxtColdEnchanted)
-            LOADVAL(mana_burn, encTxtManaBurn)
-            LOADVAL(teleportation, encTxtTeleportation)
-            LOADVAL(spectral_hit, encTxtSpectralHit)
-            LOADVAL(stone_skin, encTxtStoneSkin)
-            LOADVAL(multiple_shots, encTxtMultipleShots)
-            LOADVAL(fanatic, encTxtFanatic)
-            LOADVAL(berserker, encTxtBerserker)
+            LOADVALW(extra_strong, encTxtExtraStrong)
+            LOADVALW(extra_fast, encTxtExtraFast)
+            LOADVALW(cursed, encTxtCursed)
+            LOADVALW(magic_resistant, encTxtMagicResistant)
+            LOADVALW(fire_enchanted, encTxtFireEnchanted)
+            LOADVALW(ligntning_enchanted, encTxtLigntningEnchanted)
+            LOADVALW(cold_enchanted, encTxtColdEnchanted)
+            LOADVALW(mana_burn, encTxtManaBurn)
+            LOADVALW(teleportation, encTxtTeleportation)
+            LOADVALW(spectral_hit, encTxtSpectralHit)
+            LOADVALW(stone_skin, encTxtStoneSkin)
+            LOADVALW(multiple_shots, encTxtMultipleShots)
+            LOADVALW(fanatic, encTxtFanatic)
+            LOADVALW(berserker, encTxtBerserker)
 
-            LOADVAL(might_aura, MightAura)
-            LOADVAL(holyFire_aura, HolyFireAura)
-            LOADVAL(blessedAim_aura, BlessedAimAura)
-            LOADVAL(holyFreeze_aura, HolyFreezeAura)
-            LOADVAL(holyShock_aura, HolyShockAura)
-            LOADVAL(conviction_aura, ConvictionAura)
-            LOADVAL(fanaticism_aura, FanaticismAura)
+            LOADVALW(might_aura, MightAura)
+            LOADVALW(holyFire_aura, HolyFireAura)
+            LOADVALW(blessedAim_aura, BlessedAimAura)
+            LOADVALW(holyFreeze_aura, HolyFreezeAura)
+            LOADVALW(holyShock_aura, HolyShockAura)
+            LOADVALW(conviction_aura, ConvictionAura)
+            LOADVALW(fanaticism_aura, FanaticismAura)
 
-            LOADVAL(physical_immunity, encTxtPhysicalImmunity)
-            LOADVAL(magic_immunity, encTxtMagicImmunity)
-            LOADVAL(fire_immunity, encTxtFireImmunity)
-            LOADVAL(lightning_immunity, encTxtLightningImmunity)
-            LOADVAL(cold_immunity, encTxtColdImmunity)
-            LOADVAL(poison_immunity, encTxtPoisonImmunity)
+            LOADVALW(physical_immunity, encTxtPhysicalImmunity)
+            LOADVALW(magic_immunity, encTxtMagicImmunity)
+            LOADVALW(fire_immunity, encTxtFireImmunity)
+            LOADVALW(lightning_immunity, encTxtLightningImmunity)
+            LOADVALW(cold_immunity, encTxtColdImmunity)
+            LOADVALW(poison_immunity, encTxtPoisonImmunity)
             break;
         default:
             break;
