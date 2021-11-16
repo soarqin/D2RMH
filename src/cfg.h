@@ -21,6 +21,9 @@ struct Cfg {
     int show = 0;
     int fullLine = 0;
     int position = 2;
+    std::string mapArea;
+    float mapAreaW = 1.f;
+    float mapAreaH = 1.f;
     float scale = 2.f;
     int mapCentered = 1;
     uint8_t alpha = 170;

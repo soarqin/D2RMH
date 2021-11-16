@@ -50,6 +50,8 @@ private:
     TTF ttf_;
     Texture mapTex_;
     hmm_mat4 transform_ = {};
+    int mapViewport_[4] = {};
+    int msgViewport_[4] = {};
 
     bool enabled_ = false;
     Session session_;
@@ -67,7 +69,7 @@ private:
         float offX;
     };
     std::vector<DynamicTextString> dynamicTextStrings_;
-    std::vector<std::tuple<std::wstring_view, float, float, int, uint8_t>> textToDraw_;
+    std::vector<std::tuple<std::wstring_view, float, float, int, uint8_t>> textToDraw_, msgToDraw_;
     std::vector<std::tuple<float, float>> lines_;
 
     uint32_t objColors_[TypeMax] = {};

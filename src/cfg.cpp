@@ -60,6 +60,7 @@ void loadCfg(const std::string &filename) {
             LOADVALN(show, show)
             LOADVALN(full_line, fullLine)
             LOADVALN(position, position)
+            LOADVAL(map_area, mapArea)
             LOADVALF(scale, scale)
             LOADVALN(map_centered, mapCentered)
 
@@ -130,6 +131,13 @@ void loadCfg(const std::string &filename) {
         return 1;
     }, &section);
     sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
+    if (!sCfg.mapArea.empty()) {
+        auto vec = splitString(sCfg.mapArea, ',');
+        if (vec.size() > 1) {
+            sCfg.mapAreaW = std::clamp(strtof(vec[0].c_str(), nullptr), 0.1f, 1.f);
+            sCfg.mapAreaH = std::clamp(strtof(vec[1].c_str(), nullptr), 0.1f, 1.f);
+        }
+    }
     if (!sCfg.msgPosition.empty()) {
         auto vec = splitString(sCfg.msgPosition, ',');
         auto sz = vec.size();

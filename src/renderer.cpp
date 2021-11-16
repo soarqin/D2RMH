@@ -35,7 +35,7 @@ struct RendererCtx {
     HGLRC glCtx = nullptr;
 
     std::chrono::steady_clock::time_point nextRenderTime;
-    std::chrono::steady_clock::duration renderInterval;
+    std::chrono::steady_clock::duration renderInterval = {};
     bool fpsLimit = false;
 
     /* Render related */
@@ -90,6 +90,9 @@ Window *Renderer::owner() {
 
 void Renderer::setSwapInterval(int interval) {
     wglSwapIntervalEXT(interval);
+}
+void Renderer::setViewport(int x, int y, int w, int h) {
+    glViewport(x, y, w, h);
 }
 void Renderer::limitFPS(uint32_t fps) {
     if (fps) {
@@ -306,6 +309,7 @@ struct PipelineCtx {
     uint32_t uidVBO = 0;
     uint32_t uidEBO = 0;
     uint32_t uidFB = 0;
+    int viewport[4] = {};
 
     ShaderProgram *program = nullptr;
     bool freeProgram = false;
@@ -342,6 +346,12 @@ Pipeline::~Pipeline() {
     glDeleteBuffers(1, &ctx_->uidEBO);
     glDeleteBuffers(1, &ctx_->uidVBO);
     glDeleteVertexArrays(1, &ctx_->uidVAO);
+}
+void Pipeline::setViewport(int x, int y, int w, int h) {
+    ctx_->viewport[0] = x;
+    ctx_->viewport[1] = y;
+    ctx_->viewport[2] = w;
+    ctx_->viewport[3] = h;
 }
 void Pipeline::setOrtho(float left, float right, float bottom, float top, float nearf, float farf) {
     ctx_->mvpBase = HMM_Orthographic(left, right, bottom, top, nearf, farf);
@@ -392,17 +402,16 @@ void Pipeline::render() {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
-    int vw, vh;
     if (ctx_->renderToTarget) {
+        int vw, vh;
         glBindFramebuffer(GL_FRAMEBUFFER, ctx_->uidFB);
         const auto *tex = (const Texture *)ctx_->host;
         vw = tex->width();
         vh = tex->height();
+        glViewport(0, 0, vw, vh);
     } else {
-        const auto *ren = (const Renderer *)ctx_->host;
-        ren->getDimension(vw, vh);
+        glViewport(ctx_->viewport[0], ctx_->viewport[1], ctx_->viewport[2], ctx_->viewport[3]);
     }
-    glViewport(0, 0, vw, vh);
     doRender();
     if (ctx_->renderToTarget) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

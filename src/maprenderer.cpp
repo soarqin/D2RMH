@@ -217,6 +217,11 @@ void MapRenderer::update() {
 }
 void MapRenderer::render() {
     if (enabled_) {
+        auto *ttfPipeline = ttfgl_.pipeline();
+        auto widthf = float(mapViewport_[2]) * .5f;
+        auto heightf = float(mapViewport_[3]) * .5f;
+        ttfPipeline->setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
+        ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
         dynamicTextStrings_.clear();
         dynamicPipeline_.reset();
         messagePipeline_.reset();
@@ -239,52 +244,68 @@ void MapRenderer::render() {
         for (auto [sv, x, y, fsize, color]: textToDraw_) {
             ttf_.render(sv, x, y, false, fsize, color);
         }
+        widthf = float(msgViewport_[2]) * .5f;
+        heightf = float(msgViewport_[3]) * .5f;
+        ttfPipeline->setViewport(msgViewport_[0], msgViewport_[1], msgViewport_[2], msgViewport_[3]);
+        ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
+        for (auto [sv, x, y, fsize, color]: msgToDraw_) {
+            ttf_.render(sv, x, y, false, fsize, color);
+        }
         textToDraw_.clear();
+        msgToDraw_.clear();
     }
 }
 void MapRenderer::updateWindowPos() {
     if (!currMap_) { return; }
-    int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
-        y1 = currMap_->cropY2;
-    int width = x1 - x0;
-    int height = y1 - y0;
-    auto windowSize = (int)lroundf(cfg->scale * (float)(width + height) * 0.75f) + 8;
-    const auto bear = 16;
-    if (windowSize + bear * 2 > d2rRect.right - d2rRect.left) {
-        windowSize = d2rRect.right - d2rRect.left - bear * 2;
-    }
-    if (windowSize / 2 + bear * 2 > d2rRect.bottom - d2rRect.top) {
-        windowSize = (d2rRect.bottom - d2rRect.top - bear * 2) * 2;
-    }
-    float w, h;
+    auto width = d2rRect.right - d2rRect.left, height = d2rRect.bottom - d2rRect.top;
+    renderer_.owner()->move(d2rRect.left, d2rRect.top, width, height);
+    int w = std::lround(float(width) * cfg->mapAreaW);
+    int h = std::lround(float(height) * cfg->mapAreaH);
+    auto widthf = float(w) * 0.5f, heightf = float(h) * 0.5f;
+
     switch (cfg->position) {
     case 0:
-        renderer_.owner()->move(d2rRect.left + bear, d2rRect.top + bear, windowSize, windowSize / 2);
-        w = (float)windowSize;
-        h = w / 2;
+        mapViewport_[0] = 0;
+        mapViewport_[1] = height - h;
+        mapViewport_[2] = w;
+        mapViewport_[3] = h;
         break;
     case 1:
-        renderer_.owner()->move(d2rRect.right - windowSize - bear, d2rRect.top + bear, windowSize, windowSize / 2);
-        w = (float)windowSize;
-        h = w / 2;
+        mapViewport_[0] = width - w;
+        mapViewport_[1] = height - h;
+        mapViewport_[2] = w;
+        mapViewport_[3] = h;
         break;
     default:
-        renderer_.owner()->move(d2rRect.left + bear, d2rRect.top + bear, d2rRect.right - d2rRect.left - bear * 2, d2rRect.bottom - d2rRect.top - bear * 2);
-        w = (float)(d2rRect.right - d2rRect.left - bear * 2);
-        h = (float)(d2rRect.bottom - d2rRect.top - bear * 2);
+        mapViewport_[0] = (width - w) / 2;
+        mapViewport_[1] = (height - h) / 2;
+        mapViewport_[2] = w;
+        mapViewport_[3] = h;
         break;
     }
-    auto widthf = (float)width * 0.5f, heightf = (float)height * 0.5f;
+    msgViewport_[0] = 0;
+    msgViewport_[1] = 0;
+    msgViewport_[2] = width;
+    msgViewport_[3] = height;
+
+    int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
+        y1 = currMap_->cropY2;
+    auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
+    mapPipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
     mapPipeline_.reset();
-    mapPipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
-    mapPipeline_.pushQuad(-widthf, -heightf, widthf, heightf);
+    mapPipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
+    mapPipeline_.pushQuad(-mw, -mh, mw, mh);
+    framePipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
     framePipeline_.reset();
-    framePipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
+    framePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
+    dynamicPipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
     dynamicPipeline_.reset();
-    dynamicPipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
+    dynamicPipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
+    widthf = float(width) * .5f;
+    heightf = float(height) * .5f;
+    messagePipeline_.setViewport(0, 0, width, height);
     messagePipeline_.reset();
-    messagePipeline_.setOrtho(-w / 2, w / 2, h / 2, -h / 2);
-    ttfgl_.pipeline()->setOrtho(-w / 2, w / 2, h / 2, -h / 2);
+    messagePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
     updatePlayerPos();
 }
 void MapRenderer::updatePlayerPos() {
@@ -453,7 +474,7 @@ void MapRenderer::drawObjects() {
                         break;
                     }
                     messagePipeline_.pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
-                    textToDraw_.emplace_back(sv, nx, cy, fontSize2, item.color);
+                    msgToDraw_.emplace_back(sv, nx, cy, fontSize2, item.color);
                     cy = cy + fontSize2 + 2;
                 }
             }
