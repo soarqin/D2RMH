@@ -87,6 +87,7 @@ void loadCfg(const std::string &filename) {
             LOADVALN(show_objects, showObjects)
             LOADVALN(show_items, showItems)
             LOADVALN(show_monster_name, showMonsterName)
+            LOADVALN(show_npc_name, showNpcName)
             LOADVALN(show_monster_enchant, showMonsterEnchant)
             LOADVALN(show_monster_immune, showMonsterImmune)
             break;

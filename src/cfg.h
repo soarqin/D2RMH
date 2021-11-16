@@ -13,16 +13,16 @@
 struct Cfg {
     std::string d2Path = ".";
     std::string fontFilePath = R"(C:\Windows\Fonts\Arial.ttf)";
-    int fontSize = 12;
+    int fontSize = 14;
     int msgFontSize = 24;
     std::string language = "enUS";
 
     int fps = -1;
     int show = 0;
     int fullLine = 0;
-    int position = 1;
-    float scale = 1;
-    int mapCentered = 0;
+    int position = 2;
+    float scale = 2.f;
+    int mapCentered = 1;
     uint8_t alpha = 170;
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
     uint32_t walkableColor = RGBA(20, 20, 20, 255);
@@ -52,7 +52,8 @@ struct Cfg {
     int showNormalMonsters = 0;
     int showObjects = 1;
     int showItems = 1;
-    int showMonsterName = 1;
+    int showMonsterName = 0;
+    int showNpcName = 1;
     int showMonsterEnchant = 1;
     int showMonsterImmune = 1;
 

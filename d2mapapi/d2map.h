@@ -6,7 +6,7 @@
 
 /* return NULL if no error,
  * otherwise return error message */
-const char *d2MapInit(const char *dir);
+const char *d2MapInit(const wchar_t *dir);
 
 Level *__fastcall getLevel(ActMisc *misc, uint32_t levelno);
 void D2CLIENT_InitGameMisc();

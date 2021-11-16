@@ -405,7 +405,8 @@ void D2RProcess::updateData() {
 
     mapPlayers_.clear();
 
-    readUnitHashTable(baseAddr_ + HashTableBase, [this](const UnitAny &unit) {
+    MapPlayer *currPlayer = nullptr;
+    readUnitHashTable(baseAddr_ + HashTableBase, [this, &currPlayer](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
@@ -413,6 +414,10 @@ void D2RProcess::updateData() {
         player.name[0] = 0;
         bool levelChanged = false;
         READ(unit.unionPtr, player.name);
+        if (uint32_t token; READ(unit.unionPtr + 16, token) && token == 0) {
+            focusedPlayer_ = unit.unitId;
+            currPlayer = &player;
+        }
         uint64_t n[20];
         READ(unit.unionPtr, n);
         player.levelChanged = player.act != act.actId;
@@ -437,12 +442,11 @@ void D2RProcess::updateData() {
         focusedPlayer_ = 0;
         return;
     }
-    MapPlayer *currPlayer;
     if (!focusedPlayer_) {
         auto ite = mapPlayers_.begin();
         focusedPlayer_ = ite->first;
         currPlayer = &ite->second;
-    } else {
+    } else if (!currPlayer) {
         auto ite = mapPlayers_.find(focusedPlayer_);
         if (ite == mapPlayers_.end()) {
             ite = mapPlayers_.begin();
@@ -456,19 +460,15 @@ void D2RProcess::updateData() {
 
     if (cfg->showMonsters) {
         mapMonsters_.clear();
-        auto showName = cfg->showMonsterName;
-        auto showEnchant = cfg->showMonsterEnchant;
-        auto showImmune = cfg->showMonsterImmune;
-        auto showNormal = cfg->showNormalMonsters;
         auto monsSize = gamedata->monsters.size();
-        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x80, [this, showName, showEnchant, showImmune, showNormal, monsSize](const UnitAny &unit) {
+        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x80, [this, monsSize](const UnitAny &unit) {
             if (unit.mode == 0 || unit.mode == 12 || unit.txtFileNo >= monsSize) { return; }
             MonsterData monData;
             if (!READ(unit.unionPtr, monData)) { return; }
             auto isUnique = (monData.flag & 0x0E) != 0;
             auto &txtData = gamedata->monsters[unit.txtFileNo];
             auto isNpc = std::get<1>(txtData);
-            if (!showNormal && !isUnique && !isNpc) { return; }
+            if (!cfg->showNormalMonsters && !isUnique && !isNpc) { return; }
             DynamicPath path;
             if (!READ(unit.pathPtr, path)) { return; }
             auto &mon = mapMonsters_.emplace_back();
@@ -477,7 +477,7 @@ void D2RProcess::updateData() {
             mon.isNpc = isNpc;
             mon.isUnique = isUnique;
             mon.flag = monData.flag;
-            if (showName && (isUnique || isNpc)) {
+            if ((cfg->showMonsterName && isUnique) || (cfg->showNpcName && isNpc)) {
                 /* Super unique */
                 if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {
                     mon.name = gamedata->superUniques[monData.uniqueNo].second;
@@ -488,7 +488,7 @@ void D2RProcess::updateData() {
             if (!isUnique) { return; }
             int off = 0;
             bool hasAura = false;
-            if (showEnchant) {
+            if (cfg->showMonsterEnchant) {
                 uint8_t id;
                 for (int n = 0; n < 9 && (id = monData.enchants[n]) != 0; ++n) {
                     if (id == 30) {
@@ -501,11 +501,11 @@ void D2RProcess::updateData() {
                     }
                 }
             }
-            if (!showImmune && !hasAura) {
+            if (!cfg->showMonsterImmune && !hasAura) {
                 mon.enchants[off] = 0;
                 return;
             }
-            readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, showImmune, hasAura](const StatList &stats) {
+            readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, hasAura](const StatList &stats) {
                 if (stats.stateNo) {
                     if (!hasAura) { return; }
                     const wchar_t *str = auraStrings[stats.stateNo];
@@ -514,7 +514,7 @@ void D2RProcess::updateData() {
                     }
                     return;
                 }
-                if (!showImmune) { return; }
+                if (!cfg->showMonsterImmune) { return; }
                 static StatEx statEx[64];
                 auto cnt = std::min(64u, stats.stat.statCount);
                 if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
@@ -683,6 +683,7 @@ void D2RProcess::searchForProcess() {
     CloseHandle(snapshot);
     if (!handle_) { return; }
     hook_ = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    onSizeChange(HWND(hwnd_));
     updateData();
 }
 

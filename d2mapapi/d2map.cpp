@@ -8,15 +8,20 @@
 
 d2client_struct D2Client;
 
-char D2_DIR[MAX_PATH] = "";
 
-const char *d2MapInit(const char *dir) {
-    snprintf(D2_DIR, sizeof(D2_DIR), "%s\\", dir);
+const char *d2MapInit(const wchar_t *dir) {
+    wchar_t szPath[MAX_PATH] = {0};
+    GetCurrentDirectoryW(MAX_PATH, szPath);
+    if (dir[0] != 0 && dir[lstrlenW(dir) - 1] != '\\') {
+        wchar_t dira[MAX_PATH];
+        lstrcpyW(dira, dir);
+        lstrcatW(dira, L"\\");
+        SetCurrentDirectoryW(dira);
+    } else {
+        SetCurrentDirectoryW(dir);
+    }
 
-    char szPath[MAX_PATH] = {0};
-    GetCurrentDirectory(MAX_PATH, szPath);
     memset(&D2Client, 0, sizeof(d2client_struct));
-    SetCurrentDirectory(D2_DIR);
     if (!defineOffsets()) {
         return "Diablo II Legacy v1.13c: Failed to load DLLs!";
     }
@@ -45,7 +50,7 @@ const char *d2MapInit(const char *dir) {
 
     D2CLIENT_InitGameMisc();
 
-    SetCurrentDirectory(szPath);
+    SetCurrentDirectoryW(szPath);
     return nullptr;
 }
 

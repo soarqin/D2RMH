@@ -28,12 +28,25 @@ bool defineOffsets() {
         &D2LANG_10008,
         &D2COMMON_InitDataTables,
     };
+    DWORD ptrSaved[sizeof(ptrToLoad) / sizeof(void*)] = {};
+    /* Store pointers for restore use */
+    for (int i = 0; i < sizeof(ptrToLoad) / sizeof(void*); ++i) {
+        ptrSaved[i] = *(DWORD*)ptrToLoad[i];
+    }
+    bool result = true;
     for (auto *ptr: ptrToLoad) {
         auto *p = (DWORD*)ptr;
-        *p = getDllOffset(*p);
-        if (!*p) { return false; }
+        auto offset = getDllOffset(*p);
+        if (!offset) { result = false; break; }
+        *p = offset;
     }
-    return true;
+    if (!result) {
+        /* Restore pointers on failure */
+        for (int i = 0; i < sizeof(ptrToLoad) / sizeof(void*); ++i) {
+            *(DWORD*)ptrToLoad[i] = ptrSaved[i];
+        }
+    }
+    return result;
 }
 
 uint32_t GetDllOffset(const char *DllName, int Offset) {
