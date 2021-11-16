@@ -6,6 +6,12 @@
  * https://opensource.org/licenses/MIT.
  */
 
+#if defined(_MSC_VER)
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 #include "window.h"
 
 #include "cfg.h"
@@ -84,6 +90,8 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
+    INITCOMMONCONTROLSEX iccex = { sizeof(INITCOMMONCONTROLSEX) };
+    InitCommonControlsEx(&iccex);
     InitCommonControls();
     auto inst = HINST_THISCOMPONENT;
     auto icon = LoadIconW(inst, MAKEINTRESOURCEW(1));

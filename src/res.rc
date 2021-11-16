@@ -1,7 +1,6 @@
 1 ICON "D2RMH.ico"
-1 24 "D2RMH.manifest"
 
-#include "afxres.h"
+#include "winres.h"
 
 101 DIALOG DISCARDABLE  0, 0, 240, 130
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
