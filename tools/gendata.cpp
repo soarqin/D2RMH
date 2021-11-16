@@ -135,6 +135,9 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/shrines.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/ui.json");
+    jlng.remove("dummy");
+    jlng.remove("Dummy");
+    jlng.remove("unused");
 
     D2TXT levelTxt, objTxt, monTxt, shrineTxt, superuTxt;
     D2TXT itemTxt[3];

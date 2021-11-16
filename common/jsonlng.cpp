@@ -46,6 +46,10 @@ const std::array<std::string, JsonLng::LNG_MAX> *JsonLng::get(const std::string 
     return &ite->second;
 }
 
+void JsonLng::remove(const std::string &key) {
+    strings_.erase(key);
+}
+
 void JsonLng::loadInternal(std::istream &stm) {
     nlohmann::json j;
     stm >> j;

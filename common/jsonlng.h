@@ -37,6 +37,7 @@ public:
 
     [[nodiscard]] const std::string &get(const std::string &key, LNG lang, LNG fallback = LNG_enUS) const;
     [[nodiscard]] const std::array<std::string, LNG_MAX> *get(const std::string &key) const;
+    void remove(const std::string &key);
 
 private:
     void loadInternal(std::istream &stm);
