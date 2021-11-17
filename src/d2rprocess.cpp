@@ -299,7 +299,15 @@ static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
 
 enum {
     HashTableBase = 0x20AF660,
-    MapEnabledAddr = 0x20BF322,
+    UIBaseAddr = 0x20BF310,
+    InventoryPanelOffset = 0x09,
+    CharacterPanelOffset = 0x0A,
+    SkillTreePanelOffset = 0x0C,
+    SystemMenuOffset = 0x11,
+    InGameMapOffset = 0x12,
+    QuestPanelOffset = 0x16,
+    PartyPanelOffset = 0x1D,
+    MercenaryOffset = 0x26,
 };
 
 struct handle_data {
@@ -452,7 +460,17 @@ void D2RProcess::updateData() {
         }
         currPlayer = &ite->second;
     }
-    READ(baseAddr_ + MapEnabledAddr, mapEnabled_);
+    uint8_t mem[0x30];
+    READ(baseAddr_ + UIBaseAddr, mem);
+    mapEnabled_ = mem[InGameMapOffset];
+    panelEnabled_ = 0;
+    if (mem[InventoryPanelOffset]) { panelEnabled_ |= 0x01; }
+    if (mem[CharacterPanelOffset]) { panelEnabled_ |= 0x02; }
+    if (mem[SkillTreePanelOffset]) { panelEnabled_ |= 0x04; }
+    if (mem[SystemMenuOffset]) { panelEnabled_ |= 0x08; }
+    if (mem[QuestPanelOffset]) { panelEnabled_ |= 0x10; }
+    if (mem[PartyPanelOffset]) { panelEnabled_ |= 0x20; }
+    if (mem[MercenaryOffset]) { panelEnabled_ |= 0x40; }
     available_ = true;
     currPlayer_ = currPlayer;
 

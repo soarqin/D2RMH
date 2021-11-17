@@ -77,6 +77,10 @@ void MapRenderer::update() {
         enabled_ = false;
         return;
     }
+    if (d2rProcess_.panelEnabled() & cfg->panelMask) {
+        enabled_ = false;
+        return;
+    }
     switch (cfg->show) {
     case 0:
         enabled_ = !d2rProcess_.mapEnabled();

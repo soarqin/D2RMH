@@ -57,6 +57,7 @@ public:
     void *hwnd() { return hwnd_; }
     [[nodiscard]] inline bool available() const { return available_; }
     [[nodiscard]] inline bool mapEnabled() const { return mapEnabled_ != 0; }
+    [[nodiscard]] inline uint8_t panelEnabled() const { return panelEnabled_ != 0; }
 
     [[nodiscard]] inline const MapPlayer *currPlayer() const { return currPlayer_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return mapPlayers_; }
@@ -82,6 +83,7 @@ private:
     uint32_t searchInterval_ = 0;
 
     uint8_t mapEnabled_ = 0;
+    uint8_t panelEnabled_ = 0;
 
     uint32_t focusedPlayer_ = 0;
 

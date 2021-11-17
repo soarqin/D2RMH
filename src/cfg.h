@@ -19,6 +19,7 @@ struct Cfg {
 
     int fps = -1;
     int show = 0;
+    uint32_t panelMask = 0x7F;
     int fullLine = 0;
     int position = 2;
     std::string mapArea;
