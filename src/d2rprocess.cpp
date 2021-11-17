@@ -271,7 +271,7 @@ void loadEncText(wchar_t *output, const std::wstring &input) {
         return;
     }
     const wchar_t *inp = input.c_str();
-    std::string out;
+    std::wstring out;
     if (inp[0] != '{') {
         out.push_back(char(15));
     }
