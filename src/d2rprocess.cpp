@@ -389,7 +389,6 @@ D2RProcess::~D2RProcess() {
 
 void D2RProcess::updateData() {
     available_ = false;
-    if (GetForegroundWindow() != hwnd_) { return; }
     if (handle_) {
         DWORD ret = WaitForSingleObject(handle_, 0);
         if (ret != WAIT_TIMEOUT) {
@@ -410,6 +409,7 @@ void D2RProcess::updateData() {
         }
     }
     if (!handle_) { return; }
+    if (hwnd_ && GetForegroundWindow() != hwnd_) { return; }
 
     mapPlayers_.clear();
 
