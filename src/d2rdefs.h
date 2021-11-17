@@ -540,16 +540,30 @@ struct StatList {
     struct {
         /* StatEx *pStat */
         uint64_t statPtr;
-        uint32_t statCount;
-        uint32_t unk0;
-        uint32_t capacity;
-        uint32_t unk1;
+        uint64_t statCount;
+        uint64_t statCapacity;
         uint64_t unk2;
     } stat;
     uint64_t prevList;
     uint64_t nextList;
     uint64_t prevListEx;
     uint64_t nextListEx;
+};
+
+struct UnitInventory {
+    uint32_t magic;
+    uint32_t unk0;
+    uint64_t ownerPtr;
+    uint64_t firstItemPtr;
+    uint64_t lastItemPtr;
+    uint64_t invInfoPtr;
+    uint64_t invInfoSize;
+    uint64_t invInfoCapacity;
+    uint32_t weaponId;
+    uint32_t unk1;
+    uint64_t cursorItemPtr;
+    uint32_t ownerId;
+    uint32_t filledSockets;
 };
 
 struct UnitAny {
@@ -594,7 +608,7 @@ struct UnitAny {
     uint64_t unk4;
     /* 0x88 StatList *pStats */
     uint64_t statListPtr;
-    /* 0x90 Inventory1 *pInventory */
+    /* 0x90 UnitInventory *pInventory */
     uint64_t inventoryPtr;
     uint64_t unk5[23];
     uint64_t nextPtr;

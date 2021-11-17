@@ -418,8 +418,6 @@ void D2RProcess::updateData() {
             focusedPlayer_ = unit.unitId;
             currPlayer = &player;
         }
-        uint64_t n[20];
-        READ(unit.unionPtr, n);
         player.levelChanged = player.act != act.actId;
         player.act = act.actId;
         player.seed = act.seed;
@@ -516,7 +514,7 @@ void D2RProcess::updateData() {
                 }
                 if (!cfg->showMonsterImmune) { return; }
                 static StatEx statEx[64];
-                auto cnt = std::min(64u, stats.stat.statCount);
+                auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
                 if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
                 StatEx *st = statEx;
                 for (; cnt; --cnt, ++st) {
@@ -583,7 +581,7 @@ void D2RProcess::updateData() {
                 readStateList(unit.statListPtr, unit.unitId, [this, &sockets](const StatList &stats) {
                     if (stats.stateNo) { return; }
                     static StatEx statEx[64];
-                    auto cnt = std::min(64u, stats.stat.statCount);
+                    auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
                     if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
                     StatEx *st = statEx;
                     for (; cnt; --cnt, ++st) {
