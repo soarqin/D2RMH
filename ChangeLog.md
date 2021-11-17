@@ -1,3 +1,9 @@
+# v0.6.1
+* add `map_area` to config ini, to restrict map drawing area
+* `msg_position` is relative to the whole D2R window now
+* add missing items to `D2RMH_data.ini` to avoid crash on filtering certain items
+* hide overlay when D2R window is not foreground
+
 # v0.6
 * add edge line to map, and dim color for walkable area in default config
 * add dropped item filter, with `show_items`, `msg_font_size`, `msg_bg_color` added to config ini
