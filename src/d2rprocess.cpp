@@ -422,7 +422,7 @@ void D2RProcess::updateData() {
         player.name[0] = 0;
         bool levelChanged = false;
         READ(unit.unionPtr, player.name);
-        if (uint32_t token; READ(unit.unionPtr + 16, token) && token == 0) {
+        if (uint64_t token; READ(unit.inventoryPtr + 0x70, token) && token != 0) {
             focusedPlayer_ = unit.unitId;
             currPlayer = &player;
         }
