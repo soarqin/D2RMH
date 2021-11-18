@@ -47,8 +47,8 @@ struct Cfg {
     uint32_t msgBgColor = RGBA(1, 1, 1, 255);
 #undef RGBA
     std::string msgPosition;
-    float msgPositionX = .95f;
-    float msgPositionY = .25f;
+    float msgPositionX = .95f - .5f;
+    float msgPositionY = .25f - .5f;
     int msgAlign = 2;
 
     int showPlayerNames = 1;
