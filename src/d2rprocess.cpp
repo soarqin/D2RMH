@@ -303,6 +303,7 @@ enum {
     InventoryPanelOffset = 0x09,
     CharacterPanelOffset = 0x0A,
     SkillTreePanelOffset = 0x0C,
+    ChatMenuOffset = 0x10,
     SystemMenuOffset = 0x11,
     InGameMapOffset = 0x12,
     QuestPanelOffset = 0x16,
@@ -460,7 +461,7 @@ void D2RProcess::updateData() {
         }
         currPlayer = &ite->second;
     }
-    uint8_t mem[0x30];
+    uint8_t mem[0x28];
     READ(baseAddr_ + UIBaseAddr, mem);
     mapEnabled_ = mem[InGameMapOffset];
     panelEnabled_ = 0;
