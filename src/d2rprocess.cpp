@@ -267,7 +267,7 @@ static wchar_t immunityStrings[6][4] = {
 
 void loadEncText(wchar_t *output, const std::wstring &input) {
     if (input.empty()) {
-        output[0] == 0;
+        output[0] = 0;
         return;
     }
     const wchar_t *inp = input.c_str();
