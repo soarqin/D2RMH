@@ -178,9 +178,18 @@ int main(int argc, char *argv[]) {
     idx0 = objTxt.colIndexByName("*ID");
     idx1 = objTxt.colIndexByName("Name");
     auto idx2 = objTxt.colIndexByName("OperateFn");
+    auto idx3 = objTxt.colIndexByName("SizeX");
+    auto idx4 = objTxt.colIndexByName("SizeY");
+    auto idx5 = objTxt.colIndexByName("IsDoor");
     rows = objTxt.rows();
     for (size_t i = 0; i < rows; ++i) {
         auto id = objTxt.value(i, idx0).second;
+        if (objTxt.value(i, idx5).second) {
+            auto w = std::max(1, objTxt.value(i, idx3).second);
+            auto h = std::max(1, objTxt.value(i, idx4).second);
+            ofs << id << '=' << "Door|" << w << ',' << h << std::endl;
+            continue;
+        }
         auto op = objTxt.value(i, idx2).second;
         auto kite = parseData.usefulObjectOp.find(op);
         std::string typeStr;
@@ -198,7 +207,10 @@ int main(int argc, char *argv[]) {
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;
-            ofs << id << '=' << typeStr << '|' << key << std::endl;
+            auto minValue = typeStr == "Waypoint" ? 3 : 2;
+            auto w = std::max(minValue, objTxt.value(i, idx3).second);
+            auto h = std::max(minValue, objTxt.value(i, idx4).second);
+            ofs << id << '=' << typeStr << '|' << key << '|' << w << ',' << h << std::endl;
         }
     }
 

@@ -154,17 +154,30 @@ void loadData() {
             break;
         }
         case 2: case 3: {
-            const char *pos = strchr(value, '|');
-            if (!pos) { break; }
-            auto ssize = pos - value;
+            auto sl = splitString(value, '|');
+            if (sl.size() < 2) { break; }
             EObjType t = TypeNone;
-            if (!strncmp(value, "Waypoint", ssize)) { t = TypeWayPoint; }
-            else if (!strncmp(value, "Quest", ssize)) { t = TypeQuest; }
-            else if (!strncmp(value, "Portal", ssize)) { t = TypePortal; }
-            else if (!strncmp(value, "Chest", ssize)) { t = TypeChest; }
-            else if (!strncmp(value, "Shrine", ssize)) { t = TypeShrine; }
-            else if (!strncmp(value, "Well", ssize)) { t = TypeWell; }
-            sgamedata.objects[*isec - 2][strtol(name, nullptr, 0)] = { t, pos + 1, nullptr };
+            if (sl[0] == "Waypoint") { t = TypeWayPoint; }
+            else if (sl[0] == "Quest") { t = TypeQuest; }
+            else if (sl[0] == "Portal") { t = TypePortal; }
+            else if (sl[0] == "Chest") { t = TypeChest; }
+            else if (sl[0] == "Shrine") { t = TypeShrine; }
+            else if (sl[0] == "Well") { t = TypeWell; }
+            else if (sl[0] == "Door") { t = TypeDoor; }
+            if (*isec == 2) {
+                float x = 0, y = 0;
+                bool isDoor = t == TypeDoor;
+                if (isDoor || sl.size() > 2) {
+                    auto sl2 = splitString(sl[isDoor ? 1 : 2], ',');
+                    if (sl2.size() > 1) {
+                        x = std::strtof(sl2[0].c_str(), nullptr);
+                        y = std::strtof(sl2[1].c_str(), nullptr);
+                    }
+                }
+                sgamedata.objects[0][strtol(name, nullptr, 0)] = {t, sl[1], nullptr, x, y};
+            } else {
+                sgamedata.objects[1][strtol(name, nullptr, 0)] = {t, sl[1], nullptr, 2, 2};
+            }
             break;
         }
         case 4: {

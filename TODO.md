@@ -1,6 +1,5 @@
 ### Scheduled
 * show enchants/names for normal monsters
-* door on map
 * status text panel (timer, etc.)
 * global hotkeys to tweak functions realtime
 

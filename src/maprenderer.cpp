@@ -53,6 +53,7 @@ MapRenderer::MapRenderer(Renderer &renderer) :
     objColors_[TypeMonster] = cfg->monsterColor;
     objColors_[TypeUniqueMonster] = cfg->uniqueMonsterColor;
     objColors_[TypeNpc] = cfg->npcColor;
+    objColors_[TypeDoor] = cfg->doorColor;
     ttf_.setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
     ttf_.setAltColor(1, 228, 88, 67);
     ttf_.setAltColor(2, 31, 255, 0);
@@ -189,13 +190,19 @@ void MapRenderer::update() {
                     auto pty = float(pt.y - originY - y0);
                     auto tp = std::get<0>(ite->second);
                     switch (tp) {
+                    case TypeDoor: {
+                        float w = std::get<3>(ite->second) * .5f, h = std::get<4>(ite->second) * .5f;
+                        squadPip.pushQuad(ptx - w, pty - h, ptx + w, pty + h, objColors_[tp]);
+                        break;
+                    }
                     case TypeWayPoint:
                     case TypeQuest:
                     case TypePortal:
                     case TypeChest:
                     case TypeShrine:
                     case TypeWell: {
-                        squadPip.pushQuad(ptx - 4, pty - 4, ptx + 4, pty + 4, objColors_[tp]);
+                        float w = std::get<3>(ite->second) * .5f, h = std::get<4>(ite->second) * .5f;
+                        squadPip.pushQuad(ptx - w, pty - h, ptx + w, pty + h, objColors_[tp]);
                         if (tp != TypeShrine && tp != TypeWell) {
                             const auto *lngarr = std::get<2>(ite->second);
                             std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
@@ -431,9 +438,10 @@ void MapRenderer::drawObjects() {
             const auto &obj = p.second;
             auto x = float(obj.x - originX - x0) - w;
             auto y = float(obj.y - originY - y0) - h;
-            dynamicPipeline_.pushQuad(x - 4, y - 4, x + 4, y + 4, objColors_[obj.type]);
+            auto dw = obj.w, dh = obj.h;
+            dynamicPipeline_.pushQuad(x - dw, y - dh, x + dw, y + dh, objColors_[obj.type]);
             if (obj.name) {
-                auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
+                auto coord = transform_ * HMM_Vec4(x - dw, y - dh, 0, 1);
                 std::wstring_view sv = (*obj.name)[lng_];
                 /* if type is Portal, the portal target level is stored in field `flag` */
                 if (obj.type == TypePortal && obj.flag < gamedata->levels.size()) {

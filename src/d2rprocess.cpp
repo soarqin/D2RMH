@@ -582,6 +582,8 @@ void D2RProcess::updateData() {
                 obj.x = path.posX;
                 obj.y = path.posY;
                 obj.flag = flag;
+                obj.w = std::get<3>(ite->second) * .5f;
+                obj.h = std::get<4>(ite->second) * .5f;
                 break;
             }
             default:

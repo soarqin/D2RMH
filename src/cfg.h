@@ -44,6 +44,7 @@ struct Cfg {
     uint32_t uniqueMonsterColor = RGBA(192, 166, 130, 255);
     uint32_t monsterColor = RGBA(255, 0, 0, 255);
     uint32_t npcColor = RGBA(160, 160, 160, 255);
+    uint32_t doorColor = RGBA(80, 255, 80, 255);
     uint32_t msgBgColor = RGBA(1, 1, 1, 255);
 #undef RGBA
     std::string msgPosition;

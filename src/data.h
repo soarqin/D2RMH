@@ -25,6 +25,7 @@ enum EObjType {
     TypeMonster,
     TypeUniqueMonster,
     TypeNpc,
+    TypeDoor,
     TypeMax,
 };
 
@@ -34,7 +35,7 @@ struct Data {
     std::vector<std::pair<std::string, const LngString*>> levels, shrines, superUniques, items;
     std::vector<std::tuple<std::string, bool, const LngString*>> monsters;
     std::unordered_map<std::string, uint32_t> itemIdByCode;
-    std::unordered_map<int, std::tuple<EObjType, std::string, const LngString*>> objects[2];
+    std::unordered_map<int, std::tuple<EObjType, std::string, const LngString*, float, float>> objects[2];
     std::unordered_map<int, std::set<int>> guides;
 };
 

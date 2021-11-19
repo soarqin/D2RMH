@@ -81,6 +81,7 @@ void loadCfg(const std::string &filename) {
             LOADVALC(unique_monster_color, uniqueMonsterColor)
             LOADVALC(monster_color, monsterColor)
             LOADVALC(npc_color, npcColor)
+            LOADVALC(door_color, doorColor)
             LOADVALC(msg_bg_color, msgBgColor)
             LOADVAL(msg_position, msgPosition)
 

@@ -40,6 +40,7 @@ public:
         const std::array<std::wstring, 13> *name;
         uint8_t type;
         uint8_t flag;
+        float w, h;
     };
     struct MapItem {
         uint32_t x, y;
