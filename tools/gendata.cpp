@@ -119,9 +119,22 @@ int main(int argc, char *argv[]) {
 
     HANDLE storage;
     char path[512];
+    wchar_t wpath[512];
     snprintf(path, 512, "%s\\Data", argv[1]);
-    if (!CascOpenStorage(path, CASC_LOCALE_ALL, &storage)) {
-        return -1;
+    MultiByteToWideChar(CP_ACP, 0, path, 512, wpath, 512);
+    if (!CascOpenStorage(wpath, CASC_LOCALE_ALL, &storage)) {
+        HKEY key;
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Diablo II Resurrected", 0, KEY_READ, &key) == ERROR_SUCCESS) {
+            wchar_t regpath[MAX_PATH];
+            DWORD pathSize = sizeof(regpath);
+            if (RegQueryValueExW(key, L"InstallSource", nullptr, nullptr, LPBYTE(regpath), &pathSize) == ERROR_SUCCESS) {
+                if (!CascOpenStorage(regpath, CASC_LOCALE_ALL, &storage)) {
+                    RegCloseKey(key);
+                    return -1;
+                }
+            }
+            RegCloseKey(key);
+        }
     }
 
     JsonLng jlng;

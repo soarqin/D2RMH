@@ -57,7 +57,7 @@ set(ZLIB_FILES
     )
 
 add_library(casc STATIC ${SRC_FILES} ${HEADER_FILES} ${ZLIB_FILES})
-target_compile_definitions(casc PRIVATE _7ZIP_ST BZ_STRICT_ANSI)
+target_compile_definitions(casc PRIVATE _7ZIP_ST BZ_STRICT_ANSI PUBLIC _UNICODE UNICODE)
 target_include_directories(casc PUBLIC src)
 target_link_libraries(casc ws2_32)
 set_target_properties(casc PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
