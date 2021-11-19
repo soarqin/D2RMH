@@ -86,14 +86,19 @@ void loadCfg(const std::string &filename) {
             LOADVAL(msg_position, msgPosition)
 
             LOADVALN(show_player_names, showPlayerNames)
-            LOADVALN(show_monsters, showMonsters)
-            LOADVALN(show_normal_monsters, showNormalMonsters)
+            LOADVALN(show_npc_names, showNpcNames)
             LOADVALN(show_objects, showObjects)
             LOADVALN(show_items, showItems)
-            LOADVALN(show_monster_name, showMonsterName)
-            LOADVALN(show_npc_name, showNpcName)
-            LOADVALN(show_monster_enchant, showMonsterEnchant)
-            LOADVALN(show_monster_immune, showMonsterImmune)
+            LOADVALN(show_npc_name, showNpcNames)
+            LOADVALN(show_monsters, showMonsters)
+            LOADVALN(show_monster_names, showMonsterNames)
+            LOADVALN(show_monster_enchants, showMonsterEnchants)
+            LOADVALN(show_monster_immunities, showMonsterImmunities)
+            /* backward compatibility */
+            LOADVALN(show_normal_monsters, showNormalMonsters)
+            LOADVALN(show_monster_name, showMonsterNames)
+            LOADVALN(show_monster_enchant, showMonsterEnchants)
+            LOADVALN(show_monster_immune, showMonsterImmunities)
             break;
         case 2:
             if (false) {}
@@ -133,6 +138,7 @@ void loadCfg(const std::string &filename) {
         return 1;
     }, &section);
     sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
+    if (sCfg.showNormalMonsters) { sCfg.showMonsters = 2; }
     if (!sCfg.mapArea.empty()) {
         auto vec = splitString(sCfg.mapArea, ',');
         if (vec.size() > 1) {

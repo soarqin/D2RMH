@@ -53,14 +53,14 @@ struct Cfg {
     int msgAlign = 2;
 
     int showPlayerNames = 1;
-    int showMonsters = 1;
-    int showNormalMonsters = 0;
+    int showNpcNames = 1;
     int showObjects = 1;
     int showItems = 1;
-    int showMonsterName = 0;
-    int showNpcName = 1;
-    int showMonsterEnchant = 1;
-    int showMonsterImmune = 1;
+    int showMonsters = 1;
+    int showNormalMonsters = 0;
+    int showMonsterNames = 0;
+    int showMonsterEnchants = 1;
+    int showMonsterImmunities = 1;
 
     std::wstring encTxtExtraStrong = L"S";
     std::wstring encTxtExtraFast = L"F";

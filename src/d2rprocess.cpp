@@ -485,7 +485,8 @@ void D2RProcess::updateData() {
             auto isUnique = (monData.flag & 0x0E) != 0;
             auto &txtData = gamedata->monsters[unit.txtFileNo];
             auto isNpc = std::get<1>(txtData);
-            if (!cfg->showNormalMonsters && !isUnique && !isNpc) { return; }
+            auto sm = cfg->showMonsters;
+            if (!isNpc && !(sm == 2 || (isUnique && sm == 1))) { return; }
             DynamicPath path;
             if (!READ(unit.pathPtr, path)) { return; }
             auto &mon = mapMonsters_.emplace_back();
@@ -494,7 +495,8 @@ void D2RProcess::updateData() {
             mon.isNpc = isNpc;
             mon.isUnique = isUnique;
             mon.flag = monData.flag;
-            if ((cfg->showMonsterName && isUnique) || (cfg->showNpcName && isNpc)) {
+            auto sn = cfg->showMonsterNames;
+            if ((sn == 2 || (isUnique && sn == 1)) || (isNpc && cfg->showNpcNames)) {
                 /* Super unique */
                 if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {
                     mon.name = gamedata->superUniques[monData.uniqueNo].second;
@@ -502,10 +504,10 @@ void D2RProcess::updateData() {
                     mon.name = std::get<2>(txtData);
                 }
             }
-            if (!isUnique) { return; }
+            auto sme = cfg->showMonsterEnchants;
             int off = 0;
             bool hasAura = false;
-            if (cfg->showMonsterEnchant) {
+            if (sme == 2 || (isUnique && sme == 1)) {
                 uint8_t id;
                 for (int n = 0; n < 9 && (id = monData.enchants[n]) != 0; ++n) {
                     if (id == 30) {
@@ -518,11 +520,13 @@ void D2RProcess::updateData() {
                     }
                 }
             }
-            if (!cfg->showMonsterImmune && !hasAura) {
+            auto smi = cfg->showMonsterImmunities;
+            bool showMI = smi == 2 || (isUnique && sme == 1);
+            if (!showMI && !hasAura) {
                 mon.enchants[off] = 0;
                 return;
             }
-            readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, hasAura](const StatList &stats) {
+            readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, hasAura, showMI](const StatList &stats) {
                 if (stats.stateNo) {
                     if (!hasAura) { return; }
                     const wchar_t *str = auraStrings[stats.stateNo];
@@ -531,7 +535,7 @@ void D2RProcess::updateData() {
                     }
                     return;
                 }
-                if (!cfg->showMonsterImmune) { return; }
+                if (!showMI) { return; }
                 static StatEx statEx[64];
                 auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
                 if (!readMemory64(handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
