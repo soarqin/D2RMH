@@ -1,5 +1,4 @@
 ### Scheduled
-* show enchants/names for normal monsters
 * status text panel (timer, etc.)
 * global hotkeys to tweak functions realtime
 
