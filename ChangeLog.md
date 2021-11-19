@@ -1,3 +1,16 @@
+# v0.6.2
+* add `panel_mask` to config ini, which can hide map layer when panels are opened
+* fix the way to test local player
+* fix a logic bug that causes map layer not shown once D2R is closed and reopen
+* use real size in objects.txt for drawing map objects and draw doors on map layer now
+* (#46) config entries are changed and fixed, now it is able to display names, enchants and immunities for normal monsters:
+  * remove `show_normal_monsters`, merged into `show_monsters`, which has 3 available values now
+  * `show_monster_name` => `show_monster_names` and has 3 available values now
+  * `show_monster_enchant` => `show_monster_enchants` and has 3 available values now
+  * `show_monster_immune` => `show_monster_immunities` and has 3 available values now
+  * old config entries are still accepted, but please migrate to new names if possible
+* (gendata) can read D2R installation path from registry now
+
 # v0.6.1
 * add `map_area` to config ini, to restrict map drawing area
 * `msg_position` is relative to the whole D2R window now

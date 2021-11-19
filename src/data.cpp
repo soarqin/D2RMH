@@ -176,7 +176,7 @@ void loadData() {
                 }
                 sgamedata.objects[0][strtol(name, nullptr, 0)] = {t, sl[1], nullptr, x, y};
             } else {
-                sgamedata.objects[1][strtol(name, nullptr, 0)] = {t, sl[1], nullptr, 2, 2};
+                sgamedata.objects[1][strtol(name, nullptr, 0)] = {t, sl[1], nullptr, 2.f, 2.f};
             }
             break;
         }
