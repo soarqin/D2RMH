@@ -495,8 +495,12 @@ void D2RProcess::updateData() {
             mon.isNpc = isNpc;
             mon.isUnique = isUnique;
             mon.flag = monData.flag;
-            auto sn = cfg->showMonsterNames;
-            if ((sn == 2 || (isUnique && sn == 1)) || (isNpc && cfg->showNpcNames)) {
+            if (isNpc) {
+                if (cfg->showNpcNames) {
+                    mon.name = std::get<2>(txtData);
+                    return;
+                }
+            } else if (auto sn = cfg->showMonsterNames; (sn == 2 || (isUnique && sn == 1))) {
                 /* Super unique */
                 if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {
                     mon.name = gamedata->superUniques[monData.uniqueNo].second;
@@ -504,10 +508,9 @@ void D2RProcess::updateData() {
                     mon.name = std::get<2>(txtData);
                 }
             }
-            auto sme = cfg->showMonsterEnchants;
             int off = 0;
             bool hasAura = false;
-            if (sme == 2 || (isUnique && sme == 1)) {
+            if (auto sme = cfg->showMonsterEnchants; sme == 2 || (isUnique && sme == 1)) {
                 uint8_t id;
                 for (int n = 0; n < 9 && (id = monData.enchants[n]) != 0; ++n) {
                     if (id == 30) {
@@ -521,7 +524,7 @@ void D2RProcess::updateData() {
                 }
             }
             auto smi = cfg->showMonsterImmunities;
-            bool showMI = smi == 2 || (isUnique && sme == 1);
+            bool showMI = smi == 2 || (isUnique && smi == 1);
             if (!showMI && !hasAura) {
                 mon.enchants[off] = 0;
                 return;
