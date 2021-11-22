@@ -20,6 +20,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <commctrl.h>
 #include <stdexcept>
 #include <map>
+#include <string>
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
@@ -28,6 +29,10 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 struct MenuItem {
     UINT id = 0;
     HMENU submenu = nullptr;
+
+    std::wstring name;
+    int parent = 0;
+    unsigned flags = 0;
     std::function<void()> cb;
 };
 
@@ -39,10 +44,20 @@ struct WindowCtx {
     bool running = false;
     UINT userMsg = WM_USER + 1;
     std::map<UINT, MenuItem> trayMenuInfo;
+    struct {
+        bool enabled = false;
+        const wchar_t *icon = nullptr;
+        std::wstring tip, info, infoTitle;
+    } trayMenuBase;
 };
 
 static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static UINT taskbarRestartMsg;
     switch (uMsg) {
+    case WM_CREATE: {
+        taskbarRestartMsg = RegisterWindowMessageW(L"TaskbarCreated");
+        break;
+    }
     case WM_DESTROY: {
         auto *ctx = ((Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->ctx();
         if (ctx->nid.cbSize) {
@@ -84,6 +99,19 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return 0;
     }
     default:
+        if (uMsg == taskbarRestartMsg) {
+            auto *win = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+            auto *ctx = win->ctx();
+            if (!ctx->trayMenuBase.enabled) {
+                break;
+            }
+            auto m = ctx->trayMenuInfo;
+            win->destroyTrayMenu();
+            win->enableTrayMenu(true, ctx->trayMenuBase.icon, ctx->trayMenuBase.tip.c_str(), ctx->trayMenuBase.info.c_str(), ctx->trayMenuBase.infoTitle.c_str());
+            for (auto &p: m) {
+                win->addTrayMenuItem(p.second.name.c_str(), p.second.parent, p.second.flags, p.second.cb);
+            }
+        }
         break;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -174,9 +202,11 @@ BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
 void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip, const wchar_t *info, const wchar_t *infoTitle) {
+    ctx_->trayMenuBase = {enable, icon, tip ? tip : L"", info ? info : L"", infoTitle ? infoTitle : L""};
     if (!enable) {
         if (ctx_->nid.cbSize) {
             Shell_NotifyIconW(NIM_DELETE, &ctx_->nid);
+            memset(&ctx_->nid, 0, sizeof(ctx_->nid));
         }
         return;
     }
@@ -192,11 +222,11 @@ void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip
     ctx_->nid.hWnd = ctx_->hwnd;
     ctx_->nid.uID = 0;
     ctx_->nid.uFlags = NIF_ICON | NIF_MESSAGE;
-    if (tip) {
+    if (tip && tip[0]) {
         ctx_->nid.uFlags |= NIF_TIP;
         lstrcpyW(ctx_->nid.szTip, tip);
     }
-    if (info && infoTitle) {
+    if (info && info[0] && infoTitle && infoTitle[0]) {
         ctx_->nid.uFlags |= NIF_INFO;
         lstrcpyW(ctx_->nid.szInfo, info);
         lstrcpyW(ctx_->nid.szInfoTitle, infoTitle);
@@ -211,13 +241,15 @@ void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip
     Shell_NotifyIconW(NIM_ADD, &ctx_->nid);
 
     ctx_->trayMenu = CreatePopupMenu();
+}
+
+void Window::addAboutMenu() {
     addTrayMenuItem(L"About", -1, 0, [] {
         DialogBox(HINST_THISCOMPONENT, MAKEINTRESOURCE(101), nullptr, dialogProc);
     });
 }
 
 int Window::addTrayMenuItem(const wchar_t *name, int parent, unsigned flags, const std::function<void()> &cb) {
-    auto &st = ctx_->trayMenuInfo[ctx_->userMsg];
     HMENU parentMenu;
     if (parent < 0) {
         parentMenu = ctx_->trayMenu;
@@ -228,6 +260,7 @@ int Window::addTrayMenuItem(const wchar_t *name, int parent, unsigned flags, con
         }
         parentMenu = ite->second.submenu;
     }
+    auto &st = ctx_->trayMenuInfo[ctx_->userMsg];
     if (lstrcmpW(name, L"-") == 0) {
         InsertMenuW(parentMenu, ctx_->userMsg, MF_SEPARATOR, TRUE, L"");
     } else {
@@ -253,8 +286,24 @@ int Window::addTrayMenuItem(const wchar_t *name, int parent, unsigned flags, con
         InsertMenuItemW(parentMenu, ctx_->userMsg, TRUE, &item);
     }
     st.id = ctx_->userMsg++;
+
+    st.name = name;
+    st.parent = parent;
+    st.flags = flags;
     st.cb = cb;
     return st.id;
+}
+
+void Window::destroyTrayMenu() {
+    if (ctx_->nid.cbSize) {
+        Shell_NotifyIconW(NIM_DELETE, &ctx_->nid);
+        memset(&ctx_->nid, 0, sizeof(ctx_->nid));
+    }
+    ctx_->trayMenuBase.enabled = false;
+    DestroyMenu(ctx_->trayMenu);
+    ctx_->trayMenu = nullptr;
+    ctx_->trayMenuInfo.clear();
+    ctx_->userMsg = WM_USER + 1;
 }
 
 bool Window::run() const {

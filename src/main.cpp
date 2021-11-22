@@ -50,6 +50,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     Window wnd(100, 100, 500, 400);
     wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
+    wnd.addAboutMenu();
     wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     Renderer renderer(&wnd);
     if (cfg->fps > 0) {
