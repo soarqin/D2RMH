@@ -616,6 +616,7 @@ struct UnitAny {
     uint64_t inventoryPtr;
     uint64_t unk5[23];
     uint64_t nextPtr;
+    uint64_t roomNextPtr;
 };
 
 #pragma pack(pop)

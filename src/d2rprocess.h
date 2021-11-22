@@ -9,11 +9,13 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <functional>
 #include <cstdint>
 
 struct UnitAny;
+struct DrlgRoom1;
 struct StatList;
 
 class D2RProcess final {
@@ -49,7 +51,7 @@ public:
         uint8_t color;
     };
 public:
-    explicit D2RProcess(uint32_t searchInterval = 500);
+    explicit D2RProcess(uint32_t searchInterval = 5);
     ~D2RProcess();
 
     void updateData();
@@ -59,6 +61,7 @@ public:
     [[nodiscard]] inline bool available() const { return available_; }
     [[nodiscard]] inline bool mapEnabled() const { return mapEnabled_ != 0; }
     [[nodiscard]] inline uint8_t panelEnabled() const { return panelEnabled_ != 0; }
+    [[nodiscard]] inline uint32_t realTombLevelId() const { return realTombLevelId_; }
 
     [[nodiscard]] inline const MapPlayer *currPlayer() const { return currPlayer_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return mapPlayers_; }
@@ -71,6 +74,12 @@ private:
     void resetData();
     void readUnitHashTable(uint64_t addr, const std::function<void(const UnitAny&)> &callback);
     void readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList&)> &callback);
+    void readRoomUnits(const DrlgRoom1 &room1, std::unordered_set<uint64_t> &roomList);
+    void readUnit(const UnitAny &unit);
+    void readUnitPlayer(const UnitAny &unit);
+    void readUnitMonster(const UnitAny &unit);
+    void readUnitObject(const UnitAny &unit);
+    void readUnitItem(const UnitAny &unit);
 
 private:
     void *handle_ = nullptr;
@@ -87,6 +96,8 @@ private:
     uint8_t panelEnabled_ = 0;
 
     uint32_t focusedPlayer_ = 0;
+
+    uint32_t realTombLevelId_ = 0;
 
     const MapPlayer *currPlayer_ = nullptr;
     std::unordered_map<uint32_t, MapPlayer> mapPlayers_;

@@ -156,6 +156,7 @@ void MapRenderer::update() {
         squadPip.setOrtho(0, float(mapTex_.width()), 0, float(mapTex_.height()));
         auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
         auto widthf = float(width) * .5f, heightf = float(height) * .5f;
+        auto realTombLevelId = d2rProcess_.realTombLevelId();
         for (auto &p: currMap_->adjacentLevels) {
             if (p.first >= gamedata->levels.size()) { continue; }
             if (p.second.exits.empty()) {
@@ -167,7 +168,7 @@ void MapRenderer::update() {
             const auto *lngarr = gamedata->levels[p.first].second;
             std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
             /* Check for TalTombs */
-            if (p.first >= 66 && p.first <= 72) {
+            if (p.first == realTombLevelId) {
                 auto *m = session_.getMap(p.first);
                 if (m && m->objects.find(152) != m->objects.end()) {
                     name = L">>> " + name + L" <<<";

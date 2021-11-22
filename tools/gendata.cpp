@@ -232,6 +232,8 @@ int main(int argc, char *argv[]) {
     idx1 = monTxt.colIndexByName("NameStr");
     idx2 = monTxt.colIndexByName("npc");
     idx3 = monTxt.colIndexByName("Align");
+    idx4 = monTxt.colIndexByName("inTown");
+    idx5 = monTxt.colIndexByName("enabled");
     ofs << std::endl << '[' << "npcs" << ']' << std::endl;
     rows = monTxt.rows();
     for (size_t i = 0; i < rows; ++i) {
@@ -251,13 +253,14 @@ int main(int argc, char *argv[]) {
 
     ofs << std::endl << '[' << "monsters" << ']' << std::endl;
     for (size_t i = 0; i < rows; ++i) {
+        if (!monTxt.value(i, idx5).second) { continue; }
         auto id = monTxt.value(i, idx0).second;
         auto key = monTxt.value(i, idx1).first;
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;
-            ofs << id << '=' << key << '|' << (monTxt.value(i, idx2).second ? 1 : monTxt.value(i, idx3).second ? 2 : 0) << std::endl;
         }
+        ofs << id << '=' << (arr ? key : "") << '|' << (monTxt.value(i, idx2).second ? 1 : monTxt.value(i, idx3).second ? 2 : monTxt.value(i, idx4).second ? 1 : 0) << std::endl;
     }
 
     idx0 = shrineTxt.colIndexByName("Code");
