@@ -54,7 +54,8 @@ void JsonLng::loadInternal(std::istream &stm) {
     nlohmann::json j;
     stm >> j;
     for (auto j2: j) {
-        auto &arr = strings_[j2["Key"].get<std::string>()];
+        auto key = j2["Key"].get<std::string>();
+        auto &arr = strings_[key];
         arr[LNG_enUS] = j2["enUS"].get<std::string>();
         arr[LNG_zhTW] = j2["zhTW"].get<std::string>();
         arr[LNG_deDE] = j2["deDE"].get<std::string>();
@@ -68,5 +69,6 @@ void JsonLng::loadInternal(std::istream &stm) {
         arr[LNG_ptBR] = j2["ptBR"].get<std::string>();
         arr[LNG_ruRU] = j2["ruRU"].get<std::string>();
         arr[LNG_zhCN] = j2["zhCN"].get<std::string>();
+        keysById_[j2["id"].get<uint32_t>()] = key;
     }
 }

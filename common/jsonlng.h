@@ -12,6 +12,7 @@
 #include <array>
 #include <string>
 #include <istream>
+#include <functional>
 
 class JsonLng final {
 public:
@@ -38,10 +39,16 @@ public:
     [[nodiscard]] const std::string &get(const std::string &key, LNG lang, LNG fallback = LNG_enUS) const;
     [[nodiscard]] const std::array<std::string, LNG_MAX> *get(const std::string &key) const;
     void remove(const std::string &key);
+    void iterateById(const std::function<void(uint32_t, const std::string&)> &func) {
+        for (auto &p: keysById_) {
+            func(p.first, p.second);
+        }
+    }
 
 private:
     void loadInternal(std::istream &stm);
 
 private:
     std::map<std::string, std::array<std::string, LNG_MAX>> strings_;
+    std::map<uint32_t, std::string> keysById_;
 };

@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    JsonLng jlng;
+    JsonLng jlng, jlngMerc;
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/item-names.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/item-runes.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/item-nameaffixes.json");
@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/objects.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/shrines.json");
     loadJsonLng(jlng, storage, "data:data/local/lng/strings/ui.json");
+    loadJsonLng(jlngMerc, storage, "data:data/local/lng/strings/mercenaries.json");
     jlng.remove("dummy");
     jlng.remove("Dummy");
     jlng.remove("unused");
@@ -230,6 +231,7 @@ int main(int argc, char *argv[]) {
     idx0 = monTxt.colIndexByName("*hcIdx");
     idx1 = monTxt.colIndexByName("NameStr");
     idx2 = monTxt.colIndexByName("npc");
+    idx3 = monTxt.colIndexByName("Align");
     ofs << std::endl << '[' << "npcs" << ']' << std::endl;
     rows = monTxt.rows();
     for (size_t i = 0; i < rows; ++i) {
@@ -254,7 +256,7 @@ int main(int argc, char *argv[]) {
         const auto *arr = jlng.get(key);
         if (arr) {
             strings[key] = *arr;
-            ofs << id << '=' << key << '|' << monTxt.value(i, idx2).second << std::endl;
+            ofs << id << '=' << key << '|' << (monTxt.value(i, idx2).second ? 1 : monTxt.value(i, idx3).second ? 2 : 0) << std::endl;
         }
     }
 
@@ -313,6 +315,15 @@ int main(int argc, char *argv[]) {
             itemIndex++;
         }
     }
+
+    ofs << std::endl << '[' << "mercnames" << ']' << std::endl;
+    jlngMerc.iterateById([&ofs, &jlngMerc, &strings](uint32_t id, const std::string &key) {
+        const auto *arr = jlngMerc.get(key);
+        if (arr) {
+            strings[key] = *arr;
+            ofs << id << '=' << key << std::endl;
+        }
+    });
 
     ofs << std::endl << '[' << "strings" << ']' << std::endl;
     for (auto &p: strings) {

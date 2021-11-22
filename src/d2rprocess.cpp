@@ -497,9 +497,13 @@ void D2RProcess::updateData() {
             mon.flag = monData.flag;
             if (isNpc) {
                 if (cfg->showNpcNames) {
-                    mon.name = std::get<2>(txtData);
-                    return;
+                    if (monData.mercNameId == uint16_t(-1) || monData.mercNameId >= gamedata->mercNames.size()) {
+                        mon.name = std::get<2>(txtData);
+                    } else {
+                        mon.name = gamedata->mercNames[monData.mercNameId].second;
+                    }
                 }
+                return;
             } else if (auto sn = cfg->showMonsterNames; (sn == 2 || (isUnique && sn == 1))) {
                 /* Super unique */
                 if ((monData.flag & 2) && monData.uniqueNo < gamedata->superUniques.size()) {

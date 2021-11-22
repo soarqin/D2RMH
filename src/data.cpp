@@ -127,7 +127,8 @@ void loadData() {
             else if (!strcmp(section, "shrines")) { *isec = 5; }
             else if (!strcmp(section, "superuniques")) { *isec = 6; }
             else if (!strcmp(section, "items")) { *isec = 7; }
-            else if (!strcmp(section, "strings")) { *isec = 8; }
+            else if (!strcmp(section, "mercnames")) { *isec = 8; }
+            else if (!strcmp(section, "strings")) { *isec = 9; }
             else { *isec = -1; }
             return 1;
         }
@@ -187,7 +188,7 @@ void loadData() {
             }
             const char *pos = strchr(value, '|');
             if (pos) {
-                sgamedata.monsters[id] = { std::string(value, pos), strtoul(pos + 1, nullptr, 0) > 0, nullptr };
+                sgamedata.monsters[id] = { std::string(value, pos), uint8_t(strtoul(pos + 1, nullptr, 0)), nullptr };
             } else {
                 sgamedata.monsters[id] = { value, false, nullptr };
             }
@@ -222,6 +223,13 @@ void loadData() {
             break;
         }
         case 8: {
+            auto id = strtol(name, nullptr, 0);
+            if (id >= 65535) { break; }
+            if (id >= sgamedata.mercNames.size()) { sgamedata.mercNames.resize(id + 1); }
+            sgamedata.mercNames[id].first = value;
+            break;
+        }
+        case 9: {
             const char *pos = strchr(name, '[');
             if (!pos) { break; }
             auto index = strtoul(pos + 1, nullptr, 0);
@@ -275,6 +283,15 @@ void loadData() {
             auto ite = sgamedata.strings.find(std::get<1>(p.second));
             if (ite == sgamedata.strings.end()) { continue; }
             std::get<2>(p.second) = &ite->second;
+        }
+    }
+    for (auto &p: sgamedata.mercNames) {
+        if (p.first.empty()) { continue; }
+        auto ite = sgamedata.strings.find(p.first);
+        if (ite == sgamedata.strings.end()) {
+            p.second = nullptr;
+        } else {
+            p.second = &ite->second;
         }
     }
 }

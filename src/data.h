@@ -33,10 +33,11 @@ struct Data {
     using LngString = std::array<std::wstring, 13>;
     std::unordered_map<std::string, LngString> strings;
     std::vector<std::pair<std::string, const LngString*>> levels, shrines, superUniques, items;
-    std::vector<std::tuple<std::string, bool, const LngString*>> monsters;
+    std::vector<std::tuple<std::string, uint8_t, const LngString*>> monsters;
     std::unordered_map<std::string, uint32_t> itemIdByCode;
     std::unordered_map<int, std::tuple<EObjType, std::string, const LngString*, float, float>> objects[2];
     std::unordered_map<int, std::set<int>> guides;
+    std::vector<std::pair<std::string, const LngString*>> mercNames = {};
 };
 
 struct UnitAny;
