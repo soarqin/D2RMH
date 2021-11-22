@@ -157,6 +157,7 @@ void MapRenderer::update() {
         auto originX = currMap_->levelOrigin.x, originY = currMap_->levelOrigin.y;
         auto widthf = float(width) * .5f, heightf = float(height) * .5f;
         auto realTombLevelId = d2rProcess_.realTombLevelId();
+        auto superUniqueTombLevelId = d2rProcess_.superUniqueTombLevelId();
         for (auto &p: currMap_->adjacentLevels) {
             if (p.first >= gamedata->levels.size()) { continue; }
             if (p.second.exits.empty()) {
@@ -174,6 +175,9 @@ void MapRenderer::update() {
                     name = L">>> " + name + L" <<<";
                     lines_.emplace_back(px - widthf, py - heightf);
                 }
+            }
+            if (p.first == superUniqueTombLevelId) {
+                name += L" <== SuperUnique";
             }
             squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[TypePortal]);
             textStrings_.emplace_back(px - widthf, py - heightf, name, float(ttf_.stringWidth(name, cfg->fontSize)) * .5f);

@@ -437,7 +437,6 @@ void D2RProcess::updateData() {
         player.act = act.actId;
         player.seed = act.seed;
         /* get real TalTomb level id */
-        READ(act.miscPtr + 0x120, realTombLevelId_);
         READ(act.miscPtr + 0x830, player.difficulty);
         DynamicPath path;
         if (!READ(unit.pathPtr, path)) { return; }
@@ -451,6 +450,8 @@ void D2RProcess::updateData() {
         if (!READ(room2.levelPtr + 0x1F8, levelId)) { return; }
 
         if (player.levelId != levelId) {
+            READ(act.miscPtr + 0x120, realTombLevelId_);
+            READ(act.miscPtr + 0x874, superUniqueTombLevelId_);
             player.levelChanged = true;
             player.levelId = levelId;
             if (cfg->showObjects) {

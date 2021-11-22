@@ -62,6 +62,7 @@ public:
     [[nodiscard]] inline bool mapEnabled() const { return mapEnabled_ != 0; }
     [[nodiscard]] inline uint8_t panelEnabled() const { return panelEnabled_ != 0; }
     [[nodiscard]] inline uint32_t realTombLevelId() const { return realTombLevelId_; }
+    [[nodiscard]] inline uint32_t superUniqueTombLevelId() const { return superUniqueTombLevelId_; }
 
     [[nodiscard]] inline const MapPlayer *currPlayer() const { return currPlayer_; }
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return mapPlayers_; }
@@ -98,6 +99,7 @@ private:
     uint32_t focusedPlayer_ = 0;
 
     uint32_t realTombLevelId_ = 0;
+    uint32_t superUniqueTombLevelId_ = 0;
 
     const MapPlayer *currPlayer_ = nullptr;
     std::unordered_map<uint32_t, MapPlayer> mapPlayers_;
