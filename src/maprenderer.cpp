@@ -534,7 +534,7 @@ void MapRenderer::updatePanelText() {
                 std::wstring_view sv(pat.data() + start, pos - start);
                 if (sv == L"duration") {
                     wchar_t n[16];
-                    auto dur = now - mapStartTime_;
+                    auto dur = uint32_t(now - mapStartTime_);
                     if (dur < 3600) {
                         wsprintfW(n, L"%02u:%02u", dur / 60, dur % 60);
                     } else {
