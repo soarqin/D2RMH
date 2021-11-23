@@ -8,7 +8,7 @@ add_executable(D2RMH WIN32 ${D2RMH_SRC_FILES})
 add_custom_target(D2RMH_RES DEPENDS D2RMH.ico)
 add_dependencies(D2RMH D2RMH_RES)
 target_include_directories(D2RMH PRIVATE ../d2mapapi stb)
-target_link_libraries(D2RMH glad inih d2mapapi shlwapi comctl32)
+target_link_libraries(D2RMH glad inih d2mapapi shlwapi comctl32 winmm)
 if(MSVC)
   add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/lib/ntdll.lib
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ntdll.def

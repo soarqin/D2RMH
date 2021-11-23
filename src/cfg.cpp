@@ -11,8 +11,13 @@
 #include "util.h"
 #include "ini.h"
 
+#include <fstream>
 #include <algorithm>
 #include <cstring>
+
+#if defined(_MSC_VER)
+#define strcasecmp stricmp
+#endif
 
 static Cfg sCfg;
 const Cfg *cfg = &sCfg;
@@ -42,6 +47,7 @@ void loadCfg(const std::string &filename) {
             if (!strcmp(section, "main")) { *(int*)user = 0; }
             else if (!strcmp(section, "ui")) { *(int*)user = 1; }
             else if (!strcmp(section, "enchants")) { *(int*)user = 2; }
+            else if (!strcmp(section, "sound")) { *(int*)user = 3; }
             else { *(int*)user = -1; }
             return 1;
         }
@@ -132,6 +138,19 @@ void loadCfg(const std::string &filename) {
             LOADVALW(cold_immunity, encTxtColdImmunity)
             LOADVALW(poison_immunity, encTxtPoisonImmunity)
             break;
+        case 3: {
+            if (strncmp(name, "sound[", 6) != 0) { break; }
+            auto index = size_t(strtol(name + 6, nullptr, 0));
+            if (!index) { break; }
+            if (index >= sCfg.sounds.size()) { sCfg.sounds.resize(index + 1); }
+            auto vlen = strlen(value);
+            if (!strcasecmp(value + vlen - 4, ".wav")) {
+                sCfg.sounds[index] = {utf8toucs4(value), false};
+            } else {
+                sCfg.sounds[index] = {utf8toucs4(value), true};
+            }
+            break;
+        }
         default:
             break;
         }

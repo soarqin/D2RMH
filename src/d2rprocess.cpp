@@ -414,7 +414,13 @@ void D2RProcess::updateData() {
     if (!handle_) { return; }
     if (hwnd_ && GetForegroundWindow() != hwnd_) { return; }
 
-    mapPlayers_.clear();
+    if (currPlayer_) {
+        auto cplayer = *currPlayer_;
+        mapPlayers_.clear();
+        mapPlayers_[focusedPlayer_] = cplayer;
+    } else {
+        mapPlayers_.clear();
+    }
     if (cfg->showMonsters) {
         mapMonsters_.clear();
     }
@@ -433,11 +439,23 @@ void D2RProcess::updateData() {
         READ(unit.unionPtr, player.name);
         focusedPlayer_ = unit.unitId;
         currPlayer = &player;
-        player.levelChanged = player.act != act.actId;
-        player.act = act.actId;
-        player.seed = act.seed;
-        /* get real TalTomb level id */
-        READ(act.miscPtr + 0x830, player.difficulty);
+        uint8_t difficulty;
+        READ(act.miscPtr + 0x830, difficulty);
+        player.levelChanged = false;
+        if (difficulty != player.difficulty) {
+            player.difficulty = difficulty;
+            player.levelChanged = true;
+            knownItems_.clear();
+        }
+        if (player.seed != act.seed) {
+            player.seed = act.seed;
+            player.levelChanged = true;
+            knownItems_.clear();
+        }
+        if (player.act != act.actId) {
+            player.act = act.actId;
+            player.levelChanged = true;
+        }
         DynamicPath path;
         if (!READ(unit.pathPtr, path)) { return; }
         player.posX = path.posX;
@@ -450,10 +468,13 @@ void D2RProcess::updateData() {
         if (!READ(room2.levelPtr + 0x1F8, levelId)) { return; }
 
         if (player.levelId != levelId) {
+            /* get real TalTomb level id */
             READ(act.miscPtr + 0x120, realTombLevelId_);
             READ(act.miscPtr + 0x874, superUniqueTombLevelId_);
             player.levelChanged = true;
             player.levelId = levelId;
+        }
+        if (player.levelChanged) {
             if (cfg->showObjects) {
                 mapObjects_.clear();
             }
@@ -848,7 +869,7 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
     mitem.y = path.posY;
     mitem.name = unit.txtFileNo < gamedata->items.size() ? gamedata->items[unit.txtFileNo].second : nullptr;
     mitem.flag = n & 0x0F;
-    auto color = n >> 4;
+    auto color = (n >> 4) & 0x0F;
     if (color == 0) {
         if (auto quality = uint32_t(item.quality - 1); quality < 8) {
             const uint8_t qualityColors[8] = {15, 15, 5, 3, 2, 9, 4, 8};
@@ -856,4 +877,15 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
         }
     }
     mitem.color = color;
+    auto snd = n >> 8;
+    if (snd > 0 && knownItems_.find(unit.unitId) == knownItems_.end()) {
+        knownItems_.insert(unit.unitId);
+        if (snd < cfg->sounds.size() && !cfg->sounds[snd].first.empty()) {
+            if (cfg->sounds[snd].second) {
+                PlaySoundW(cfg->sounds[snd].first.c_str(), nullptr, SND_ALIAS | SND_ASYNC | SND_NODEFAULT);
+            } else {
+                PlaySoundW(cfg->sounds[snd].first.c_str(), nullptr, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
+            }
+        }
+    }
 }

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <vector>
 #include <string>
 
 struct Cfg {
@@ -91,6 +92,8 @@ struct Cfg {
     std::wstring encTxtLightningImmunity = L"{9}i";
     std::wstring encTxtColdImmunity = L"{3}i";
     std::wstring encTxtPoisonImmunity = L"{2}i";
+
+    std::vector<std::pair<std::wstring, bool>> sounds;
 };
 
 extern void loadCfg(const std::string &filename = "D2RMH.ini");

@@ -44,6 +44,6 @@ struct UnitAny;
 struct ItemData;
 
 extern void loadData();
-extern uint8_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets);
+extern uint16_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets);
 
 extern const Data *gamedata;

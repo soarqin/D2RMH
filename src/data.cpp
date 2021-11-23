@@ -19,8 +19,8 @@
 static Data sgamedata;
 const Data *gamedata = &sgamedata;
 
-/* [id][quality-1][ethereal][sockets] */
-static uint8_t itemFilters[1000][8][2][7] = {};
+/* itemFilters[id][quality-1][ethereal][sockets] = style | (color << 4) | (sound << 8) */
+static uint16_t itemFilters[1000][8][2][7] = {};
 
 static inline uint32_t strToUInt(const std::string &str, bool searchItemCode) {
     if (!searchItemCode) {
@@ -66,11 +66,15 @@ static inline std::vector<std::pair<uint32_t, uint32_t>> calcRanges(const std::s
 }
 
 static void loadItemFilter(const char *key, const char *value) {
-    auto res = uint8_t(strtoul(value, nullptr, 0));
+    auto res = uint16_t(strtoul(value, nullptr, 0));
     if (res) {
         auto *sub = strchr(value, ',');
         if (sub) {
-            res |= uint8_t(strtoul(sub + 1, nullptr, 0) << 4);
+            char *endptr = nullptr;
+            res |= uint16_t(std::min(15ul, strtoul(sub + 1, &endptr, 0)) << 4);
+            if (endptr && *endptr == ',') {
+                res |= uint16_t(std::min(255ul, strtoul(endptr + 1, nullptr, 0)) << 8);
+            }
         }
     }
 
@@ -296,7 +300,7 @@ void loadData() {
     }
 }
 
-uint8_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets) {
+uint16_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets) {
     if (sockets > 6) { return 0; }
     auto id = unit->txtFileNo;
     if (id >= 1000) { return 0; }

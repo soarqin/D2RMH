@@ -106,4 +106,5 @@ private:
     std::vector<MapMonster> mapMonsters_;
     std::unordered_map<uint32_t, MapObject> mapObjects_;
     std::vector<MapItem> mapItems_;
+    std::unordered_set<uint32_t> knownItems_;
 };
