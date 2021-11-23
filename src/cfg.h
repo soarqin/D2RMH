@@ -52,7 +52,7 @@ struct Cfg {
     float msgPositionX = .0f;
     float msgPositionY = .0f;
     int msgAlign = 0;
-    std::wstring panelPattern = L"{duration}";
+    std::wstring panelPattern;
     std::string panelPosition = "0.93,0.015,2";
     std::vector<std::wstring> panelPatterns;
     float panelPositionX = .0f;
