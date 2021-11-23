@@ -1,5 +1,4 @@
 ### Scheduled
-* status text panel (timer, etc.)
 * global hotkeys to tweak functions realtime
 
 ### Need more research, may not be implemented

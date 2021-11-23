@@ -1,3 +1,16 @@
+# v0.7
+* (#47, #59, #63) add adaptive size for `map_area`, and is set as default value, kinda resolves confusion caused by new mechanism of `map_area`
+* (#50) add text panel support, with new entries `text_panel_pattern` and `text_panel_position` in D2RMH.ini
+* (#58) fix bug that monster immunities is not shown when disable `show_monster_enchants`
+* (#60) add simple function that play sound on item dropping
+* (#61) items sold to merchants are not detected now
+* (#62) neutral NPCs in town, mercenaries and summons are shown as NPC now
+* show real names of mercenaries now
+* much simpler and faster way to detect real TalTomb, and show TalTomb with Super Unique monster(Ancient Kaa the Soulless) now
+* set D2R process finding interval to 5 seconds, and remove WinMM from dependencies
+* restore tray icon on Windows Explorer restart
+* add `Reload Config` to tray menu for quick reloading D2RMH.ini
+
 # v0.6.2
 * add `panel_mask` to config ini, which can hide map layer when panels are opened
 * fix the way to test local player
@@ -32,7 +45,7 @@
     * map_centered: 0->1
     * show_monster_name: 1->0
 * fix bug that running D2RMH before D2R(windowed) causes overlay window shown out of window
-* add an about dialog
+* add an About dialog
 * refactoring some remote mem reading codes to make it more readable
 * refactoring string matching codes to improve performance
 
