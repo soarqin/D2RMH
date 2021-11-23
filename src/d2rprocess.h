@@ -70,6 +70,8 @@ public:
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return mapObjects_; }
     [[nodiscard]] inline const std::vector<MapItem> &items() const { return mapItems_; }
 
+    void reloadConfig() { loadFromCfg(); resetData(); }
+
 private:
     void searchForProcess();
     void resetData();
@@ -81,6 +83,7 @@ private:
     void readUnitMonster(const UnitAny &unit);
     void readUnitObject(const UnitAny &unit);
     void readUnitItem(const UnitAny &unit);
+    void loadFromCfg();
 
 private:
     void *handle_ = nullptr;

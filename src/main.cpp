@@ -49,9 +49,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     loadData();
 
     Window wnd(100, 100, 500, 400);
-    wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
-    wnd.addAboutMenu();
-    wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     Renderer renderer(&wnd);
     if (cfg->fps > 0) {
         renderer.limitFPS(cfg->fps);
@@ -60,6 +57,19 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     MapRenderer map(renderer);
+    wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
+    wnd.addAboutMenu();
+    wnd.addTrayMenuItem(L"Reload Config", -1, 0, [&wnd, &renderer, &map]() {
+        loadCfg();
+        wnd.reloadConfig();
+        if (cfg->fps > 0) {
+            renderer.limitFPS(cfg->fps);
+        } else {
+            Renderer::setSwapInterval(-cfg->fps);
+        }
+        map.reloadConfig();
+    });
+    wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     while (wnd.run()) {
         renderer.prepare();
         map.update();

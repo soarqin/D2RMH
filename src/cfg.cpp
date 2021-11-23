@@ -40,6 +40,7 @@ inline uint32_t calcColor(const char *value) {
 }
 
 void loadCfg(const std::string &filename) {
+    sCfg = Cfg {};
     int section = -1;
     ini_parse(filename.c_str(), [](void* user, const char* section,
                                    const char* name, const char* value)->int {
@@ -90,6 +91,8 @@ void loadCfg(const std::string &filename) {
             LOADVALC(door_color, doorColor)
             LOADVALC(msg_bg_color, msgBgColor)
             LOADVAL(msg_position, msgPosition)
+            LOADVALW(text_panel_pattern, panelPattern)
+            LOADVAL(text_panel_position, panelPosition)
 
             LOADVALN(show_player_names, showPlayerNames)
             LOADVALN(show_npc_names, showNpcNames)
@@ -178,6 +181,30 @@ void loadCfg(const std::string &filename) {
         }
         if (sz > 2) {
             sCfg.msgAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
+        }
+    }
+    if (!sCfg.panelPattern.empty()) {
+        sCfg.panelPatterns.clear();
+        typename std::wstring::size_type pos = 0, last = 0;
+        while ((pos = sCfg.panelPattern.find(L"{newline}", last)) != std::wstring::npos) {
+            sCfg.panelPatterns.emplace_back(sCfg.panelPattern.substr(last, pos - last));
+            last = pos + 9;
+        }
+        if (last < sCfg.panelPattern.size()) {
+            sCfg.panelPatterns.emplace_back(sCfg.panelPattern.substr(last));
+        }
+    }
+    if (!sCfg.panelPosition.empty()) {
+        auto vec = splitString(sCfg.panelPosition, ',');
+        auto sz = vec.size();
+        if (sz > 0) {
+            sCfg.panelPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;
+        }
+        if (sz > 1) {
+            sCfg.panelPositionY = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f) - .5f;
+        }
+        if (sz > 2) {
+            sCfg.panelAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
         }
     }
 }

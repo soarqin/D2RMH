@@ -48,10 +48,16 @@ struct Cfg {
     uint32_t doorColor = RGBA(80, 255, 80, 255);
     uint32_t msgBgColor = RGBA(1, 1, 1, 255);
 #undef RGBA
-    std::string msgPosition;
-    float msgPositionX = .95f - .5f;
-    float msgPositionY = .25f - .5f;
-    int msgAlign = 2;
+    std::string msgPosition = "0.95,0.25,2";
+    float msgPositionX = .0f;
+    float msgPositionY = .0f;
+    int msgAlign = 0;
+    std::wstring panelPattern = L"{duration}";
+    std::string panelPosition = "0.93,0.015,2";
+    std::vector<std::wstring> panelPatterns;
+    float panelPositionX = .0f;
+    float panelPositionY = .0f;
+    int panelAlign = 0;
 
     int showPlayerNames = 1;
     int showNpcNames = 1;

@@ -37,6 +37,8 @@ public:
     void getDimension(int &w, int &h);
     void move(int x, int y, int w, int h);
 
+    void reloadConfig();
+
 private:
     void setSizeCallback(const std::function<void(int, int)> &cb);
     void *hwnd();

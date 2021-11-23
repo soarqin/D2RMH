@@ -168,6 +168,13 @@ int main(int argc, char *argv[]) {
     std::map<std::string, std::array<std::string, JsonLng::LNG_MAX>> strings;
     std::map<std::string, int> levelIdByName;
 
+    for (const auto *s: {"strCreateGameNormalText", "strCreateGameNightmareText", "strCreateGameHellText"}) {
+        const auto *arr = jlng.get(s);
+        if (arr) {
+            strings[s] = *arr;
+        }
+    }
+
     std::ofstream ofs("D2RMH_data.ini");
     std::ofstream ofs2("ItemDesc.csv");
     ofs2 << /* UTF-8 BOM */ "\xEF\xBB\xBF" << "index,code,enUS,zhTW,deDE,esES,frFR,itIT,koKR,plPL,esMX,jaJP,ptBR,ruRU,zhCN" << std::endl;

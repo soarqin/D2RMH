@@ -334,16 +334,20 @@ void Window::getDimension(int &w, int &h) {
     h = rc.bottom - rc.top;
 }
 
-void *Window::hwnd() {
-    return (void*)ctx_->hwnd;
-}
-
 void Window::move(int x, int y, int w, int h) {
     auto exStyle = GetWindowLong(ctx_->hwnd, GWL_EXSTYLE);
     auto style = GetWindowLong(ctx_->hwnd, GWL_STYLE);
     RECT rc = {x, y, x + w, y + h};
     AdjustWindowRectEx(&rc, style, FALSE, exStyle);
     MoveWindow(ctx_->hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+}
+
+void Window::reloadConfig() {
+    SetLayeredWindowAttributes(ctx_->hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
+}
+
+void *Window::hwnd() {
+    return (void*)ctx_->hwnd;
 }
 
 void Window::setSizeCallback(const std::function<void(int, int)> &cb) {

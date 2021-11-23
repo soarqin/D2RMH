@@ -33,11 +33,14 @@ public:
     explicit MapRenderer(Renderer &renderer);
     void update();
     void render();
+    void reloadConfig();
 
 private:
     void updateWindowPos();
     void updatePlayerPos();
     void drawObjects();
+    void updatePanelText();
+    void loadFromCfg();
 
 private:
     Renderer &renderer_;
@@ -47,7 +50,7 @@ private:
     PipelineSquad2D messagePipeline_;
     D2RProcess d2rProcess_;
     TTFRenderGL ttfgl_;
-    TTF ttf_;
+    std::unique_ptr<TTF> ttf_;
     Texture mapTex_;
     hmm_mat4 transform_ = {};
     int mapViewport_[4] = {};
@@ -73,4 +76,8 @@ private:
     std::vector<std::tuple<float, float>> lines_;
 
     uint32_t objColors_[TypeMax] = {};
+
+    uint32_t mapStartTime_ = 0;
+    uint32_t nextPanelUpdateTime_ = 0;
+    std::vector<std::wstring> panelText_;
 };

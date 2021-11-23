@@ -341,35 +341,6 @@ D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval)
     mapMonsters_.reserve(1024);
     mapItems_.reserve(1024);
     mapObjects_.bucket(1024);
-    loadEncText(enchantStrings[5], cfg->encTxtExtraStrong);
-    loadEncText(enchantStrings[6], cfg->encTxtExtraFast);
-    loadEncText(enchantStrings[7], cfg->encTxtCursed);
-    loadEncText(enchantStrings[8], cfg->encTxtMagicResistant);
-    loadEncText(enchantStrings[9], cfg->encTxtFireEnchanted);
-    loadEncText(enchantStrings[17], cfg->encTxtLigntningEnchanted);
-    loadEncText(enchantStrings[18], cfg->encTxtColdEnchanted);
-    loadEncText(enchantStrings[25], cfg->encTxtManaBurn);
-    loadEncText(enchantStrings[26], cfg->encTxtTeleportation);
-    loadEncText(enchantStrings[27], cfg->encTxtSpectralHit);
-    loadEncText(enchantStrings[28], cfg->encTxtStoneSkin);
-    loadEncText(enchantStrings[29], cfg->encTxtMultipleShots);
-    loadEncText(enchantStrings[37], cfg->encTxtFanatic);
-    loadEncText(enchantStrings[39], cfg->encTxtBerserker);
-
-    loadEncText(auraStrings[33], cfg->MightAura);
-    loadEncText(auraStrings[35], cfg->HolyFireAura);
-    loadEncText(auraStrings[40], cfg->BlessedAimAura);
-    loadEncText(auraStrings[43], cfg->HolyFreezeAura);
-    loadEncText(auraStrings[46], cfg->HolyShockAura);
-    loadEncText(auraStrings[28], cfg->ConvictionAura);
-    loadEncText(auraStrings[49], cfg->FanaticismAura);
-
-    loadEncText(immunityStrings[0], cfg->encTxtPhysicalImmunity);
-    loadEncText(immunityStrings[1], cfg->encTxtMagicImmunity);
-    loadEncText(immunityStrings[2], cfg->encTxtFireImmunity);
-    loadEncText(immunityStrings[3], cfg->encTxtLightningImmunity);
-    loadEncText(immunityStrings[4], cfg->encTxtColdImmunity);
-    loadEncText(immunityStrings[5], cfg->encTxtPoisonImmunity);
     std::pair<StatId, size_t> statsMappingInit[] = {
         {StatId::Damageresist, 0},
         {StatId::Magicresist, 1},
@@ -381,6 +352,8 @@ D2RProcess::D2RProcess(uint32_t searchInterval): searchInterval_(searchInterval)
     for (auto[k, v]: statsMappingInit) {
         statsMapping[size_t(k)] = v;
     }
+
+    loadFromCfg();
 
     searchForProcess();
     nextSearchTime_ = time(nullptr) + searchInterval_;
@@ -414,13 +387,21 @@ void D2RProcess::updateData() {
     if (!handle_) { return; }
     if (hwnd_ && GetForegroundWindow() != hwnd_) { return; }
 
+    uint8_t lastDifficulty;
+    uint32_t lastSeed, lastAct, lastLevelId;
     if (currPlayer_) {
-        auto cplayer = *currPlayer_;
-        mapPlayers_.clear();
-        mapPlayers_[focusedPlayer_] = cplayer;
+        lastDifficulty = currPlayer_->difficulty;
+        lastSeed = currPlayer_->seed;
+        lastAct = currPlayer_->act;
+        lastLevelId = currPlayer_->levelId;
     } else {
-        mapPlayers_.clear();
+        lastDifficulty = uint8_t(-1);
+        lastSeed = 0;
+        lastAct = uint32_t(-1);
+        lastLevelId = uint32_t(-1);
     }
+
+    mapPlayers_.clear();
     if (cfg->showMonsters) {
         mapMonsters_.clear();
     }
@@ -429,7 +410,7 @@ void D2RProcess::updateData() {
     }
 
     MapPlayer *currPlayer = nullptr;
-    readUnitHashTable(baseAddr_ + HashTableBase, [this, &currPlayer](const UnitAny &unit) {
+    readUnitHashTable(baseAddr_ + HashTableBase, [this, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
         if (uint64_t token; !READ(unit.inventoryPtr + 0x70, token) || token == 0) { return; }
         DrlgAct act;
@@ -439,22 +420,21 @@ void D2RProcess::updateData() {
         READ(unit.unionPtr, player.name);
         focusedPlayer_ = unit.unitId;
         currPlayer = &player;
-        uint8_t difficulty;
-        READ(act.miscPtr + 0x830, difficulty);
+        READ(act.miscPtr + 0x830, player.difficulty);
         player.levelChanged = false;
-        if (difficulty != player.difficulty) {
-            player.difficulty = difficulty;
+        player.seed = act.seed;
+        if (lastDifficulty != player.difficulty || lastSeed != act.seed) {
             player.levelChanged = true;
             knownItems_.clear();
         }
-        if (player.seed != act.seed) {
-            player.seed = act.seed;
+        player.act = act.actId;
+        if (lastAct != act.actId) {
             player.levelChanged = true;
-            knownItems_.clear();
         }
-        if (player.act != act.actId) {
-            player.act = act.actId;
-            player.levelChanged = true;
+        if (player.levelChanged) {
+            /* get real TalTomb level id */
+            READ(act.miscPtr + 0x120, realTombLevelId_);
+            READ(act.miscPtr + 0x874, superUniqueTombLevelId_);
         }
         DynamicPath path;
         if (!READ(unit.pathPtr, path)) { return; }
@@ -467,12 +447,9 @@ void D2RProcess::updateData() {
         uint32_t levelId;
         if (!READ(room2.levelPtr + 0x1F8, levelId)) { return; }
 
-        if (player.levelId != levelId) {
-            /* get real TalTomb level id */
-            READ(act.miscPtr + 0x120, realTombLevelId_);
-            READ(act.miscPtr + 0x874, superUniqueTombLevelId_);
+        player.levelId = levelId;
+        if (levelId != lastLevelId) {
             player.levelChanged = true;
-            player.levelId = levelId;
         }
         if (player.levelChanged) {
             if (cfg->showObjects) {
@@ -714,7 +691,6 @@ void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     if (!READ(path.room1Ptr, room1)) { return; }
     DrlgRoom2 room2;
     if (!READ(room1.room2Ptr, room2)) { return; }
-    uint32_t levelId;
     if (!READ(room2.levelPtr + 0x1F8, player.levelId)) { return; }
 }
 void D2RProcess::readUnitMonster(const UnitAny &unit) {
@@ -888,4 +864,35 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
             }
         }
     }
+}
+void D2RProcess::loadFromCfg() {
+    loadEncText(enchantStrings[5], cfg->encTxtExtraStrong);
+    loadEncText(enchantStrings[6], cfg->encTxtExtraFast);
+    loadEncText(enchantStrings[7], cfg->encTxtCursed);
+    loadEncText(enchantStrings[8], cfg->encTxtMagicResistant);
+    loadEncText(enchantStrings[9], cfg->encTxtFireEnchanted);
+    loadEncText(enchantStrings[17], cfg->encTxtLigntningEnchanted);
+    loadEncText(enchantStrings[18], cfg->encTxtColdEnchanted);
+    loadEncText(enchantStrings[25], cfg->encTxtManaBurn);
+    loadEncText(enchantStrings[26], cfg->encTxtTeleportation);
+    loadEncText(enchantStrings[27], cfg->encTxtSpectralHit);
+    loadEncText(enchantStrings[28], cfg->encTxtStoneSkin);
+    loadEncText(enchantStrings[29], cfg->encTxtMultipleShots);
+    loadEncText(enchantStrings[37], cfg->encTxtFanatic);
+    loadEncText(enchantStrings[39], cfg->encTxtBerserker);
+
+    loadEncText(auraStrings[33], cfg->MightAura);
+    loadEncText(auraStrings[35], cfg->HolyFireAura);
+    loadEncText(auraStrings[40], cfg->BlessedAimAura);
+    loadEncText(auraStrings[43], cfg->HolyFreezeAura);
+    loadEncText(auraStrings[46], cfg->HolyShockAura);
+    loadEncText(auraStrings[28], cfg->ConvictionAura);
+    loadEncText(auraStrings[49], cfg->FanaticismAura);
+
+    loadEncText(immunityStrings[0], cfg->encTxtPhysicalImmunity);
+    loadEncText(immunityStrings[1], cfg->encTxtMagicImmunity);
+    loadEncText(immunityStrings[2], cfg->encTxtFireImmunity);
+    loadEncText(immunityStrings[3], cfg->encTxtLightningImmunity);
+    loadEncText(immunityStrings[4], cfg->encTxtColdImmunity);
+    loadEncText(immunityStrings[5], cfg->encTxtPoisonImmunity);
 }
