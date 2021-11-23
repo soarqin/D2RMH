@@ -275,8 +275,17 @@ void MapRenderer::updateWindowPos() {
     if (!currMap_) { return; }
     auto width = d2rRect.right - d2rRect.left, height = d2rRect.bottom - d2rRect.top;
     renderer_.owner()->move(d2rRect.left, d2rRect.top, width, height);
-    int w = std::lround(float(width) * cfg->mapAreaW);
-    int h = std::lround(float(height) * cfg->mapAreaH);
+
+    int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2, y1 = currMap_->cropY2;
+    int w, h;
+    auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
+    if (cfg->mapAreaW > 0.0) {
+        w = std::lround(float(width) * cfg->mapAreaW);
+        h = std::lround(float(height) * cfg->mapAreaH);
+    } else {
+        w = (int)lroundf(cfg->scale * (mw + mh) * 1.42f /* sqrt(2) */) + cfg->fontSize;
+        h = w / 2;
+    }
     auto widthf = float(w) * 0.5f, heightf = float(h) * 0.5f;
 
     switch (cfg->position) {
@@ -304,9 +313,6 @@ void MapRenderer::updateWindowPos() {
     msgViewport_[2] = width;
     msgViewport_[3] = height;
 
-    int x0 = currMap_->cropX, y0 = currMap_->cropY, x1 = currMap_->cropX2,
-        y1 = currMap_->cropY2;
-    auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
     mapPipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
     mapPipeline_.reset();
     mapPipeline_.setOrtho(-widthf, widthf, heightf, -heightf);

@@ -19,7 +19,7 @@ const Cfg *cfg = &sCfg;
 
 #define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
 #define LOADVALW(n, m) else if (!strcmp(name, #n)) { sCfg.m = utf8toucs4(value); }
-#define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtoul(value, nullptr, 0); }
+#define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = decltype(sCfg.m)(strtol(value, nullptr, 0)); }
 #define LOADVALF(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtof(value, nullptr); }
 #define LOADVALC(n, m) else if (!strcmp(name, #n)) { sCfg.m = calcColor(value); }
 
@@ -142,8 +142,10 @@ void loadCfg(const std::string &filename) {
     if (!sCfg.mapArea.empty()) {
         auto vec = splitString(sCfg.mapArea, ',');
         if (vec.size() > 1) {
-            sCfg.mapAreaW = std::clamp(strtof(vec[0].c_str(), nullptr), 0.1f, 1.f);
-            sCfg.mapAreaH = std::clamp(strtof(vec[1].c_str(), nullptr), 0.1f, 1.f);
+            sCfg.mapAreaW = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f);
+            sCfg.mapAreaH = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f);
+        } else {
+            sCfg.mapAreaW = sCfg.mapAreaH = std::clamp(strtof(sCfg.mapArea.c_str(), nullptr), 0.f, 1.f);
         }
     }
     if (!sCfg.msgPosition.empty()) {
