@@ -53,32 +53,36 @@ void MapRenderer::update() {
     if (d2rProcess_.panelEnabled() & cfg->panelMask) {
         enabled_ = false;
         return;
+    } else {
+        switch (cfg->show) {
+        case 0:
+            enabled_ = !d2rProcess_.mapEnabled();
+            break;
+        case 1:
+            enabled_ = d2rProcess_.mapEnabled();
+            break;
+        default:
+            enabled_ = true;
+            break;
+        }
     }
-    switch (cfg->show) {
-    case 0:
-        enabled_ = !d2rProcess_.mapEnabled();
-        break;
-    case 1:
-        enabled_ = d2rProcess_.mapEnabled();
-        break;
-    default:
-        enabled_ = true;
-        break;
+    const auto *currPlayer = d2rProcess_.currPlayer();
+    if (!currPlayer || !currPlayer->levelId) {
+        enabled_ = false;
+        return;
+    }
+    bool changed = session_.update(currPlayer->seed, currPlayer->difficulty);
+    if (changed) {
+        mapStartTime_ = time(nullptr);
     }
     if (!enabled_) {
         return;
     }
-    const auto *currPlayer = d2rProcess_.currPlayer();
-    if (!currPlayer) {
-        return;
-    }
-    bool changed = session_.update(currPlayer->seed, currPlayer->difficulty);
     if (uint32_t levelId = currPlayer->levelId; levelId != currLevelId_) {
         currLevelId_ = levelId;
         changed = true;
     }
     if (changed) {
-        mapStartTime_ = time(nullptr);
         textStrings_.clear();
         lines_.clear();
         currMap_ = session_.getMap(currLevelId_);
