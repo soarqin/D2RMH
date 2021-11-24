@@ -50,9 +50,13 @@ void MapRenderer::update() {
         enabled_ = false;
         return;
     }
-    if (d2rProcess_.panelEnabled() & cfg->panelMask) {
+    const auto *currPlayer = d2rProcess_.currPlayer();
+    if (!currPlayer || !currPlayer->seed || !currPlayer->levelId) {
         enabled_ = false;
         return;
+    }
+    if (d2rProcess_.panelEnabled() & cfg->panelMask) {
+        enabled_ = false;
     } else {
         switch (cfg->show) {
         case 0:
@@ -65,11 +69,6 @@ void MapRenderer::update() {
             enabled_ = true;
             break;
         }
-    }
-    const auto *currPlayer = d2rProcess_.currPlayer();
-    if (!currPlayer || !currPlayer->levelId) {
-        enabled_ = false;
-        return;
     }
     bool changed = session_.update(currPlayer->seed, currPlayer->difficulty);
     if (changed) {
