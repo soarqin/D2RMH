@@ -25,6 +25,8 @@
 #endif
 #include <windows.h>
 #include <vector>
+#include <map>
+#include <memory>
 #include <tuple>
 #include <string>
 
@@ -57,13 +59,16 @@ private:
     int msgViewport_[4] = {};
 
     bool enabled_ = false;
-    Session session_;
     RECT d2rRect = {};
     uint32_t currLevelId_ = 0;
     CollisionMap *currMap_ = nullptr;
     uint32_t walkableColor_ = 0;
     JsonLng::LNG lng_ = JsonLng::LNG_enUS;
     uint16_t playerPosX_ = 0, playerPosY_ = 0;
+
+    std::map<void*, std::unique_ptr<Session>> sessions_;
+    void *currHWND_ = nullptr;
+    Session *currSession_ = nullptr;
 
     std::vector<std::tuple<float, float, std::wstring, float>> textStrings_;
     struct DynamicTextString {

@@ -39,6 +39,15 @@ MapRenderer::MapRenderer(Renderer &renderer) :
         d2rRect = {left, top, right, bottom};
         updateWindowPos();
     });
+    d2rProcess_.setProcessCloseCallback([this](void *hwnd) {
+        auto ite = sessions_.find(hwnd);
+        if (ite == sessions_.end()) { return; }
+        if (currHWND_ == ite->first) {
+            currHWND_ = nullptr;
+            currSession_ = nullptr;
+        }
+        sessions_.erase(ite);
+    });
     mapPipeline_.setTexture(mapTex_);
 
     loadFromCfg();
@@ -70,12 +79,24 @@ void MapRenderer::update() {
             break;
         }
     }
-    bool changed = session_.update(currPlayer->seed, currPlayer->difficulty);
+    auto *hwnd = d2rProcess_.hwnd();
+    if (currHWND_ != hwnd) {
+        auto &session = sessions_[d2rProcess_.hwnd()];
+        if (!session) {
+            session = std::make_unique<Session>();
+        }
+        currSession_ = session.get();
+    }
+    bool changed = currSession_->update(currPlayer->seed, currPlayer->difficulty);
     if (changed) {
         mapStartTime_ = time(nullptr);
     }
     if (!enabled_) {
         return;
+    }
+    if (hwnd != currHWND_) {
+        currHWND_ = hwnd;
+        changed = true;
     }
     if (uint32_t levelId = currPlayer->levelId; levelId != currLevelId_) {
         currLevelId_ = levelId;
@@ -84,7 +105,7 @@ void MapRenderer::update() {
     if (changed) {
         textStrings_.clear();
         lines_.clear();
-        currMap_ = session_.getMap(currLevelId_);
+        currMap_ = currSession_->getMap(currLevelId_);
         if (!currMap_) {
             enabled_ = false;
             return;
@@ -146,11 +167,8 @@ void MapRenderer::update() {
             std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
             /* Check for TalTombs */
             if (p.first == realTombLevelId) {
-                auto *m = session_.getMap(p.first);
-                if (m && m->objects.find(152) != m->objects.end()) {
-                    name = L">>> " + name + L" <<<";
-                    lines_.emplace_back(px - widthf, py - heightf);
-                }
+                name = L">>> " + name + L" <<<";
+                lines_.emplace_back(px - widthf, py - heightf);
             }
             if (p.first == superUniqueTombLevelId) {
                 name += L" <== SuperUnique";

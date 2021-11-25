@@ -1,3 +1,10 @@
+# next release
+* (#38) multi-instance support
+* (#66) fix issue that map layer not shown for non-expansion characters
+* search for memory offsets in order to get expansion flag address, offsets from [MapAssist](https://github.com/OneXDeveloper/MapAssist/blob/9b5658760efa8e8e243a4927d25abd2c796a41df/Helpers/ProcessContext.cs#L115-L167)
+* fix `panel_mask` entry in config is not correctly processed
+* add waypoint panel to `panel_mask`
+
 # v0.7
 * (#47, #59, #63) add adaptive size for `map_area`, and is set as default value, kinda resolves confusion caused by new mechanism of `map_area`
 * (#50) add text panel support, with new entries `text_panel_pattern` and `text_panel_position` in D2RMH.ini
