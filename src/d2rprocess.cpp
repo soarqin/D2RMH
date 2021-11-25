@@ -437,7 +437,8 @@ void D2RProcess::updateData() {
     MapPlayer *currPlayer = nullptr;
     readUnitHashTable(hashTableBase_, [this, expansion, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
-        if (uint64_t token; !READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == 0) { return; }
+        uint64_t token;
+        if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) { return; }
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
         auto &player = mapPlayers_[unit.unitId];
