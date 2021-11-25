@@ -75,6 +75,7 @@ public:
 
 private:
     void searchForProcess();
+    void updateOffset();
     void resetData();
     void readUnitHashTable(uint64_t addr, const std::function<void(const UnitAny&)> &callback);
     void readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList&)> &callback);
@@ -93,6 +94,9 @@ private:
     bool available_ = false;
     uint64_t baseAddr_ = 0;
     uint64_t baseSize_ = 0;
+    uint64_t hashTableBase_ = 0;
+    uint64_t uiBase_ = 0;
+    uint64_t isExpansionAddr_ = 0;
 
     uint32_t nextSearchTime_ = 0;
     uint32_t searchInterval_ = 0;

@@ -297,8 +297,10 @@ void loadEncText(wchar_t *output, const std::wstring &input) {
 static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
 
 enum {
+    /* These 2 offsets are no more used, use memory search now
     HashTableBase = 0x20AF660,
     UIBaseAddr = 0x20BF310,
+    */
     InventoryPanelOffset = 0x09,
     CharacterPanelOffset = 0x0A,
     SkillTreePanelOffset = 0x0C,
@@ -363,6 +365,25 @@ D2RProcess::~D2RProcess() {
     if (handle_) { CloseHandle(handle_); }
 }
 
+inline bool matchMem(size_t sz, const uint8_t* mem, const uint8_t* search, const uint8_t* mask) {
+    for (size_t i = 0; i < sz; ++i) {
+        uint8_t m = mask[i];
+        if ((mem[i] & m) != (search[i] & m)) { return false; }
+    }
+    return true;
+}
+
+inline size_t searchMem(const uint8_t *mem, size_t sz, const uint8_t* search, const uint8_t* mask, size_t searchSz) {
+    if (sz < searchSz) { return size_t(-1); }
+    size_t e = sz - searchSz + 1;
+    for (size_t i = 0; i < e; ++i) {
+        if (matchMem(searchSz, mem + i, search, mask)) {
+            return i;
+        }
+    }
+    return size_t(-1);
+}
+
 void D2RProcess::updateData() {
     available_ = false;
     if (handle_) {
@@ -409,10 +430,13 @@ void D2RProcess::updateData() {
         mapItems_.clear();
     }
 
+    uint8_t expansion = 0;
+    READ(isExpansionAddr_, expansion);
+
     MapPlayer *currPlayer = nullptr;
-    readUnitHashTable(baseAddr_ + HashTableBase, [this, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
+    readUnitHashTable(hashTableBase_, [this, expansion, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
-        if (uint64_t token; !READ(unit.inventoryPtr + 0x70, token) || token == 0) { return; }
+        if (uint64_t token; !READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == 0) { return; }
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
         auto &player = mapPlayers_[unit.unitId];
@@ -479,7 +503,7 @@ void D2RProcess::updateData() {
         currPlayer = &ite->second;
     }
     uint8_t mem[0x28];
-    READ(baseAddr_ + UIBaseAddr, mem);
+    READ(uiBase_, mem);
     mapEnabled_ = mem[InGameMapOffset];
     panelEnabled_ = 0;
     if (mem[InventoryPanelOffset]) { panelEnabled_ |= 0x01; }
@@ -493,17 +517,17 @@ void D2RProcess::updateData() {
     currPlayer_ = currPlayer;
 
     if (cfg->showMonsters) {
-        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x80, [this](const auto &unit) {
+        readUnitHashTable(hashTableBase_ + 8 * 0x80, [this](const auto &unit) {
             readUnit(unit);
         });
     }
     if (cfg->showObjects) {
-        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x100, [this](const auto &unit) {
+        readUnitHashTable(hashTableBase_ + 8 * 0x100, [this](const auto &unit) {
             readUnit(unit);
         });
     }
     if (cfg->showItems) {
-        readUnitHashTable(baseAddr_ + HashTableBase + 8 * 0x200, [this](const auto &unit) {
+        readUnitHashTable(hashTableBase_ + 8 * 0x200, [this](const auto &unit) {
             readUnit(unit);
         });
     }
@@ -579,7 +603,43 @@ void D2RProcess::searchForProcess() {
     if (!handle_) { return; }
     hook_ = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     onSizeChange(HWND(hwnd_));
+    updateOffset();
     updateData();
+}
+
+void D2RProcess::updateOffset() {
+    auto *mem = new(std::nothrow) uint8_t[baseSize_];
+    if (mem && readMemory64(handle_, baseAddr_, baseSize_, mem)) {
+        const uint8_t search0[] = {0x48, 0x8D, 0, 0, 0, 0, 0, 0x8B, 0xD1};
+        const uint8_t mask0[] = {0xFF, 0xFF, 0, 0, 0, 0, 0, 0xFF, 0xFF};
+        auto off = searchMem(mem, baseSize_, search0, mask0, sizeof(search0));
+        if (off != size_t(-1)) {
+            int32_t rel;
+            if (READ(baseAddr_ + off + 3, rel)) {
+                hashTableBase_ = baseAddr_ + off + 7 + rel;
+            }
+        }
+
+        const uint8_t search1[] = {0x40, 0x84, 0xED, 0x0F, 0x94, 0x05};
+        const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        off = searchMem(mem, baseSize_, search1, mask1, sizeof(search1));
+        if (off != size_t(-1)) {
+            int32_t rel;
+            if (READ(baseAddr_ + off + 6, rel)) {
+                uiBase_ = baseAddr_ + off + 10 + rel - 0x12;
+            }
+        }
+        const uint8_t search2[] = {0xC7, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x85, 0xC0, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x83, 0x78, 0x5C, 0x00, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x33, 0xD2, 0x41};
+        const uint8_t mask2[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF};
+        off = searchMem(mem, baseSize_, search2, mask2, sizeof(search2));
+        if (off != size_t(-1)) {
+            int32_t rel;
+            if (READ(baseAddr_ + off - 4, rel)) {
+                isExpansionAddr_ = baseAddr_ + off + rel;
+            }
+        }
+    }
+    delete[] mem;
 }
 
 void D2RProcess::resetData() {
