@@ -57,30 +57,30 @@ public:
         ~ProcessData();
         void resetData();
 
-        void *handle_ = nullptr;
-        void *hwnd_ = nullptr;
-        void *hook_ = nullptr;
+        void *handle = nullptr;
+        void *hwnd = nullptr;
+        void *hook = nullptr;
 
-        uint64_t baseAddr_ = 0;
-        uint64_t baseSize_ = 0;
-        uint64_t hashTableBase_ = 0;
-        uint64_t uiBase_ = 0;
-        uint64_t isExpansionAddr_ = 0;
+        uint64_t baseAddr = 0;
+        uint64_t baseSize = 0;
+        uint64_t hashTableBaseAddr = 0;
+        uint64_t uiBaseAddr = 0;
+        uint64_t isExpansionAddr = 0;
 
-        uint8_t mapEnabled_ = 0;
-        uint32_t panelEnabled_ = 0;
+        uint8_t mapEnabled = 0;
+        uint32_t panelEnabled = 0;
 
-        uint32_t focusedPlayer_ = 0;
+        uint32_t focusedPlayer = 0;
 
-        uint32_t realTombLevelId_ = 0;
-        uint32_t superUniqueTombLevelId_ = 0;
+        uint32_t realTombLevelId = 0;
+        uint32_t superUniqueTombLevelId = 0;
 
-        const MapPlayer *currPlayer_ = nullptr;
-        std::unordered_map<uint32_t, MapPlayer> mapPlayers_;
-        std::vector<MapMonster> mapMonsters_;
-        std::unordered_map<uint32_t, MapObject> mapObjects_;
-        std::vector<MapItem> mapItems_;
-        std::unordered_set<uint32_t> knownItems_;
+        const MapPlayer *currPlayer = nullptr;
+        std::unordered_map<uint32_t, MapPlayer> mapPlayers;
+        std::vector<MapMonster> mapMonsters;
+        std::unordered_map<uint32_t, MapObject> mapObjects;
+        std::vector<MapItem> mapItems;
+        std::unordered_set<uint32_t> knownItems;
     };
 public:
     explicit D2RProcess(uint32_t searchInterval = 100);
@@ -91,18 +91,18 @@ public:
         processCloseCallback_ = cb;
     }
 
-    void *hwnd() { return currProcess_->hwnd_; }
+    void *hwnd() { return currProcess_->hwnd; }
     [[nodiscard]] inline bool available() const { return currProcess_ != nullptr; }
-    [[nodiscard]] inline bool mapEnabled() const { return currProcess_->mapEnabled_ != 0; }
-    [[nodiscard]] inline uint32_t panelEnabled() const { return currProcess_->panelEnabled_; }
-    [[nodiscard]] inline uint32_t realTombLevelId() const { return currProcess_->realTombLevelId_; }
-    [[nodiscard]] inline uint32_t superUniqueTombLevelId() const { return currProcess_->superUniqueTombLevelId_; }
+    [[nodiscard]] inline bool mapEnabled() const { return currProcess_->mapEnabled != 0; }
+    [[nodiscard]] inline uint32_t panelEnabled() const { return currProcess_->panelEnabled; }
+    [[nodiscard]] inline uint32_t realTombLevelId() const { return currProcess_->realTombLevelId; }
+    [[nodiscard]] inline uint32_t superUniqueTombLevelId() const { return currProcess_->superUniqueTombLevelId; }
 
-    [[nodiscard]] inline const MapPlayer *currPlayer() const { return currProcess_->currPlayer_; }
-    [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return currProcess_->mapPlayers_; }
-    [[nodiscard]] inline const std::vector<MapMonster> &monsters() const { return currProcess_->mapMonsters_; }
-    [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return currProcess_->mapObjects_; }
-    [[nodiscard]] inline const std::vector<MapItem> &items() const { return currProcess_->mapItems_; }
+    [[nodiscard]] inline const MapPlayer *currPlayer() const { return currProcess_->currPlayer; }
+    [[nodiscard]] inline const std::unordered_map<uint32_t, MapPlayer> &players() const { return currProcess_->mapPlayers; }
+    [[nodiscard]] inline const std::vector<MapMonster> &monsters() const { return currProcess_->mapMonsters; }
+    [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return currProcess_->mapObjects; }
+    [[nodiscard]] inline const std::vector<MapItem> &items() const { return currProcess_->mapItems; }
 
     void reloadConfig() { loadFromCfg(); currProcess_ = nullptr; }
 

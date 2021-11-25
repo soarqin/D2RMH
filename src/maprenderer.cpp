@@ -84,13 +84,14 @@ void MapRenderer::update() {
     if (currHWND_ != hwnd) {
         auto &session = sessions_[d2rProcess_.hwnd()];
         if (!session) {
-            session = std::make_unique<Session>();
+            session = std::make_unique<SessionInfo>();
         }
         currSession_ = session.get();
+        nextPanelUpdateTime_ = getCurrTime();
     }
-    bool changed = currSession_->update(currPlayer->seed, currPlayer->difficulty);
+    bool changed = currSession_->session.update(currPlayer->seed, currPlayer->difficulty);
     if (changed) {
-        mapStartTime_ = getCurrTime();
+        currSession_->mapStartTime = getCurrTime();
     }
     if (!enabled_) {
         return;
@@ -106,7 +107,7 @@ void MapRenderer::update() {
     if (changed) {
         textStrings_.clear();
         lines_.clear();
-        currMap_ = currSession_->getMap(currLevelId_);
+        currMap_ = currSession_->session.getMap(currLevelId_);
         if (!currMap_) {
             enabled_ = false;
             return;
@@ -556,7 +557,7 @@ void MapRenderer::updatePanelText() {
                 std::wstring_view sv(pat.data() + start, pos - start);
                 if (sv == L"duration") {
                     wchar_t n[16];
-                    auto dur = uint32_t(std::chrono::duration_cast<std::chrono::seconds>(now - mapStartTime_).count());
+                    auto dur = uint32_t(std::chrono::duration_cast<std::chrono::seconds>(now - currSession_->mapStartTime).count());
                     if (dur < 3600) {
                         wsprintfW(n, L"%02u:%02u", dur / 60, dur % 60);
                     } else {

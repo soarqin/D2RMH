@@ -339,7 +339,7 @@ HWND findMainWindow(unsigned long processId) {
     return data.hwnd;
 }
 
-#define READ(a, v) readMemory64(currProcess->handle_, (a), sizeof(v), &(v))
+#define READ(a, v) readMemory64(currProcess->handle, (a), sizeof(v), &(v))
 
 D2RProcess::D2RProcess(uint32_t searchInterval):
     searchInterval_(std::chrono::milliseconds(searchInterval)) {
@@ -379,7 +379,7 @@ inline size_t searchMem(const uint8_t *mem, size_t sz, const uint8_t* search, co
 
 void D2RProcess::updateData() {
     for (auto ite = processes_.begin(); ite != processes_.end();) {
-        DWORD ret = WaitForSingleObject(ite->second.handle_, 0);
+        DWORD ret = WaitForSingleObject(ite->second.handle, 0);
         if (ret == WAIT_TIMEOUT) {
             ++ite;
         } else {
@@ -390,7 +390,7 @@ void D2RProcess::updateData() {
         }
     }
     auto foregroundWnd = GetForegroundWindow();
-    if (!currProcess_ || foregroundWnd != currProcess_->hwnd_) {
+    if (!currProcess_ || foregroundWnd != currProcess_->hwnd) {
         currProcess_ = nullptr;
         auto now = getCurrTime();
         if (now >= nextSearchTime_) {
@@ -405,7 +405,7 @@ void D2RProcess::updateData() {
     auto *currProcess = currProcess_;
     uint8_t lastDifficulty;
     uint32_t lastSeed, lastAct, lastLevelId;
-    auto *currPlayer = currProcess->currPlayer_;
+    auto *currPlayer = currProcess->currPlayer;
     if (currPlayer) {
         lastDifficulty = currPlayer->difficulty;
         lastSeed = currPlayer->seed;
@@ -418,36 +418,36 @@ void D2RProcess::updateData() {
         lastLevelId = uint32_t(-1);
     }
 
-    currProcess->mapPlayers_.clear();
+    currProcess->mapPlayers.clear();
     if (cfg->showMonsters) {
-        currProcess->mapMonsters_.clear();
+        currProcess->mapMonsters.clear();
     }
     if (cfg->showItems) {
-        currProcess->mapItems_.clear();
+        currProcess->mapItems.clear();
     }
 
     uint8_t expansion = 0;
-    READ(currProcess->isExpansionAddr_, expansion);
+    READ(currProcess->isExpansionAddr, expansion);
 
     currPlayer = nullptr;
-    readUnitHashTable(currProcess->hashTableBase_, [this, expansion, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
+    readUnitHashTable(currProcess->hashTableBaseAddr, [this, expansion, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
         auto *currProcess = currProcess_;
         uint64_t token;
         if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) { return; }
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
-        auto &player = currProcess->mapPlayers_[unit.unitId];
+        auto &player = currProcess->mapPlayers[unit.unitId];
         player.name[0] = 0;
         READ(unit.unionPtr, player.name);
-        currProcess->focusedPlayer_ = unit.unitId;
+        currProcess->focusedPlayer = unit.unitId;
         currPlayer = &player;
         READ(act.miscPtr + 0x830, player.difficulty);
         player.levelChanged = false;
         player.seed = act.seed;
         if (lastDifficulty != player.difficulty || lastSeed != act.seed) {
             player.levelChanged = true;
-            currProcess->knownItems_.clear();
+            currProcess->knownItems.clear();
         }
         player.act = act.actId;
         if (lastAct != act.actId) {
@@ -455,8 +455,8 @@ void D2RProcess::updateData() {
         }
         if (player.levelChanged) {
             /* get real TalTomb level id */
-            READ(act.miscPtr + 0x120, currProcess->realTombLevelId_);
-            READ(act.miscPtr + 0x874, currProcess->superUniqueTombLevelId_);
+            READ(act.miscPtr + 0x120, currProcess->realTombLevelId);
+            READ(act.miscPtr + 0x874, currProcess->superUniqueTombLevelId);
         }
         DynamicPath path;
         if (!READ(unit.pathPtr, path)) { return; }
@@ -475,7 +475,7 @@ void D2RProcess::updateData() {
         }
         if (player.levelChanged) {
             if (cfg->showObjects) {
-                currProcess->mapObjects_.clear();
+                currProcess->mapObjects.clear();
             }
         }
 /*  this is another way of reading all units from memory, we may need this if we need to see units on neighbour levels
@@ -484,25 +484,25 @@ void D2RProcess::updateData() {
         readRoomUnits(room1, rset);
 */
     });
-    if (currProcess->mapPlayers_.empty()) {
-        currProcess->focusedPlayer_ = 0;
+    if (currProcess->mapPlayers.empty()) {
+        currProcess->focusedPlayer = 0;
         return;
     }
-    if (!currProcess->focusedPlayer_) {
-        auto ite = currProcess->mapPlayers_.begin();
-        currProcess->focusedPlayer_ = ite->first;
+    if (!currProcess->focusedPlayer) {
+        auto ite = currProcess->mapPlayers.begin();
+        currProcess->focusedPlayer = ite->first;
         currPlayer = &ite->second;
     } else if (!currPlayer) {
-        auto ite = currProcess->mapPlayers_.find(currProcess->focusedPlayer_);
-        if (ite == currProcess->mapPlayers_.end()) {
-            ite = currProcess->mapPlayers_.begin();
-            currProcess->focusedPlayer_ = ite->first;
+        auto ite = currProcess->mapPlayers.find(currProcess->focusedPlayer);
+        if (ite == currProcess->mapPlayers.end()) {
+            ite = currProcess->mapPlayers.begin();
+            currProcess->focusedPlayer = ite->first;
         }
         currPlayer = &ite->second;
     }
     uint8_t mem[0x28];
-    READ(currProcess->uiBase_, mem);
-    currProcess->mapEnabled_ = mem[InGameMapOffset];
+    READ(currProcess->uiBaseAddr, mem);
+    currProcess->mapEnabled = mem[InGameMapOffset];
     uint32_t panelEnabled = 0;
     if (mem[InventoryPanelOffset]) { panelEnabled |= 0x01; }
     if (mem[CharacterPanelOffset]) { panelEnabled |= 0x02; }
@@ -512,21 +512,21 @@ void D2RProcess::updateData() {
     if (mem[PartyPanelOffset]) { panelEnabled |= 0x20; }
     if (mem[MercenaryOffset]) { panelEnabled |= 0x40; }
     if (mem[WaypointPanelOffset]) { panelEnabled |= 0x80; }
-    currProcess->panelEnabled_ = panelEnabled;
-    currProcess->currPlayer_ = currPlayer;
+    currProcess->panelEnabled = panelEnabled;
+    currProcess->currPlayer = currPlayer;
 
     if (cfg->showMonsters) {
-        readUnitHashTable(currProcess->hashTableBase_ + 8 * 0x80, [this](const auto &unit) {
+        readUnitHashTable(currProcess->hashTableBaseAddr + 8 * 0x80, [this](const auto &unit) {
             readUnit(unit);
         });
     }
     if (cfg->showObjects) {
-        readUnitHashTable(currProcess->hashTableBase_ + 8 * 0x100, [this](const auto &unit) {
+        readUnitHashTable(currProcess->hashTableBaseAddr + 8 * 0x100, [this](const auto &unit) {
             readUnit(unit);
         });
     }
     if (cfg->showItems) {
-        readUnitHashTable(currProcess->hashTableBase_ + 8 * 0x200, [this](const auto &unit) {
+        readUnitHashTable(currProcess->hashTableBaseAddr + 8 * 0x200, [this](const auto &unit) {
             readUnit(unit);
         });
     }
@@ -559,7 +559,7 @@ void onSizeChange(HWND hwnd) {
 void D2RProcess::setWindowPosCallback(const std::function<void(int, int, int, int)> &cb) {
     sizeCallback = cb;
     if (currProcess_) {
-        onSizeChange((HWND)currProcess_->hwnd_);
+        onSizeChange((HWND)currProcess_->hwnd);
     }
 }
 
@@ -573,7 +573,7 @@ void D2RProcess::searchForProcess(void *hwnd) {
     auto ite = processes_.find(hwnd);
     if (ite != processes_.end()) {
         currProcess_ = &ite->second;
-        onSizeChange(HWND(currProcess_->hwnd_));
+        onSizeChange(HWND(currProcess_->hwnd));
         return;
     }
     DWORD processId = 0;
@@ -598,10 +598,10 @@ void D2RProcess::searchForProcess(void *hwnd) {
         return;
     }
     auto &procInfo = processes_[(void*)hwnd];
-    procInfo.handle_ = handle;
-    procInfo.hwnd_ = hwnd;
-    procInfo.baseAddr_ = baseAddr;
-    procInfo.baseSize_ = baseSize;
+    procInfo.handle = handle;
+    procInfo.hwnd = hwnd;
+    procInfo.baseAddr = baseAddr;
+    procInfo.baseSize = baseSize;
 
     /*
     PROCESSENTRY32W entry;
@@ -636,42 +636,42 @@ void D2RProcess::searchForProcess(void *hwnd) {
     CloseHandle(snapshot);
      */
     currProcess_ = &procInfo;
-    procInfo.hook_ = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
-    onSizeChange(HWND(procInfo.hwnd_));
+    procInfo.hook = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    onSizeChange(HWND(procInfo.hwnd));
     updateOffset();
     updateData();
 }
 
 void D2RProcess::updateOffset() {
     auto *currProcess = currProcess_;
-    auto *mem = new(std::nothrow) uint8_t[currProcess->baseSize_];
-    if (mem && readMemory64(currProcess->handle_, currProcess->baseAddr_, currProcess->baseSize_, mem)) {
+    auto *mem = new(std::nothrow) uint8_t[currProcess->baseSize];
+    if (mem && readMemory64(currProcess->handle, currProcess->baseAddr, currProcess->baseSize, mem)) {
         const uint8_t search0[] = {0x48, 0x8D, 0, 0, 0, 0, 0, 0x8B, 0xD1};
         const uint8_t mask0[] = {0xFF, 0xFF, 0, 0, 0, 0, 0, 0xFF, 0xFF};
-        auto off = searchMem(mem, currProcess->baseSize_, search0, mask0, sizeof(search0));
+        auto off = searchMem(mem, currProcess->baseSize, search0, mask0, sizeof(search0));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(currProcess->baseAddr_ + off + 3, rel)) {
-                currProcess->hashTableBase_ = currProcess->baseAddr_ + off + 7 + rel;
+            if (READ(currProcess->baseAddr + off + 3, rel)) {
+                currProcess->hashTableBaseAddr = currProcess->baseAddr + off + 7 + rel;
             }
         }
 
         const uint8_t search1[] = {0x40, 0x84, 0xED, 0x0F, 0x94, 0x05};
         const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        off = searchMem(mem, currProcess->baseSize_, search1, mask1, sizeof(search1));
+        off = searchMem(mem, currProcess->baseSize, search1, mask1, sizeof(search1));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(currProcess->baseAddr_ + off + 6, rel)) {
-                currProcess->uiBase_ = currProcess->baseAddr_ + off + 10 + rel - 0x12;
+            if (READ(currProcess->baseAddr + off + 6, rel)) {
+                currProcess->uiBaseAddr = currProcess->baseAddr + off + 10 + rel - 0x12;
             }
         }
         const uint8_t search2[] = {0xC7, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x85, 0xC0, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x83, 0x78, 0x5C, 0x00, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x33, 0xD2, 0x41};
         const uint8_t mask2[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF};
-        off = searchMem(mem, currProcess->baseSize_, search2, mask2, sizeof(search2));
+        off = searchMem(mem, currProcess->baseSize, search2, mask2, sizeof(search2));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(currProcess->baseAddr_ + off - 4, rel)) {
-                currProcess->isExpansionAddr_ = currProcess->baseAddr_ + off + rel;
+            if (READ(currProcess->baseAddr + off - 4, rel)) {
+                currProcess->isExpansionAddr = currProcess->baseAddr + off + rel;
             }
         }
     }
@@ -719,7 +719,7 @@ void D2RProcess::readRoomUnits(const DrlgRoom1 &room1, std::unordered_set<uint64
         addr = unit.roomNextPtr;
     }
     auto count = std::min(64u, room1.roomsNear);
-    if (readMemory64(currProcess_->handle_, room1.roomsNearListPtr, count * sizeof(uint64_t), roomsNear)) {
+    if (readMemory64(currProcess_->handle, room1.roomsNearListPtr, count * sizeof(uint64_t), roomsNear)) {
         auto *currProcess = currProcess_;
         for (auto i = 0u; i < count; ++i) {
             auto addr = roomsNear[i];
@@ -750,10 +750,10 @@ void D2RProcess::readUnit(const UnitAny &unit) {
 }
 void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     auto *currProcess = currProcess_;
-    if (unit.unitId == currProcess->focusedPlayer_) { return; }
+    if (unit.unitId == currProcess->focusedPlayer) { return; }
     DrlgAct act;
     if (!READ(unit.actPtr, act)) { return; }
-    auto &player = currProcess->mapPlayers_[unit.unitId];
+    auto &player = currProcess->mapPlayers[unit.unitId];
     player.name[0] = 0;
     READ(unit.unionPtr, player.name);
     player.levelChanged = false;
@@ -782,7 +782,7 @@ void D2RProcess::readUnitMonster(const UnitAny &unit) {
     if (!isNpc && !(sm == 2 || (isUnique && sm == 1))) { return; }
     DynamicPath path;
     if (!READ(unit.pathPtr, path)) { return; }
-    auto &mon = currProcess->mapMonsters_.emplace_back();
+    auto &mon = currProcess->mapMonsters.emplace_back();
     mon.x = path.posX;
     mon.y = path.posY;
     mon.isNpc = isNpc;
@@ -839,7 +839,7 @@ void D2RProcess::readUnitMonster(const UnitAny &unit) {
         auto *currProcess = currProcess_;
         static StatEx statEx[64];
         auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
-        if (!readMemory64(currProcess->handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+        if (!readMemory64(currProcess->handle, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
         StatEx *st = statEx;
         for (; cnt; --cnt, ++st) {
             if (st->value < 100) { continue; }
@@ -861,7 +861,7 @@ void D2RProcess::readUnitObject(const UnitAny &unit) {
     if (/* Portals */ unit.txtFileNo != 59 && unit.txtFileNo != 60 && /* destroyed/opened */ unit.mode == 2) {
         StaticPath path;
         if (READ(unit.pathPtr, path)) {
-            currProcess->mapObjects_.erase(path.posX | (uint32_t(path.posY) << 16));
+            currProcess->mapObjects.erase(path.posX | (uint32_t(path.posY) << 16));
         }
         return;
     }
@@ -876,7 +876,7 @@ void D2RProcess::readUnitObject(const UnitAny &unit) {
         READ(unit.unionPtr + 8, flag);
         StaticPath path;
         if (!READ(unit.pathPtr, path)) { break; }
-        auto &obj = currProcess->mapObjects_[path.posX | (uint32_t(path.posY) << 16)];
+        auto &obj = currProcess->mapObjects[path.posX | (uint32_t(path.posY) << 16)];
         if (obj.x) { break; }
         obj.type = std::get<0>(ite->second);
         obj.name = type == TypeShrine && flag < gamedata->shrines.size() ?
@@ -909,7 +909,7 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
             auto *currProcess = currProcess_;
             static StatEx statEx[64];
             auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
-            if (!readMemory64(currProcess->handle_, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+            if (!readMemory64(currProcess->handle, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
             StatEx *st = statEx;
             for (; cnt; --cnt, ++st) {
                 if (st->stateId != uint16_t(StatId::ItemNumsockets)) { continue; }
@@ -922,7 +922,7 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
     if (!n) { return; }
     StaticPath path;
     if (!READ(unit.pathPtr, path)) { return; }
-    auto &mitem = currProcess->mapItems_.emplace_back();
+    auto &mitem = currProcess->mapItems.emplace_back();
     mitem.x = path.posX;
     mitem.y = path.posY;
     mitem.name = unit.txtFileNo < gamedata->items.size() ? gamedata->items[unit.txtFileNo].second : nullptr;
@@ -936,8 +936,8 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
     }
     mitem.color = color;
     auto snd = n >> 8;
-    if (snd > 0 && currProcess->knownItems_.find(unit.unitId) == currProcess->knownItems_.end()) {
-        currProcess->knownItems_.insert(unit.unitId);
+    if (snd > 0 && currProcess->knownItems.find(unit.unitId) == currProcess->knownItems.end()) {
+        currProcess->knownItems.insert(unit.unitId);
         if (snd < cfg->sounds.size() && !cfg->sounds[snd].first.empty()) {
             if (cfg->sounds[snd].second) {
                 PlaySoundW(cfg->sounds[snd].first.c_str(), nullptr, SND_ALIAS | SND_ASYNC | SND_NODEFAULT);
@@ -980,36 +980,36 @@ void D2RProcess::loadFromCfg() {
 }
 
 D2RProcess::ProcessData::ProcessData():
-    mapObjects_(1024) {
-    mapMonsters_.reserve(1024);
-    mapItems_.reserve(1024);
+    mapObjects(1024) {
+    mapMonsters.reserve(1024);
+    mapItems.reserve(1024);
 }
 D2RProcess::ProcessData::~ProcessData() {
-    if (handle_) {
-        UnhookWinEvent(HWINEVENTHOOK(hook_));
-        hook_ = nullptr;
-        CloseHandle(handle_);
+    if (handle) {
+        UnhookWinEvent(HWINEVENTHOOK(hook));
+        hook = nullptr;
+        CloseHandle(handle);
     }
 }
 void D2RProcess::ProcessData::resetData() {
-    if (handle_) {
-        UnhookWinEvent(HWINEVENTHOOK(hook_));
-        hook_ = nullptr;
-        CloseHandle(handle_);
-        handle_ = nullptr;
+    if (handle) {
+        UnhookWinEvent(HWINEVENTHOOK(hook));
+        hook = nullptr;
+        CloseHandle(handle);
+        handle = nullptr;
     }
 
-    hwnd_ = nullptr;
+    hwnd = nullptr;
 
-    baseAddr_ = 0;
-    baseSize_ = 0;
+    baseAddr = 0;
+    baseSize = 0;
 
-    mapEnabled_ = 0;
-    focusedPlayer_ = 0;
-    currPlayer_ = nullptr;
+    mapEnabled = 0;
+    focusedPlayer = 0;
+    currPlayer = nullptr;
 
-    mapPlayers_.clear();
-    mapMonsters_.clear();
-    mapObjects_.clear();
-    mapItems_.clear();
+    mapPlayers.clear();
+    mapMonsters.clear();
+    mapObjects.clear();
+    mapItems.clear();
 }

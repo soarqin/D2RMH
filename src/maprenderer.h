@@ -32,6 +32,10 @@
 #include <chrono>
 
 class MapRenderer {
+    struct SessionInfo {
+        Session session;
+        std::chrono::steady_clock::time_point mapStartTime;
+    };
 public:
     explicit MapRenderer(Renderer &renderer);
     void update();
@@ -67,9 +71,9 @@ private:
     JsonLng::LNG lng_ = JsonLng::LNG_enUS;
     uint16_t playerPosX_ = 0, playerPosY_ = 0;
 
-    std::map<void*, std::unique_ptr<Session>> sessions_;
+    std::map<void*, std::unique_ptr<SessionInfo>> sessions_;
     void *currHWND_ = nullptr;
-    Session *currSession_ = nullptr;
+    SessionInfo *currSession_ = nullptr;
 
     std::vector<std::tuple<float, float, std::wstring, float>> textStrings_;
     struct DynamicTextString {
@@ -83,7 +87,6 @@ private:
 
     uint32_t objColors_[TypeMax] = {};
 
-    std::chrono::steady_clock::time_point mapStartTime_;
     std::chrono::steady_clock::time_point nextPanelUpdateTime_;
     std::vector<std::wstring> panelText_;
 };
