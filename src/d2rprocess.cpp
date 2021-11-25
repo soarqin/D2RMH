@@ -308,6 +308,7 @@ enum {
     SystemMenuOffset = 0x11,
     InGameMapOffset = 0x12,
     QuestPanelOffset = 0x16,
+    WaypointPanelOffset = 0x1B,
     PartyPanelOffset = 0x1D,
     MercenaryOffset = 0x26,
 };
@@ -513,6 +514,7 @@ void D2RProcess::updateData() {
     if (mem[QuestPanelOffset]) { panelEnabled_ |= 0x10; }
     if (mem[PartyPanelOffset]) { panelEnabled_ |= 0x20; }
     if (mem[MercenaryOffset]) { panelEnabled_ |= 0x40; }
+    if (mem[WaypointPanelOffset]) { panelEnabled_ |= 0x80; }
     available_ = true;
     currPlayer_ = currPlayer;
 

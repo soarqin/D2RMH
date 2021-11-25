@@ -61,7 +61,7 @@ public:
     void *hwnd() { return hwnd_; }
     [[nodiscard]] inline bool available() const { return available_; }
     [[nodiscard]] inline bool mapEnabled() const { return mapEnabled_ != 0; }
-    [[nodiscard]] inline uint8_t panelEnabled() const { return panelEnabled_ != 0; }
+    [[nodiscard]] inline uint8_t panelEnabled() const { return panelEnabled_; }
     [[nodiscard]] inline uint32_t realTombLevelId() const { return realTombLevelId_; }
     [[nodiscard]] inline uint32_t superUniqueTombLevelId() const { return superUniqueTombLevelId_; }
 
