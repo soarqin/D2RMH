@@ -71,6 +71,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     });
     wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     while (wnd.run()) {
+        updateTime();
         renderer.prepare();
         map.update();
         renderer.begin();

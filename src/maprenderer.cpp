@@ -9,6 +9,7 @@
 #include "maprenderer.h"
 
 #include "window.h"
+#include "util.h"
 #include "cfg.h"
 
 static JsonLng::LNG lngFromString(const std::string &language) {
@@ -89,7 +90,7 @@ void MapRenderer::update() {
     }
     bool changed = currSession_->update(currPlayer->seed, currPlayer->difficulty);
     if (changed) {
-        mapStartTime_ = time(nullptr);
+        mapStartTime_ = getCurrTime();
     }
     if (!enabled_) {
         return;
@@ -532,11 +533,11 @@ void MapRenderer::drawObjects() {
 }
 
 void MapRenderer::updatePanelText() {
-    auto now = time(nullptr);
+    auto now = getCurrTime();
     if (now < nextPanelUpdateTime_) {
         return;
     }
-    nextPanelUpdateTime_ = now + 1;
+    nextPanelUpdateTime_ = now + std::chrono::seconds(1);
     const auto &panels = cfg->panelPatterns;
     auto size = panels.size();
     panelText_.resize(size);
@@ -555,7 +556,7 @@ void MapRenderer::updatePanelText() {
                 std::wstring_view sv(pat.data() + start, pos - start);
                 if (sv == L"duration") {
                     wchar_t n[16];
-                    auto dur = uint32_t(now - mapStartTime_);
+                    auto dur = uint32_t(std::chrono::duration_cast<std::chrono::seconds>(now - mapStartTime_).count());
                     if (dur < 3600) {
                         wsprintfW(n, L"%02u:%02u", dur / 60, dur % 60);
                     } else {
@@ -564,8 +565,9 @@ void MapRenderer::updatePanelText() {
                     target += n;
                 } else if (sv == L"time") {
                     wchar_t n[16];
-                    auto *tm = localtime(&now);
-                    wsprintfW(n, L"%u:%02u:%02u", tm->tm_hour, tm->tm_min, tm->tm_sec);
+                    auto currUnixTime = time(nullptr);
+                    auto *tm = localtime(&currUnixTime);
+                    wsprintfW(n, L"%d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
                     target += n;
                 } else if (sv == L"difficulty") {
                     const auto *cpl = d2rProcess_.currPlayer();

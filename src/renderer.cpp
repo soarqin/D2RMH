@@ -9,6 +9,7 @@
 #include "renderer.h"
 
 #include "window.h"
+#include "util.h"
 
 #include "HandmadeMath.h"
 #include <glad/glad_wgl.h>
@@ -112,7 +113,7 @@ void Renderer::setClearColor(float r, float g, float b, float a) {
 void Renderer::prepare() {
     if (ctx_->fpsLimit) {
         do {
-            auto now = std::chrono::steady_clock::now();
+            auto now = getCurrTime();
             if (ctx_->nextRenderTime > now) {
                 std::this_thread::sleep_for(ctx_->nextRenderTime - now);
                 continue;

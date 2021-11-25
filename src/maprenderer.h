@@ -29,6 +29,7 @@
 #include <memory>
 #include <tuple>
 #include <string>
+#include <chrono>
 
 class MapRenderer {
 public:
@@ -82,7 +83,7 @@ private:
 
     uint32_t objColors_[TypeMax] = {};
 
-    uint32_t mapStartTime_ = 0;
-    uint32_t nextPanelUpdateTime_ = 0;
+    std::chrono::steady_clock::time_point mapStartTime_;
+    std::chrono::steady_clock::time_point nextPanelUpdateTime_;
     std::vector<std::wstring> panelText_;
 };

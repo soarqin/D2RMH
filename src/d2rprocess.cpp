@@ -12,6 +12,7 @@
 #include "cfg.h"
 #include "data.h"
 #include "d2rdefs.h"
+#include "util.h"
 
 #include <windows.h>
 #include <psapi.h>
@@ -355,7 +356,6 @@ D2RProcess::D2RProcess(uint32_t searchInterval):
     }
 
     loadFromCfg();
-    nextSearchTime_ = std::chrono::steady_clock::now();
 }
 
 inline bool matchMem(size_t sz, const uint8_t* mem, const uint8_t* search, const uint8_t* mask) {
@@ -392,7 +392,7 @@ void D2RProcess::updateData() {
     auto foregroundWnd = GetForegroundWindow();
     if (!currProcess_ || foregroundWnd != currProcess_->hwnd_) {
         currProcess_ = nullptr;
-        auto now = std::chrono::steady_clock::now();
+        auto now = getCurrTime();
         if (now >= nextSearchTime_) {
             searchForProcess(foregroundWnd);
             nextSearchTime_ = now + searchInterval_;
@@ -979,10 +979,10 @@ void D2RProcess::loadFromCfg() {
     loadEncText(immunityStrings[5], cfg->encTxtPoisonImmunity);
 }
 
-D2RProcess::ProcessData::ProcessData() {
+D2RProcess::ProcessData::ProcessData():
+    mapObjects_(1024) {
     mapMonsters_.reserve(1024);
     mapItems_.reserve(1024);
-    mapObjects_.bucket(1024);
 }
 D2RProcess::ProcessData::~ProcessData() {
     if (handle_) {

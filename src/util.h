@@ -10,6 +10,9 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 
 std::wstring utf8toucs4(const std::string &s);
 std::vector<std::string> splitString(const std::string &str, char c);
+void updateTime();
+std::chrono::steady_clock::time_point getCurrTime();

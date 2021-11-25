@@ -66,3 +66,12 @@ std::vector<std::string> splitString(const std::string &str, char c) {
     }
     return result;
 }
+
+static std::chrono::steady_clock::time_point sCurrTime;
+void updateTime() {
+    sCurrTime = std::chrono::steady_clock::now();
+}
+
+std::chrono::steady_clock::time_point getCurrTime() {
+    return sCurrTime;
+}
