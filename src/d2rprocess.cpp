@@ -378,19 +378,19 @@ inline size_t searchMem(const uint8_t *mem, size_t sz, const uint8_t* search, co
 }
 
 void D2RProcess::updateData() {
-    for (auto ite = processes_.begin(); ite != processes_.end();) {
-        DWORD ret = WaitForSingleObject(ite->second.handle, 0);
-        if (ret == WAIT_TIMEOUT) {
-            ++ite;
-        } else {
-            if (processCloseCallback_) {
-                processCloseCallback_(ite->first);
-            }
-            ite = processes_.erase(ite);
-        }
-    }
     auto foregroundWnd = GetForegroundWindow();
     if (!currProcess_ || foregroundWnd != currProcess_->hwnd) {
+        for (auto ite = processes_.begin(); ite != processes_.end();) {
+            DWORD ret = WaitForSingleObject(ite->second.handle, 0);
+            if (ret == WAIT_TIMEOUT) {
+                ++ite;
+            } else {
+                if (processCloseCallback_) {
+                    processCloseCallback_(ite->first);
+                }
+                ite = processes_.erase(ite);
+            }
+        }
         currProcess_ = nullptr;
         auto now = getCurrTime();
         if (now >= nextSearchTime_) {
