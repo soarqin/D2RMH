@@ -13,20 +13,22 @@
 #include "cfg.h"
 
 static JsonLng::LNG lngFromString(const std::string &language) {
-    if (language == "enUS") return JsonLng::LNG_enUS;
-    if (language == "zhTW") return JsonLng::LNG_zhTW;
-    if (language == "deDE") return JsonLng::LNG_deDE;
-    if (language == "esES") return JsonLng::LNG_esES;
-    if (language == "frFR") return JsonLng::LNG_frFR;
-    if (language == "itIT") return JsonLng::LNG_itIT;
-    if (language == "koKR") return JsonLng::LNG_koKR;
-    if (language == "plPL") return JsonLng::LNG_plPL;
-    if (language == "esMX") return JsonLng::LNG_esMX;
-    if (language == "jaJP") return JsonLng::LNG_jaJP;
-    if (language == "ptBR") return JsonLng::LNG_ptBR;
-    if (language == "ruRU") return JsonLng::LNG_ruRU;
-    if (language == "zhCN") return JsonLng::LNG_zhCN;
+#define CHECK_LNG(n) if (language == #n) { return JsonLng::LNG_##n; }
+    CHECK_LNG(enUS)
+    CHECK_LNG(zhTW)
+    CHECK_LNG(deDE)
+    CHECK_LNG(esES)
+    CHECK_LNG(frFR)
+    CHECK_LNG(itIT)
+    CHECK_LNG(koKR)
+    CHECK_LNG(plPL)
+    CHECK_LNG(esMX)
+    CHECK_LNG(jaJP)
+    CHECK_LNG(ptBR)
+    CHECK_LNG(ruRU)
+    CHECK_LNG(ruRU)
     return JsonLng::LNG_enUS;
+#undef CHECK_LNG
 }
 
 MapRenderer::MapRenderer(Renderer &renderer) :
