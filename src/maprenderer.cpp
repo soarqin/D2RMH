@@ -81,24 +81,23 @@ void MapRenderer::update() {
         }
     }
     auto *hwnd = d2rProcess_.hwnd();
+    bool changed = false;
     if (currHWND_ != hwnd) {
         auto &session = sessions_[d2rProcess_.hwnd()];
         if (!session) {
             session = std::make_unique<SessionInfo>();
         }
+        currHWND_ = hwnd;
         currSession_ = session.get();
         nextPanelUpdateTime_ = getCurrTime();
+        changed = true;
     }
-    bool changed = currSession_->session.update(currPlayer->seed, currPlayer->difficulty);
-    if (changed) {
+    if (currSession_->session.update(currPlayer->seed, currPlayer->difficulty)) {
         currSession_->mapStartTime = getCurrTime();
+        changed = true;
     }
     if (!enabled_) {
         return;
-    }
-    if (hwnd != currHWND_) {
-        currHWND_ = hwnd;
-        changed = true;
     }
     if (uint32_t levelId = currPlayer->levelId; levelId != currLevelId_) {
         currLevelId_ = levelId;
