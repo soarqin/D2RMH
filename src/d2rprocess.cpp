@@ -434,7 +434,29 @@ void D2RProcess::updateData() {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
         auto *currProcess = currProcess_;
         uint64_t token;
-        if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) { return; }
+        if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) {
+            /* --START-- remove this if using readRoomUnits() */
+            DrlgAct act;
+            if (!READ(unit.actPtr, act)) { return; }
+            auto &player = currProcess->mapPlayers[unit.unitId];
+            player.name[0] = 0;
+            READ(unit.unionPtr, player.name);
+            player.levelChanged = false;
+            player.act = act.actId;
+            player.seed = act.seed;
+            READ(act.miscPtr + 0x830, player.difficulty);
+            DynamicPath path;
+            if (!READ(unit.pathPtr, path)) { return; }
+            player.posX = path.posX;
+            player.posY = path.posY;
+            DrlgRoom1 room1;
+            if (!READ(path.room1Ptr, room1)) { return; }
+            DrlgRoom2 room2;
+            if (!READ(room1.room2Ptr, room2)) { return; }
+            if (!READ(room2.levelPtr + 0x1F8, player.levelId)) { return; }
+            /* --END-- remove this if using readRoomUnits() */
+            return;
+        }
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
         auto &player = currProcess->mapPlayers[unit.unitId];
