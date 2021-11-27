@@ -36,7 +36,9 @@ class MapRenderer {
         Session session;
         Texture mapTex;
         uint32_t currLevelId = 0;
+        int x0 = 0, y0 = 0, x1 = 0, y1 = 0, cx = 0, cy = 0;
         const CollisionMap *currMap = nullptr;
+        std::vector<std::pair<const CollisionMap*, Texture>> mapAround;
         uint16_t playerPosX = 0, playerPosY = 0;
         std::vector<std::tuple<float, float, std::wstring, float>> textStrings;
         std::vector<std::tuple<float, float>> lines;

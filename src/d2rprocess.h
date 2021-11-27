@@ -26,13 +26,13 @@ public:
         uint32_t act;
         uint32_t seed;
         uint32_t levelId;
-        uint16_t posX, posY;
+        int posX, posY;
         char name[16];
         uint8_t difficulty;
         bool levelChanged;
     };
     struct MapMonster {
-        uint32_t x, y;
+        int x, y;
         const std::array<std::wstring, 13> *name;
         wchar_t enchants[32];
         uint8_t flag;
@@ -40,14 +40,14 @@ public:
         bool isUnique;
     };
     struct MapObject {
-        uint32_t x, y;
+        int x, y;
         const std::array<std::wstring, 13> *name;
         uint8_t type;
         uint8_t flag;
         float w, h;
     };
     struct MapItem {
-        uint32_t x, y;
+        int x, y;
         const std::array<std::wstring, 13> *name;
         uint8_t flag;
         uint8_t color;

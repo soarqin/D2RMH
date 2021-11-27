@@ -115,17 +115,66 @@ void MapRenderer::update() {
             enabled_ = false;
             return;
         }
+        auto originX = currMap->levelOrigin.x, originY = currMap->levelOrigin.y;
+        std::map<uint32_t, const CollisionMap*> knownMaps;
         int x0 = currMap->cropX, y0 = currMap->cropY,
             x1 = currMap->cropX2, y1 = currMap->cropY2;
-        int width = std::max(0, x1 - x0);
-        int height = std::max(0, y1 - y0);
-        auto totalWidth = currMap->totalWidth;
+        int totalX0 = originX + x0, totalY0 = originY + y0, totalX1 = originX + x1, totalY1 = originY + y1;
+        auto cx = currMap->levelOrigin.x + (x1 + x0) / 2;
+        auto cy = currMap->levelOrigin.y + (y1 + y0) / 2;
+        if (cfg->neighbourMapBounds) {
+            auto bounds = int(cfg->neighbourMapBounds);
+            auto mx0 = std::max(0, cx - bounds);
+            auto my0 = std::max(0, cy - bounds);
+            auto mx1 = cx + bounds;
+            auto my1 = cy + bounds;
+            std::vector<const CollisionMap *> mapsToProcess = {currMap};
+            while (!mapsToProcess.empty()) {
+                const auto *map = mapsToProcess.back();
+                mapsToProcess.pop_back();
+                knownMaps[map->areaId()] = map;
+                for (auto &p: map->adjacentLevels) {
+                    if (p.second.isWrap) { continue; }
+                    if (knownMaps.find(p.first) != knownMaps.end()) { continue; }
+                    mapsToProcess.emplace_back(currSession_->session.getMap(p.first));
+                }
+            }
+            knownMaps.erase(currMap->areaId());
+            for (auto ite = knownMaps.begin(); ite != knownMaps.end();) {
+                auto tx0 = ite->second->levelOrigin.x + ite->second->cropX;
+                auto ty0 = ite->second->levelOrigin.y + ite->second->cropY;
+                auto tx1 = ite->second->levelOrigin.x + ite->second->cropX2;
+                auto ty1 = ite->second->levelOrigin.y + ite->second->cropY2;
+                if (tx0 < mx0 || ty0 < my0 || tx1 > mx1 || ty1 > my1) {
+                    ite = knownMaps.erase(ite);
+                    continue;
+                } else {
+                    if (tx0 < totalX0) { totalX0 = tx0; }
+                    if (ty0 < totalY0) { totalY0 = ty0; }
+                    if (tx1 > totalX1) { totalX1 = tx1; }
+                    if (ty1 > totalY1) { totalY1 = ty1; }
+                    ++ite;
+                }
+            }
+        }
+        currSession_->x0 = totalX0;
+        currSession_->y0 = totalY0;
+        currSession_->x1 = totalX1;
+        currSession_->y1 = totalY1;
+        currSession_->cx = cx;
+        currSession_->cy = cy;
+        int width = totalX1 - totalX0;
+        int height = totalY1 - totalY0;
         auto *pixels = new uint32_t[width * height];
-        auto *ptr = pixels;
+        auto offX = currMap->levelOrigin.x - totalX0;
+        auto offY = currMap->levelOrigin.y - totalY0;
         auto edgeColor = cfg->edgeColor;
+        auto &mapTex = currSession_->mapTex;
         bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
+        auto totalWidth = currMap->totalWidth;
         for (int y = y0; y < y1; ++y) {
             int idx = y * totalWidth + x0;
+            auto *ptr = pixels + offX + x0 + (offY + y) * width;
             for (int x = x0; x < x1; ++x) {
                 bool blocked = currMap->map[idx] & 1;
                 uint32_t clr = blocked ? 0 : walkableColor_;
@@ -141,7 +190,33 @@ void MapRenderer::update() {
                 ++idx;
             }
         }
-        currSession_->mapTex.setData(width, height, pixels);
+        for (auto &p: knownMaps) {
+            auto *m = p.second;
+            offX = m->levelOrigin.x - totalX0;
+            offY = m->levelOrigin.y - totalY0;
+            totalWidth = m->totalWidth;
+            auto mx0 = m->cropX, my0 = m->cropY,
+                 mx1 = m->cropX2, my1 = m->cropY2;
+            for (int y = my0; y < my1; ++y) {
+                int idx = y * totalWidth + mx0;
+                auto *ptr = pixels + offX + mx0 + (offY + y) * width;
+                for (int x = mx0; x < mx1; ++x) {
+                    bool blocked = m->map[idx] & 1;
+                    uint32_t clr = blocked ? 0 : walkableColor_;
+                    if (hasEdge && !blocked && (
+                        (x > mx0 && (m->map[idx - 1] & 1))
+                            || (x + 1 < mx1 && (m->map[idx + 1] & 1))
+                            || (y > my0 && (m->map[idx - totalWidth] & 1))
+                            || (y + 1 < my1 && (m->map[idx + totalWidth] & 1))
+                    )) {
+                        clr = edgeColor;
+                    }
+                    *ptr++ = clr;
+                    ++idx;
+                }
+            }
+        }
+        mapTex.setData(width, height, pixels);
         delete[] pixels;
 
         const std::set<int> *guides;
@@ -154,35 +229,33 @@ void MapRenderer::update() {
             }
         }
 
-        auto &mapTex = currSession_->mapTex;
         PipelineSquad2D squadPip(mapTex);
         squadPip.setOrtho(0, float(mapTex.width()), 0, float(mapTex.height()));
-        auto originX = currMap->levelOrigin.x, originY = currMap->levelOrigin.y;
-        auto widthf = float(width) * .5f, heightf = float(height) * .5f;
+        auto widthf = float(x1 - x0) * .5f, heightf = float(y1 - y0) * .5f;
         auto realTombLevelId = d2rProcess_.realTombLevelId();
         auto superUniqueTombLevelId = d2rProcess_.superUniqueTombLevelId();
         for (auto &p: currMap->adjacentLevels) {
             if (p.first >= gamedata->levels.size()) { continue; }
-            if (p.second.exits.empty()) {
-                continue;
-            }
-            auto &e = p.second.exits[0];
-            auto px = float(e.x - originX - x0);
-            auto py = float(e.y - originY - y0);
-            const auto *lngarr = gamedata->levels[p.first].second;
-            std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
-            /* Check for TalTombs */
-            if (p.first == realTombLevelId) {
-                name = L">>> " + name + L" <<<";
-                currSession_->lines.emplace_back(px - widthf, py - heightf);
-            }
-            if (p.first == superUniqueTombLevelId) {
-                name += L" <== SuperUnique";
-            }
-            squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[TypePortal]);
-            currSession_->textStrings.emplace_back(px - widthf, py - heightf, name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
-            if (guides && (*guides).find(p.first) != (*guides).end()) {
-                currSession_->lines.emplace_back(px - widthf, py - heightf);
+            for (auto &e: p.second.exits) {
+                auto px = float(e.x - totalX0);
+                auto py = float(e.y - totalY0);
+                const auto *lngarr = gamedata->levels[p.first].second;
+                std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
+                auto rx = float(e.x - currSession_->cx), ry = float(e.y - currSession_->cy);
+                /* Check for TalTombs */
+                if (p.first == realTombLevelId) {
+                    name = L">>> " + name + L" <<<";
+                    currSession_->lines.emplace_back(rx, ry);
+                }
+                if (p.first == superUniqueTombLevelId) {
+                    name += L" <== SuperUnique";
+                }
+                squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[TypePortal]);
+                currSession_->textStrings
+                    .emplace_back(rx, ry, name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
+                if (guides && (*guides).find(p.first) != (*guides).end()) {
+                    currSession_->lines.emplace_back(rx, ry);
+                }
             }
         }
         const std::map<uint32_t, std::vector<Point>> *objs[2] = {&currMap->objects, &currMap->npcs};
@@ -191,8 +264,8 @@ void MapRenderer::update() {
                 auto ite = gamedata->objects[i].find(id);
                 if (ite == gamedata->objects[i].end()) { continue; }
                 for (auto &pt: vec) {
-                    auto ptx = float(pt.x - originX - x0);
-                    auto pty = float(pt.y - originY - y0);
+                    auto ptx = float(pt.x - totalX0);
+                    auto pty = float(pt.y - totalY0);
                     auto tp = std::get<0>(ite->second);
                     switch (tp) {
                     case TypeDoor: {
@@ -211,7 +284,7 @@ void MapRenderer::update() {
                         if (tp != TypeShrine && tp != TypeWell) {
                             const auto *lngarr = std::get<2>(ite->second);
                             std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
-                            currSession_->textStrings.emplace_back(ptx - widthf, pty - heightf, name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
+                            currSession_->textStrings.emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy), name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
                         }
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
                             currSession_->lines.emplace_back(ptx - widthf, pty - heightf);
@@ -231,12 +304,12 @@ void MapRenderer::update() {
     }
     if (switched || changed) {
         if (auto *currMap = currSession_->currMap) {
-            int x0 = currMap->cropX, y0 = currMap->cropY,
-                x1 = currMap->cropX2, y1 = currMap->cropY2;
-            auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
+            int x0 = currSession_->x0, y0 = currSession_->y0,
+                x1 = currSession_->x1, y1 = currSession_->y1,
+                cx = currSession_->cx, cy = currSession_->cy;
             mapPipeline_.reset();
             mapPipeline_.setTexture(currSession_->mapTex);
-            mapPipeline_.pushQuad(-mw, -mh, mw, mh);
+            mapPipeline_.pushQuad(float(x0 - cx), float(y0 - cy), float(x1 - cx), float(y1 - cy));
             updateWindowPos();
         }
     }
@@ -374,17 +447,14 @@ void MapRenderer::reloadConfig() {
 }
 void MapRenderer::updatePlayerPos() {
     auto *currMap = currSession_->currMap;
-    int x0 = currMap->cropX, y0 = currMap->cropY, x1 = currMap->cropX2,
-        y1 = currMap->cropY2;
-    auto originX = currMap->levelOrigin.x, originY = currMap->levelOrigin.y;
-    auto widthf = (float)(x1 - x0) * 0.5f, heightf = (float)(y1 - y0) * 0.5f;
+    auto cx = currSession_->cx, cy = currSession_->cy;
     const auto *currPlayer = d2rProcess_.currPlayer();
     bool showPlayerNames = cfg->showPlayerNames;
     for (const auto &[id, plr]: d2rProcess_.players()) {
         auto posX = plr.posX;
         auto posY = plr.posY;
-        auto oxf = float(posX - originX - x0) - widthf;
-        auto oyf = float(posY - originY - y0) - heightf;
+        auto oxf = float(posX - cx);
+        auto oyf = float(posY - cy);
         if (showPlayerNames && plr.name[0]) {
             dynamicTextStrings_.emplace_back(DynamicTextString { oxf, oyf, plr.name, float(ttf_->stringWidth(plr.name, cfg->fontSize)) * .5f });
         }
@@ -463,15 +533,10 @@ void MapRenderer::drawObjects() {
     auto fontSize = cfg->fontSize;
     if (!mons.empty() || !objs.empty() || !items.empty()) {
         auto *currMap = currSession_->currMap;
-        int x0 = currMap->cropX, y0 = currMap->cropY, x1 = currMap->cropX2,
-            y1 = currMap->cropY2;
-        auto originX = currMap->levelOrigin.x;
-        auto originY = currMap->levelOrigin.y;
-        auto w = float(x1 - x0) * .5f;
-        auto h = float(y1 - y0) * .5f;
+        auto ctx = currSession_->cx, cty = currSession_->cy;
         for (const auto &mon: mons) {
-            auto x = float(mon.x - originX - x0) - w;
-            auto y = float(mon.y - originY - y0) - h;
+            auto x = float(mon.x - ctx);
+            auto y = float(mon.y - cty);
             dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[mon.isNpc ? TypeNpc : mon.isUnique ? TypeUniqueMonster : TypeMonster]);
             if (mon.name) {
                 auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
@@ -491,8 +556,8 @@ void MapRenderer::drawObjects() {
         }
         for (const auto &p: objs) {
             const auto &obj = p.second;
-            auto x = float(obj.x - originX - x0) - w;
-            auto y = float(obj.y - originY - y0) - h;
+            auto x = float(obj.x - ctx);
+            auto y = float(obj.y - cty);
             auto dw = obj.w, dh = obj.h;
             dynamicPipeline_.pushQuad(x - dw, y - dh, x + dw, y + dh, objColors_[obj.type]);
             if (obj.name) {
@@ -518,8 +583,8 @@ void MapRenderer::drawObjects() {
             for (const auto &item: items) {
                 std::wstring_view sv = (*item.name)[lng_];
                 if (item.flag & 1) {
-                    auto x = float(item.x - originX - x0) - w;
-                    auto y = float(item.y - originY - y0) - h;
+                    auto x = float(item.x - ctx);
+                    auto y = float(item.y - cty);
                     dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, 0xFFFFFFFF);
                     if (item.name) {
                         auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);

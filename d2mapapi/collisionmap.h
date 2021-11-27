@@ -12,6 +12,7 @@ struct Point {
 
 struct AdjacentLevel {
     std::vector<Point> exits;
+    bool isWrap = false;
     Point levelOrigin;
     int width = 0;
     int height = 0;
@@ -25,6 +26,7 @@ private:
 public:
     CollisionMap(Act *act, unsigned int areaId);
     bool build();
+    [[nodiscard]] inline unsigned int areaId() const { return areaId_; }
 
     Point levelOrigin; // level top-left
     int totalWidth = 0, totalHeight = 0;

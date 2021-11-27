@@ -73,6 +73,7 @@ void loadCfg(const std::string &filename) {
             LOADVALN(map_centered, mapCentered)
 
             LOADVALN(alpha, alpha)
+            LOADVALN(neighbour_map_bounds, neighbourMapBounds)
             LOADVALC(walkable_color, walkableColor)
             LOADVALC(edge_color, edgeColor)
             LOADVALC(text_color, textColor)

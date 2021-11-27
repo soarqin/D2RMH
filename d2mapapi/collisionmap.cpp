@@ -94,7 +94,9 @@ bool CollisionMap::build() {
                             const auto exitX = static_cast<int>(pRoom2->dwPosX * 5 + pPresetUnit->dwPosX);
                             const auto exitY = static_cast<int>(pRoom2->dwPosY * 5 + pPresetUnit->dwPosY);
 
-                            adjacentLevels[pRoomTile->pRoom2->pLevel->dwLevelNo].exits.push_back(Point{exitX, exitY});
+                            auto &al = adjacentLevels[pRoomTile->pRoom2->pLevel->dwLevelNo];
+                            al.isWrap = true;
+                            al.exits.push_back(Point{exitX, exitY});
                         }
                     }
                 }
@@ -115,7 +117,7 @@ bool CollisionMap::build() {
             adjacentLevel.levelOrigin = origin;
             adjacentLevel.width = newLevelWidth;
             adjacentLevel.height = newLevelHeight;
-            /* we have exii already */
+            /* we have exits already */
             if (!adjacentLevel.exits.empty()) { continue; }
             /* caculate the path to the new level */
             if (width > 5) {
