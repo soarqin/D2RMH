@@ -9,9 +9,20 @@
 #include "os_structs.h"
 
 extern "C" {
-static HMODULE ntdllMod = LoadLibraryA("ntdll.dll");
-NtWow64QueryInformationProcess64Proc NtWow64QueryInformationProcess64
-    = (NtWow64QueryInformationProcess64Proc)GetProcAddress(ntdllMod, "NtWow64QueryInformationProcess64");
-NtWow64ReadVirtualMemory64Proc NtWow64ReadVirtualMemory64
-    = (NtWow64ReadVirtualMemory64Proc)GetProcAddress(ntdllMod, "NtWow64ReadVirtualMemory64");
+
+NtWow64QueryInformationProcess64Proc NtWow64QueryInformationProcess64;
+NtWow64ReadVirtualMemory64Proc NtWow64ReadVirtualMemory64;
+
+static HMODULE getNtDllMod() {
+    static HMODULE ntdllMod = LoadLibraryA("ntdll.dll");
+    return ntdllMod;
+}
+
+void osInit() {
+    NtWow64QueryInformationProcess64 =
+        (NtWow64QueryInformationProcess64Proc)GetProcAddress(getNtDllMod(), "NtWow64QueryInformationProcess64");
+    NtWow64ReadVirtualMemory64 =
+        (NtWow64ReadVirtualMemory64Proc)GetProcAddress(getNtDllMod(), "NtWow64ReadVirtualMemory64");
+}
+
 }

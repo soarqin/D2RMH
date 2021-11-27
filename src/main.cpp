@@ -12,10 +12,12 @@
 #include "window.h"
 #include "maprenderer.h"
 #include "util.h"
+#include "os_structs.h"
 
 #include "d2map.h"
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    osInit();
     HANDLE evt = CreateEventW(nullptr, FALSE, FALSE, L"Global\\D2RMH_EVENT" );
     if (!evt) {
         return -1;

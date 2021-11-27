@@ -122,4 +122,7 @@ typedef NTSTATUS (NTAPI *NtWow64ReadVirtualMemory64Proc)(
 
 extern NtWow64QueryInformationProcess64Proc NtWow64QueryInformationProcess64;
 extern NtWow64ReadVirtualMemory64Proc NtWow64ReadVirtualMemory64;
+
+extern void osInit();
+
 }
