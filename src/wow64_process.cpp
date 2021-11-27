@@ -9,10 +9,7 @@
 #include "wow64_process.h"
 
 #include "os_structs.h"
-#ifdef _MSC_VER
-#pragma comment(linker, "/alternatename:__imp__NtWow64QueryInformationProcess64@20=__imp__NtWow64QueryInformationProcess64")
-#pragma comment(linker, "/alternatename:__imp__NtWow64ReadVirtualMemory64@28=__imp__NtWow64ReadVirtualMemory64")
-#endif
+
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
