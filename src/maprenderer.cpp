@@ -83,6 +83,7 @@ void MapRenderer::update() {
     }
     auto *hwnd = d2rProcess_.hwnd();
     bool changed = false;
+    bool switched = false;
     if (currHWND_ != hwnd) {
         auto &session = sessions_[d2rProcess_.hwnd()];
         if (!session) {
@@ -92,6 +93,7 @@ void MapRenderer::update() {
         currHWND_ = hwnd;
         currSession_ = session.get();
         nextPanelUpdateTime_ = getCurrTime();
+        switched = true;
     }
     if (currSession_->session.update(currPlayer->seed, currPlayer->difficulty)) {
         currSession_->mapStartTime = getCurrTime();
@@ -223,16 +225,20 @@ void MapRenderer::update() {
             }
         }
         squadPip.render();
-        updateWindowPos();
-
-        auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
-        mapPipeline_.reset();
-        mapPipeline_.setTexture(mapTex);
-        mapPipeline_.pushQuad(-mw, -mh, mw, mh);
-
         enabled_ = true;
     } else {
         enabled_ = currSession_->currMap != nullptr;
+    }
+    if (switched) {
+        if (auto *currMap = currSession_->currMap) {
+            int x0 = currMap->cropX, y0 = currMap->cropY,
+                x1 = currMap->cropX2, y1 = currMap->cropY2;
+            auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
+            mapPipeline_.reset();
+            mapPipeline_.setTexture(currSession_->mapTex);
+            mapPipeline_.pushQuad(-mw, -mh, mw, mh);
+            updateWindowPos();
+        }
     }
 }
 void MapRenderer::render() {
