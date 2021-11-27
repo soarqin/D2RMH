@@ -1,9 +1,11 @@
 # next release
 * (#38) multi-instance support
 * (#66) fix issue that map layer not shown for non-expansion characters
+* (#68) fix issue that other players not shown
 * search for memory offsets in order to get expansion flag address, offsets from [MapAssist](https://github.com/OneXDeveloper/MapAssist/blob/9b5658760efa8e8e243a4927d25abd2c796a41df/Helpers/ProcessContext.cs#L115-L167)
 * fix `panel_mask` entry in config is not correctly processed
 * add waypoint panel to `panel_mask`
+* dynamic loading functions from ntdll.dll and build release binaries with mingw32 now, to minify risks of virus detection
 
 # v0.7
 * (#47, #59, #63) add adaptive size for `map_area`, and is set as default value, kinda resolves confusion caused by new mechanism of `map_area`
