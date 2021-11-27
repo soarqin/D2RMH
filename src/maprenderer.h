@@ -34,6 +34,12 @@
 class MapRenderer {
     struct SessionInfo {
         Session session;
+        Texture mapTex;
+        uint32_t currLevelId = 0;
+        const CollisionMap *currMap = nullptr;
+        uint16_t playerPosX = 0, playerPosY = 0;
+        std::vector<std::tuple<float, float, std::wstring, float>> textStrings;
+        std::vector<std::tuple<float, float>> lines;
         std::chrono::steady_clock::time_point mapStartTime;
     };
 public:
@@ -58,24 +64,19 @@ private:
     D2RProcess d2rProcess_;
     TTFRenderGL ttfgl_;
     std::unique_ptr<TTF> ttf_;
-    Texture mapTex_;
     hmm_mat4 transform_ = {};
     int mapViewport_[4] = {};
     int msgViewport_[4] = {};
 
     bool enabled_ = false;
     RECT d2rRect = {};
-    uint32_t currLevelId_ = 0;
-    CollisionMap *currMap_ = nullptr;
     uint32_t walkableColor_ = 0;
     JsonLng::LNG lng_ = JsonLng::LNG_enUS;
-    uint16_t playerPosX_ = 0, playerPosY_ = 0;
 
     std::map<void*, std::unique_ptr<SessionInfo>> sessions_;
     void *currHWND_ = nullptr;
     SessionInfo *currSession_ = nullptr;
 
-    std::vector<std::tuple<float, float, std::wstring, float>> textStrings_;
     struct DynamicTextString {
         float x, y;
         const char *text;
@@ -83,7 +84,6 @@ private:
     };
     std::vector<DynamicTextString> dynamicTextStrings_;
     std::vector<std::tuple<std::wstring_view, float, float, int, uint8_t>> textToDraw_, msgToDraw_;
-    std::vector<std::tuple<float, float>> lines_;
 
     uint32_t objColors_[TypeMax] = {};
 

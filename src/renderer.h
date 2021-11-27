@@ -76,6 +76,8 @@ class Texture final {
 public:
     Texture();
     ~Texture();
+    Texture(const Texture &) = delete;
+    Texture(Texture &&) noexcept;
     void create(int width, int height);
     void setData(int width, int height, const uint32_t *data);
     void updateSubData(int x, int y, int width, int height, const uint32_t *data) const;

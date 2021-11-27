@@ -259,6 +259,14 @@ Texture::~Texture() {
         glDeleteTextures(1, &uid_);
     }
 }
+Texture::Texture(Texture &&other) noexcept {
+    uid_ = other.uid_;
+    width_ = other.width_;
+    height_ = other.height_;
+    widthReal_ = other.widthReal_;
+    heightReal_ = other.heightReal_;
+    other.uid_ = 0;
+}
 void Texture::create(int width, int height) {
     width_ = roundup(width);
     height_ = roundup(height);

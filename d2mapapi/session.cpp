@@ -29,7 +29,7 @@ bool Session::update(unsigned int seed, unsigned char difficulty) {
     return true;
 }
 
-CollisionMap *Session::getMap(unsigned int areaid) {
+const CollisionMap *Session::getMap(unsigned int areaid) {
     auto ite = maps_.find(areaid);
     if (ite == maps_.end()) {
         auto actId = Helpers::getAct(areaid);
