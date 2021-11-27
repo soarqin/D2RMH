@@ -229,7 +229,7 @@ void MapRenderer::update() {
     } else {
         enabled_ = currSession_->currMap != nullptr;
     }
-    if (switched) {
+    if (switched || changed) {
         if (auto *currMap = currSession_->currMap) {
             int x0 = currMap->cropX, y0 = currMap->cropY,
                 x1 = currMap->cropX2, y1 = currMap->cropY2;
