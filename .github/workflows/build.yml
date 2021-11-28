@@ -16,18 +16,23 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Setup Environment
+      shell: pwsh
+      run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
     - name: CMake Configure
-      run: cmake -B ${{github.workspace}}/build -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON
+      run: cmake -B ${{github.workspace}}/mingw32_build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_STATIC_CRT=ON
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target snapshot-pack
+      run: cmake --build ${{github.workspace}}/mingw32_build --target snapshot-pack
 
     - uses: actions/upload-artifact@v2
       with: 
         name: D2RMH-snapshot
         path: |
-          ${{github.workspace}}/build/bin/D2RMH-snapshot.zip
+          ${{github.workspace}}/mingw32_build/bin/D2RMH-snapshot.zip
         retention-days: 7
