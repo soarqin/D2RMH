@@ -289,7 +289,7 @@ void MapRenderer::update() {
                             currSession_->textStrings.emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy), name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
                         }
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
-                            currSession_->lines.emplace_back(ptx - widthf, pty - heightf);
+                            currSession_->lines.emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy));
                         }
                         break;
                     }

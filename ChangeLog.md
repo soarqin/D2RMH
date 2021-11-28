@@ -1,3 +1,6 @@
+# next release
+* fix lines for some quest targets
+
 # v0.8
 * (#38) multi-instance support
 * (#66) fix issue that map layer not shown for non-expansion characters
