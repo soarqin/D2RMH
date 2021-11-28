@@ -26,7 +26,7 @@ static JsonLng::LNG lngFromString(const std::string &language) {
     CHECK_LNG(jaJP)
     CHECK_LNG(ptBR)
     CHECK_LNG(ruRU)
-    CHECK_LNG(ruRU)
+    CHECK_LNG(zhCN)
     return JsonLng::LNG_enUS;
 #undef CHECK_LNG
 }
