@@ -1,5 +1,6 @@
-# next release
+# v0.8.1
 * fix lines for some quest targets
+* fix random color blocks outside of map area sometime
 
 # v0.8
 * (#38) multi-instance support
