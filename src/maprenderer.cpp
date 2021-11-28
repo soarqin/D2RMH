@@ -122,21 +122,23 @@ void MapRenderer::update() {
         int totalX0 = originX + x0, totalY0 = originY + y0, totalX1 = originX + x1, totalY1 = originY + y1;
         auto cx = currMap->levelOrigin.x + (x1 + x0) / 2;
         auto cy = currMap->levelOrigin.y + (y1 + y0) / 2;
-        if (cfg->neighbourMapBounds) {
-            auto bounds = int(cfg->neighbourMapBounds);
+        if (cfg->neighbourMapBounds != 0) {
+            auto bounds = cfg->neighbourMapBounds > 0 ? cfg->neighbourMapBounds : 2048;
+            auto steps = cfg->neighbourMapBounds < 0 ? -cfg->neighbourMapBounds : 32;
             auto mx0 = std::max(0, cx - bounds);
             auto my0 = std::max(0, cy - bounds);
             auto mx1 = cx + bounds;
             auto my1 = cy + bounds;
-            std::vector<const CollisionMap *> mapsToProcess = {currMap};
+            std::vector<std::pair<const CollisionMap *, int>> mapsToProcess = {{currMap, 0}};
             while (!mapsToProcess.empty()) {
-                const auto *map = mapsToProcess.back();
+                const auto [map, step] = mapsToProcess.back();
                 mapsToProcess.pop_back();
                 knownMaps[map->areaId()] = map;
+                if (step >= steps) { continue; }
                 for (auto &p: map->adjacentLevels) {
                     if (p.second.isWrap) { continue; }
                     if (knownMaps.find(p.first) != knownMaps.end()) { continue; }
-                    mapsToProcess.emplace_back(currSession_->session.getMap(p.first));
+                    mapsToProcess.emplace_back(currSession_->session.getMap(p.first), step + 1);
                 }
             }
             knownMaps.erase(currMap->areaId());
