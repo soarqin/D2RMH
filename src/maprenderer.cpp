@@ -168,6 +168,7 @@ void MapRenderer::update() {
         int width = totalX1 - totalX0;
         int height = totalY1 - totalY0;
         auto *pixels = new uint32_t[width * height];
+        memset(pixels, 0, sizeof(uint32_t) * width * height);
         auto offX = currMap->levelOrigin.x - totalX0;
         auto offY = currMap->levelOrigin.y - totalY0;
         auto edgeColor = cfg->edgeColor;
