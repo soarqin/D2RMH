@@ -151,7 +151,7 @@ void loadData() {
             break;
         }
         case 1: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= sgamedata.levels.size()) {
                 sgamedata.levels.resize(id + 1);
             }
@@ -186,7 +186,7 @@ void loadData() {
             break;
         }
         case 4: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= sgamedata.monsters.size()) {
                 sgamedata.monsters.resize(id + 1);
             }
@@ -199,7 +199,7 @@ void loadData() {
             break;
         }
         case 5: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= sgamedata.shrines.size()) {
                 sgamedata.shrines.resize(id + 1);
             }
@@ -207,7 +207,7 @@ void loadData() {
             break;
         }
         case 6: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= sgamedata.superUniques.size()) {
                 sgamedata.superUniques.resize(id + 1);
             }
@@ -215,7 +215,7 @@ void loadData() {
             break;
         }
         case 7: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= sgamedata.items.size()) {
                 sgamedata.items.resize(id + 1);
             }
@@ -227,7 +227,7 @@ void loadData() {
             break;
         }
         case 8: {
-            auto id = strtol(name, nullptr, 0);
+            auto id = strtoul(name, nullptr, 0);
             if (id >= 65535) { break; }
             if (id >= sgamedata.mercNames.size()) { sgamedata.mercNames.resize(id + 1); }
             sgamedata.mercNames[id].first = value;

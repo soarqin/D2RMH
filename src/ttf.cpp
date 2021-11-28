@@ -138,7 +138,7 @@ bool TTF::add(const std::string &filename, int index) {
     ifs.seekg(0, std::ios::end);
     auto size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
-    fi.ttf_buffer.resize(size);
+    fi.ttf_buffer.resize(size_t(size));
     ifs.read((char*)fi.ttf_buffer.data(), size);
     ifs.close();
     auto *info = new stbtt_fontinfo;
@@ -266,7 +266,7 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
     stbtt_MakeGlyphBitmapSubpixel(info, dst, fd->w, fd->h, dstPitch, fontScale, fontScale, 0, 0, index);
 #endif
 
-    if (rpidx >= textures_.size()) {
+    if (size_t(rpidx) >= textures_.size()) {
         textures_.resize(rpidx + 1, nullptr);
     }
     auto *tex = textures_[rpidx];

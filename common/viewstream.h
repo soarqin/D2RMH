@@ -49,7 +49,7 @@ public:
             if(0 == _n && !traits_type::not_eof(this->underflow() ) )
                 return -1;
         }
-        std::memmove(static_cast<void*>(_s), this->gptr(), _n);
+        std::memmove(static_cast<void*>(_s), this->gptr(), size_t(_n));
         this->gbump( static_cast<int>(_n) );
         return _n;
     }

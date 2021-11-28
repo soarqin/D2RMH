@@ -16,7 +16,7 @@
 #include <cstring>
 
 #if defined(_MSC_VER)
-#define strcasecmp stricmp
+#define strcasecmp _stricmp
 #endif
 
 static Cfg sCfg;

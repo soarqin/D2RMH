@@ -666,11 +666,11 @@ void D2RProcess::searchForProcess(void *hwnd) {
 
 void D2RProcess::updateOffset() {
     auto *currProcess = currProcess_;
-    auto *mem = new(std::nothrow) uint8_t[currProcess->baseSize];
-    if (mem && readMemory64(currProcess->handle, currProcess->baseAddr, currProcess->baseSize, mem)) {
+    auto *mem = new(std::nothrow) uint8_t[size_t(currProcess->baseSize)];
+    if (mem && readMemory64(currProcess->handle, currProcess->baseAddr, uint32_t(currProcess->baseSize), mem)) {
         const uint8_t search0[] = {0x48, 0x8D, 0, 0, 0, 0, 0, 0x8B, 0xD1};
         const uint8_t mask0[] = {0xFF, 0xFF, 0, 0, 0, 0, 0, 0xFF, 0xFF};
-        auto off = searchMem(mem, currProcess->baseSize, search0, mask0, sizeof(search0));
+        auto off = searchMem(mem, size_t(currProcess->baseSize), search0, mask0, sizeof(search0));
         if (off != size_t(-1)) {
             int32_t rel;
             if (READ(currProcess->baseAddr + off + 3, rel)) {
@@ -680,7 +680,7 @@ void D2RProcess::updateOffset() {
 
         const uint8_t search1[] = {0x40, 0x84, 0xED, 0x0F, 0x94, 0x05};
         const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        off = searchMem(mem, currProcess->baseSize, search1, mask1, sizeof(search1));
+        off = searchMem(mem, size_t(currProcess->baseSize), search1, mask1, sizeof(search1));
         if (off != size_t(-1)) {
             int32_t rel;
             if (READ(currProcess->baseAddr + off + 6, rel)) {
@@ -689,7 +689,7 @@ void D2RProcess::updateOffset() {
         }
         const uint8_t search2[] = {0xC7, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x85, 0xC0, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x83, 0x78, 0x5C, 0x00, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x33, 0xD2, 0x41};
         const uint8_t mask2[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF};
-        off = searchMem(mem, currProcess->baseSize, search2, mask2, sizeof(search2));
+        off = searchMem(mem, size_t(currProcess->baseSize), search2, mask2, sizeof(search2));
         if (off != size_t(-1)) {
             int32_t rel;
             if (READ(currProcess->baseAddr + off - 4, rel)) {
@@ -957,7 +957,7 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
         }
     }
     mitem.color = color;
-    auto snd = n >> 8;
+    auto snd = size_t(n >> 8);
     if (snd > 0 && currProcess->knownItems.find(unit.unitId) == currProcess->knownItems.end()) {
         currProcess->knownItems.insert(unit.unitId);
         if (snd < cfg->sounds.size() && !cfg->sounds[snd].first.empty()) {

@@ -648,8 +648,9 @@ void MapRenderer::updatePanelText() {
                 } else if (sv == L"time") {
                     wchar_t n[16];
                     auto currUnixTime = time(nullptr);
-                    auto *tm = localtime(&currUnixTime);
-                    wsprintfW(n, L"%d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+                    struct tm tm = {};
+                    localtime_s(&tm, &currUnixTime);
+                    wsprintfW(n, L"%d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
                     target += n;
                 } else if (sv == L"difficulty") {
                     const auto *cpl = d2rProcess_.currPlayer();
