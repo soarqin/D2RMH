@@ -3,10 +3,10 @@ name: CMake
 on:
   push:
     branches: [ master ]
-    paths: [ CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
+    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
   pull_request:
     branches: [ master ]
-    paths: [ CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
+    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
 
 env:
   BUILD_TYPE: Release
@@ -15,24 +15,33 @@ jobs:
   build:
     runs-on: windows-latest
 
+    strategy:
+      matrix:
+        include:
+          - generator: MinGW Makefiles
+            ident: mingw32
+          - generator: Visual Studio 16 2019
+            ident: vc2019
+            extra_flags: -A Win32
+
     steps:
-    - name: Setup Environment
-      shell: pwsh
-      run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Setup Environment
+        shell: pwsh
+        run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: CMake Configure
-      run: cmake -B ${{github.workspace}}/mingw32_build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_STATIC_CRT=ON
+      - name: CMake Configure
+        run: cmake -B "${{github.workspace}}/${{matrix.ident}}_build" -G "${{matrix.generator}}" ${{matrix.extra_flags}} -DCMAKE_BUILD_TYPE="${{env.BUILD_TYPE}}" -DUSE_STATIC_CRT=ON
 
-    - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/mingw32_build --target snapshot-pack
+      - name: Build
+        # Build your program with the given configuration
+        run: cmake --build "${{github.workspace}}/${{matrix.ident}}_build" --config "${{env.BUILD_TYPE}}" --target snapshot-pack -j
 
-    - uses: actions/upload-artifact@v2
-      with: 
-        name: D2RMH-snapshot
-        path: |
-          ${{github.workspace}}/mingw32_build/bin/D2RMH-snapshot.zip
-        retention-days: 7
+      - uses: actions/upload-artifact@v2
+        with:
+          name: D2RMH-snapshot-${{matrix.ident}}
+          path: |
+            ${{github.workspace}}/${{matrix.ident}}_build/bin/D2RMH-snapshot.zip
+          retention-days: 7
