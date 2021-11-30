@@ -2,6 +2,8 @@
 
 #include "d2structs.h"
 
+namespace d2mapapi {
+
 #ifdef _DEFINE_VARS
 
 enum {DLLNO_D2CLIENT, DLLNO_D2COMMON, DLLNO_D2GFX, DLLNO_D2LANG, DLLNO_D2WIN, DLLNO_D2NET, DLLNO_D2GAME, DLLNO_D2LAUNCH, DLLNO_FOG, DLLNO_BNCLIENT, DLLNO_STORM, DLLNO_D2CMP, DLLNO_D2MULTI, DLLNO_D2SOUND};
@@ -57,3 +59,5 @@ FUNCPTR(D2COMMON, InitDataTables, uint32_t __stdcall, (uint32_t _1, uint32_t _2,
 #undef FUNCPTR
 #undef VARPTR
 #undef ASMPTR
+
+}

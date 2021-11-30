@@ -7552,14 +7552,14 @@ class lexer : public lexer_base<BasicJsonType>
     This function scans a string according to Sect. 6 of RFC 8259.
 
     The function is realized with a deterministic finite state machine derived
-    from the grammar described in RFC 8259. Starting in state "d2MapInit", the
+    from the grammar described in RFC 8259. Starting in state "d2Init", the
     input is read and used to determined the next state. Only state "done"
     accepts the number. State "error" is a trap state to model errors. In the
     table below, "anything" means any character but the ones listed before.
 
     state    | 0        | 1-9      | e E      | +       | -       | .        | anything
     ---------|----------|----------|----------|---------|---------|----------|-----------
-    d2MapInit     | zero     | any1     | [error]  | [error] | minus   | [error]  | [error]
+    d2Init     | zero     | any1     | [error]  | [error] | minus   | [error]  | [error]
     minus    | zero     | any1     | [error]  | [error] | [error] | [error]  | [error]
     zero     | done     | done     | exponent | done    | done    | decimal1 | done
     any1     | any1     | any1     | exponent | done    | done    | decimal1 | done
@@ -19160,8 +19160,8 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     @brief create a container (array or object) from an initializer list
 
     Creates a JSON value of type array or object from the passed initializer
-    list @a d2MapInit. In case @a type_deduction is `true` (default), the type of
-    the JSON value to be created is deducted from the initializer list @a d2MapInit
+    list @a d2Init. In case @a type_deduction is `true` (default), the type of
+    the JSON value to be created is deducted from the initializer list @a d2Init
     according to the following rules:
 
     1. If the list is empty, an empty JSON object value `{}` is created.
@@ -19198,7 +19198,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     @param[in] init  initializer list with JSON values
 
     @param[in] type_deduction internal parameter; when set to `true`, the type
-    of the JSON value is deducted from the initializer list @a d2MapInit; when set
+    of the JSON value is deducted from the initializer list @a d2Init; when set
     to `false`, the type provided via @a manual_type is forced. This mode is
     used by the functions @ref array(initializer_list_t) and
     @ref object(initializer_list_t).
@@ -19209,13 +19209,13 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     is set to `true`, this parameter has no effect
 
     @throw type_error.301 if @a type_deduction is `false`, @a manual_type is
-    `value_t::object`, but @a d2MapInit contains an element which is not a pair
+    `value_t::object`, but @a d2Init contains an element which is not a pair
     whose first element is a string. In this case, the constructor could not
     create an object. If @a type_deduction would have be `true`, an array
     would have been created. See @ref object(initializer_list_t)
     for an example.
 
-    @complexity Linear in the size of the initializer list @a d2MapInit.
+    @complexity Linear in the size of the initializer list @a d2Init.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
     changes to any JSON value.
@@ -19303,7 +19303,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
     @return JSON binary array value
 
-    @complexity Linear in the size of @a d2MapInit.
+    @complexity Linear in the size of @a d2Init.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
     changes to any JSON value.
@@ -19340,7 +19340,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
     @return JSON binary array value
 
-    @complexity Linear in the size of @a d2MapInit.
+    @complexity Linear in the size of @a d2Init.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
     changes to any JSON value.
@@ -19398,7 +19398,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
     @return JSON array value
 
-    @complexity Linear in the size of @a d2MapInit.
+    @complexity Linear in the size of @a d2Init.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
     changes to any JSON value.
@@ -19429,20 +19429,20 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     @note This function is only added for symmetry reasons. In contrast to the
     related function @ref array(initializer_list_t), there are
     no cases which can only be expressed by this function. That is, any
-    initializer list @a d2MapInit can also be passed to the initializer list
+    initializer list @a d2Init can also be passed to the initializer list
     constructor @ref basic_json(initializer_list_t, bool, value_t).
 
     @param[in] init  initializer list to create an object from (optional)
 
     @return JSON object value
 
-    @throw type_error.301 if @a d2MapInit is not a list of pairs whose first
+    @throw type_error.301 if @a d2Init is not a list of pairs whose first
     elements are strings. In this case, no object can be created. When such a
     value is passed to @ref basic_json(initializer_list_t, bool, value_t),
-    an array would have been created from the passed initializer list @a d2MapInit.
+    an array would have been created from the passed initializer list @a d2Init.
     See example below.
 
-    @complexity Linear in the size of @a d2MapInit.
+    @complexity Linear in the size of @a d2Init.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
     changes to any JSON value.
@@ -23075,16 +23075,16 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     This function allows to use `push_back` with an initializer list. In case
 
     1. the current value is an object,
-    2. the initializer list @a d2MapInit contains only two elements, and
-    3. the first element of @a d2MapInit is a string,
+    2. the initializer list @a d2Init contains only two elements, and
+    3. the first element of @a d2Init is a string,
 
-    @a d2MapInit is converted into an object element and added using
-    @ref push_back(const typename object_t::value_type&). Otherwise, @a d2MapInit
+    @a d2Init is converted into an object element and added using
+    @ref push_back(const typename object_t::value_type&). Otherwise, @a d2Init
     is converted to a JSON value and added using @ref push_back(basic_json&&).
 
     @param[in] init  an initializer list
 
-    @complexity Linear in the size of the initializer list @a d2MapInit.
+    @complexity Linear in the size of the initializer list @a d2Init.
 
     @note This function is required to resolve an ambiguous overload error,
           because pairs like `{"key", "value"}` can be both interpreted as

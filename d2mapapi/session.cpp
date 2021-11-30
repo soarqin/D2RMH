@@ -2,6 +2,8 @@
 
 #include "d2ptrs.h"
 
+namespace d2mapapi {
+
 static const unsigned int ActLevels[] = {1, 40, 75, 103, 109, 137};
 
 namespace Helpers {
@@ -41,7 +43,7 @@ const CollisionMap *Session::getMap(unsigned int areaid) {
                                             ActLevels[actId], D2CLIENT_LoadAct_1, D2CLIENT_LoadAct_2);
         }
         auto map = std::make_unique<CollisionMap>(acts_[actId], areaid);
-        if (!map->build()) { return nullptr; }
+        if (!map->built) { return nullptr; }
         auto &output = maps_[areaid];
         output = std::move(map);
         return output.get();
@@ -58,4 +60,6 @@ void Session::unloadAll() {
             act = nullptr;
         }
     }
+}
+
 }

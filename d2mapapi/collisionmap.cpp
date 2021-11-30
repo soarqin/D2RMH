@@ -3,43 +3,40 @@
 #include "d2map.h"
 #include "d2ptrs.h"
 
-#include <iostream>
 #include <set>
 #include <vector>
+
+namespace d2mapapi {
 
 constexpr int unit_type_npc = 1;
 constexpr int unit_type_object = 2;
 constexpr int unit_type_tile = 5;
 
-CollisionMap::CollisionMap(Act *act, unsigned int areaId) {
-    this->act_ = act;
-    this->areaId_ = areaId;
-}
+CollisionMap::CollisionMap(Act *act, unsigned int areaId) : id(areaId) {
+    Level *pLevel = getLevel(act->pMisc, areaId);
 
-bool CollisionMap::build() {
-    Level *pLevel = getLevel(act_->pMisc, areaId_);
-
-    if (!pLevel) { return false; }
+    if (!pLevel) { return; }
     if (!pLevel->pRoom2First) {
         D2COMMON_InitLevel(pLevel);
     }
 
     if (pLevel->pRoom2First) {
-        levelOrigin.x = pLevel->dwPosX * 5;
-        levelOrigin.y = pLevel->dwPosY * 5;
+        offset.x = pLevel->dwPosX * 5;
+        offset.y = pLevel->dwPosY * 5;
 
         const int width = pLevel->dwSizeX * 5;
         const int height = pLevel->dwSizeY * 5;
-        map = std::vector<int16_t>(width * height, -1);
-        totalWidth = width; totalHeight = height;
+        auto map = std::vector<int16_t>(width * height, -1);
+        size.width = width;
+        size.height = height;
 
-        std::set<Level*> nearLevels;
+        std::set<Level *> nearLevels;
         for (Room2 *pRoom2 = pLevel->pRoom2First; pRoom2; pRoom2 = pRoom2->pRoom2Next) {
             bool bAdded = false;
 
             if (!pRoom2->pRoom1) {
                 bAdded = true;
-                D2COMMON_AddRoomData(act_, pLevel->dwLevelNo, pRoom2->dwPosX, pRoom2->dwPosY, NULL);
+                D2COMMON_AddRoomData(act, pLevel->dwLevelNo, pRoom2->dwPosX, pRoom2->dwPosY, nullptr);
             }
 
             // levels near
@@ -51,18 +48,18 @@ bool CollisionMap::build() {
 
             // add collision data
             if (pRoom2->pRoom1 && pRoom2->pRoom1->Coll) {
-                const int x = pRoom2->pRoom1->Coll->dwPosGameX - levelOrigin.x;
-                const int y = pRoom2->pRoom1->Coll->dwPosGameY - levelOrigin.y;
+                const int x = pRoom2->pRoom1->Coll->dwPosGameX - offset.x;
+                const int y = pRoom2->pRoom1->Coll->dwPosGameY - offset.y;
                 const int cx = pRoom2->pRoom1->Coll->dwSizeGameX;
                 const int cy = pRoom2->pRoom1->Coll->dwSizeGameY;
                 const int nLimitX = x + cx;
                 const int nLimitY = y + cy;
 
                 uint16_t *p = pRoom2->pRoom1->Coll->pMapStart;
-                if (cropX < 0 || x < cropX) cropX = x;
-                if (cropY < 0 || y < cropY) cropY = y;
-                if (cropX2 < 0 || nLimitX > cropX2) cropX2 = nLimitX;
-                if (cropY2 < 0 || nLimitY > cropY2) cropY2 = nLimitY;
+                if (cropX0 < 0 || x < cropX0) cropX0 = x;
+                if (cropY0 < 0 || y < cropY0) cropY0 = y;
+                if (cropX1 < 0 || nLimitX > cropX1) cropX1 = nLimitX;
+                if (cropY1 < 0 || nLimitY > cropY1) cropY1 = nLimitY;
                 for (int j = y; j < nLimitY; j++) {
                     int index = j * width + x;
                     for (int i = x; i < nLimitX; i++) {
@@ -94,16 +91,16 @@ bool CollisionMap::build() {
                             const auto exitX = static_cast<int>(pRoom2->dwPosX * 5 + pPresetUnit->dwPosX);
                             const auto exitY = static_cast<int>(pRoom2->dwPosY * 5 + pPresetUnit->dwPosY);
 
-                            auto &al = adjacentLevels[pRoomTile->pRoom2->pLevel->dwLevelNo];
-                            al.isWrap = true;
-                            al.exits.push_back(Point{exitX, exitY});
+                            auto &al = exits[pRoomTile->pRoom2->pLevel->dwLevelNo];
+                            al.isPortal = true;
+                            al.offsets.push_back(Point{exitX, exitY});
                         }
                     }
                 }
             }
 
             if (bAdded) {
-                D2COMMON_RemoveRoomData(act_, pLevel->dwLevelNo, pRoom2->dwPosX, pRoom2->dwPosY, NULL);
+                D2COMMON_RemoveRoomData(act, pLevel->dwLevelNo, pRoom2->dwPosX, pRoom2->dwPosY, nullptr);
             }
         }
         for (auto *level: nearLevels) {
@@ -113,19 +110,16 @@ bool CollisionMap::build() {
             const int newLevelWidth = level->dwSizeX * 5;
             const int newLevelHeight = level->dwSizeY * 5;
 
-            auto &adjacentLevel = adjacentLevels[level->dwLevelNo];
-            adjacentLevel.levelOrigin = origin;
-            adjacentLevel.width = newLevelWidth;
-            adjacentLevel.height = newLevelHeight;
+            auto &adjacentLevel = exits[level->dwLevelNo];
             /* we have exits already */
-            if (!adjacentLevel.exits.empty()) { continue; }
+            if (!adjacentLevel.offsets.empty()) { continue; }
             /* caculate the path to the new level */
             if (width > 5) {
-                if (origin.x < levelOrigin.x && origin.x + newLevelWidth == levelOrigin.x) {
+                if (origin.x < offset.x && origin.x + newLevelWidth == offset.x) {
                     /* Check near level on left-side */
                     int startY = -1, endY = -1;
-                    int h0 = std::max(origin.y - levelOrigin.y, 0);
-                    int h1 = std::min(origin.y + newLevelHeight - levelOrigin.y, height);
+                    int h0 = std::max(origin.y - offset.y, 0);
+                    int h1 = std::min(origin.y + newLevelHeight - offset.y, height);
                     int index = h0 * width;
                     for (int i = h0; i < h1; ++i) {
                         if ((map[index] & 1) || (map[index + 5] & 1)) {
@@ -140,13 +134,13 @@ bool CollisionMap::build() {
                         }
                         index += width;
                     }
-                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x, levelOrigin.y + (startY + endY) / 2});
+                    adjacentLevel.offsets.emplace_back(Point{offset.x, offset.y + (startY + endY) / 2});
                 }
-                if (origin.x > levelOrigin.x && origin.x == levelOrigin.x + width) {
+                if (origin.x > offset.x && origin.x == offset.x + width) {
                     /* Check near level on right-side */
                     int startY = -1, endY = -1;
-                    int h0 = std::max(origin.y - levelOrigin.y, 0);
-                    int h1 = std::min(origin.y + newLevelHeight - levelOrigin.y, height);
+                    int h0 = std::max(origin.y - offset.y, 0);
+                    int h1 = std::min(origin.y + newLevelHeight - offset.y, height);
                     int index = h0 * width + (width - 1);
                     for (int i = h0; i < h1; ++i) {
                         if ((map[index] & 1) || (map[index - 5] & 1)) {
@@ -161,15 +155,15 @@ bool CollisionMap::build() {
                         }
                         index += width;
                     }
-                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + width - 1, levelOrigin.y + (startY + endY) / 2});
+                    adjacentLevel.offsets.emplace_back(Point{offset.x + width - 1, offset.y + (startY + endY) / 2});
                 }
             }
             if (height > 5) {
-                if (origin.y < levelOrigin.y && origin.y + newLevelHeight == levelOrigin.y) {
+                if (origin.y < offset.y && origin.y + newLevelHeight == offset.y) {
                     /* Check near level on upside */
                     int startX = -1, endX = -1;
-                    int w0 = std::max(origin.x - levelOrigin.x, 0);
-                    int w1 = std::min(origin.x + newLevelWidth - levelOrigin.x, width);
+                    int w0 = std::max(origin.x - offset.x, 0);
+                    int w1 = std::min(origin.x + newLevelWidth - offset.x, width);
                     for (int i = w0; i < w1; ++i) {
                         if ((map[i] & 1) || (map[i + 5 * width] & 1)) {
                             if (startX >= 0) {
@@ -182,13 +176,13 @@ bool CollisionMap::build() {
                             }
                         }
                     }
-                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y});
+                    adjacentLevel.offsets.emplace_back(Point{offset.x + (startX + endX) / 2, offset.y});
                 }
-                if (origin.y > levelOrigin.y && origin.y == levelOrigin.y + height) {
+                if (origin.y > offset.y && origin.y == offset.y + height) {
                     /* Check near level on downside */
                     int startX = -1, endX = -1;
-                    int w0 = std::max(origin.x - levelOrigin.x, 0);
-                    int w1 = std::min(origin.x + newLevelWidth - levelOrigin.x, width);
+                    int w0 = std::max(origin.x - offset.x, 0);
+                    int w1 = std::min(origin.x + newLevelWidth - offset.x, width);
                     int index = width * (height - 1) + w0;
                     for (int i = w0; i < w1; ++i) {
                         if ((map[index] & 1) || map[index - 5 * width] & 1) {
@@ -203,10 +197,32 @@ bool CollisionMap::build() {
                         }
                         ++index;
                     }
-                    adjacentLevel.exits.emplace_back(Point{levelOrigin.x + (startX + endX) / 2, levelOrigin.y + height - 1});
+                    adjacentLevel.offsets.emplace_back(Point{offset.x + (startX + endX) / 2, offset.y + height - 1});
                 }
             }
         }
+
+        /* run length encoding map data */
+        mapData.clear();
+        for (int j = cropY0; j < cropY1; ++j) {
+            int index = j * width + cropX0;
+            bool lastIsWalkable = false;
+            int count = 0;
+            for (int i = cropX0; i < cropX1; ++i) {
+                bool walkable = !(map[index++] & 1);
+                if (walkable == lastIsWalkable) {
+                    ++count;
+                    continue;
+                }
+                mapData.emplace_back(count);
+                count = 1;
+                lastIsWalkable = walkable;
+            }
+            mapData.emplace_back(count);
+            mapData.emplace_back(-1);
+        }
     }
-    return true;
+    built = true;
+}
+
 }

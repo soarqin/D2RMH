@@ -7,6 +7,8 @@
 #include <iostream>
 #include <windows.h>
 
+namespace d2mapapi {
+
 bool defineOffsets() {
     void *ptrToLoad[] = {
         &D2CLIENT_InitGameMisc_I,
@@ -71,4 +73,6 @@ uint32_t getDllOffset(int num) {
     if ((num & 0xff) > 12)
         return 0;
     return GetDllOffset(dlls[num & 0xff], num >> 8);
+}
+
 }

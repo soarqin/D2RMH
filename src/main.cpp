@@ -28,7 +28,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
     loadCfg();
-    const auto *errstr = d2MapInit(cfg->d2Path.c_str());
+    const auto *errstr = d2mapapi::d2Init(cfg->d2Path.c_str());
     if (errstr) {
         do {
             HKEY key;
@@ -36,7 +36,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 wchar_t path[MAX_PATH];
                 DWORD pathSize = sizeof(path);
                 if (RegQueryValueExW(key, L"InstallPath", nullptr, nullptr, LPBYTE(path), &pathSize) == ERROR_SUCCESS) {
-                    errstr = d2MapInit(path);
+                    errstr = d2mapapi::d2Init(path);
                     if (!errstr) {
                         RegCloseKey(key);
                         break;

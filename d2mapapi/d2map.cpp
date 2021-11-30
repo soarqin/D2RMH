@@ -6,10 +6,11 @@
 #include <iostream>
 #include <windows.h>
 
+namespace d2mapapi {
+
 d2client_struct D2Client;
 
-
-const char *d2MapInit(const wchar_t *dir) {
+const char *d2Init(const wchar_t *dir) {
     wchar_t szPath[MAX_PATH] = {0};
     GetCurrentDirectoryW(MAX_PATH, szPath);
     if (dir[0] != 0 && dir[lstrlenW(dir) - 1] != '\\') {
@@ -92,4 +93,6 @@ void __attribute__((naked)) D2CLIENT_InitGameMisc() {
 
 uint32_t D2ClientInterface() {
     return D2Client.dwInit;
+}
+
 }

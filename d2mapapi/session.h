@@ -5,6 +5,8 @@
 #include <map>
 #include <memory>
 
+namespace d2mapapi {
+
 class Session {
 public:
     ~Session();
@@ -22,3 +24,5 @@ private:
     unsigned char difficulty_ = 0;
     Act *acts_[5] = {};
 };
+
+}

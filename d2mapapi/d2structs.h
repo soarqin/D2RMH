@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+namespace d2mapapi {
+
 struct UnitAny;
 struct Room1;
 struct Room2;
@@ -435,3 +437,5 @@ struct sgptDataTable {
     uint32_t dwStorePageRecords;
     MpqTable *pElemTypes;
 };
+
+}

@@ -115,13 +115,13 @@ void MapRenderer::update() {
             enabled_ = false;
             return;
         }
-        auto originX = currMap->levelOrigin.x, originY = currMap->levelOrigin.y;
-        std::map<uint32_t, const CollisionMap*> knownMaps;
-        int x0 = currMap->cropX, y0 = currMap->cropY,
-            x1 = currMap->cropX2, y1 = currMap->cropY2;
+        auto originX = currMap->offset.x, originY = currMap->offset.y;
+        std::map<uint32_t, const d2mapapi::CollisionMap*> knownMaps;
+        int x0 = currMap->cropX0, y0 = currMap->cropY0,
+            x1 = currMap->cropX1, y1 = currMap->cropY1;
         int totalX0 = originX + x0, totalY0 = originY + y0, totalX1 = originX + x1, totalY1 = originY + y1;
-        auto cx = currMap->levelOrigin.x + (x1 + x0) / 2;
-        auto cy = currMap->levelOrigin.y + (y1 + y0) / 2;
+        auto cx = currMap->offset.x + (x1 + x0) / 2;
+        auto cy = currMap->offset.y + (y1 + y0) / 2;
         if (cfg->neighbourMapBounds != 0) {
             auto bounds = cfg->neighbourMapBounds > 0 ? cfg->neighbourMapBounds : 2048;
             auto steps = cfg->neighbourMapBounds < 0 ? -cfg->neighbourMapBounds : 32;
@@ -129,24 +129,24 @@ void MapRenderer::update() {
             auto my0 = std::max(0, cy - bounds);
             auto mx1 = cx + bounds;
             auto my1 = cy + bounds;
-            std::vector<std::pair<const CollisionMap *, int>> mapsToProcess = {{currMap, 0}};
+            std::vector<std::pair<const d2mapapi::CollisionMap*, int>> mapsToProcess = {{currMap, 0}};
             while (!mapsToProcess.empty()) {
                 const auto [map, step] = mapsToProcess.back();
                 mapsToProcess.pop_back();
-                knownMaps[map->areaId()] = map;
+                knownMaps[map->id] = map;
                 if (step >= steps) { continue; }
-                for (auto &p: map->adjacentLevels) {
-                    if (p.second.isWrap) { continue; }
+                for (auto &p: map->exits) {
+                    if (p.second.isPortal) { continue; }
                     if (knownMaps.find(p.first) != knownMaps.end()) { continue; }
                     mapsToProcess.emplace_back(currSession_->session.getMap(p.first), step + 1);
                 }
             }
-            knownMaps.erase(currMap->areaId());
+            knownMaps.erase(currMap->id);
             for (auto ite = knownMaps.begin(); ite != knownMaps.end();) {
-                auto tx0 = ite->second->levelOrigin.x + ite->second->cropX;
-                auto ty0 = ite->second->levelOrigin.y + ite->second->cropY;
-                auto tx1 = ite->second->levelOrigin.x + ite->second->cropX2;
-                auto ty1 = ite->second->levelOrigin.y + ite->second->cropY2;
+                auto tx0 = ite->second->offset.x + ite->second->cropX0;
+                auto ty0 = ite->second->offset.y + ite->second->cropY0;
+                auto tx1 = ite->second->offset.x + ite->second->cropX1;
+                auto ty1 = ite->second->offset.y + ite->second->cropY1;
                 if (tx0 < mx0 || ty0 < my0 || tx1 > mx1 || ty1 > my1) {
                     ite = knownMaps.erase(ite);
                     continue;
@@ -169,55 +169,70 @@ void MapRenderer::update() {
         int height = totalY1 - totalY0;
         auto *pixels = new uint32_t[width * height];
         memset(pixels, 0, sizeof(uint32_t) * width * height);
-        auto offX = currMap->levelOrigin.x - totalX0;
-        auto offY = currMap->levelOrigin.y - totalY0;
-        auto edgeColor = cfg->edgeColor;
         auto &mapTex = currSession_->mapTex;
-        bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
-        auto totalWidth = currMap->totalWidth;
-        for (int y = y0; y < y1; ++y) {
-            int idx = y * totalWidth + x0;
-            auto *ptr = pixels + offX + x0 + (offY + y) * width;
-            for (int x = x0; x < x1; ++x) {
-                bool blocked = currMap->map[idx] & 1;
-                uint32_t clr = blocked ? 0 : walkableColor_;
-                if (hasEdge && !blocked && (
-                    (x > x0 && (currMap->map[idx - 1] & 1))
-                    || (x + 1 < x1 && (currMap->map[idx + 1] & 1))
-                    || (y > y0 && (currMap->map[idx - totalWidth] & 1))
-                    || (y + 1 < y1 && (currMap->map[idx + totalWidth] & 1))
-                )) {
-                    clr = edgeColor;
+        auto totalWidth = currMap->size.width;
+        auto decodeMapFunc = [this, totalX0, totalY0, width, pixels](const d2mapapi::CollisionMap *currMap) {
+            auto offX = currMap->offset.x - totalX0;
+            auto offY = currMap->offset.y - totalY0;
+            auto edgeColor = cfg->edgeColor;
+            bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
+            auto x0 = currMap->cropX0, y0 = currMap->cropY0, y1 = currMap->cropY1,
+                 mw = currMap->size.width, mh = currMap->size.height;
+            int y = y0;
+            int x = x0;
+            bool isWalkable = false;
+            for (auto v: currMap->mapData) {
+                if (v == -1) {
+                    ++y;
+                    x = x0;
+                    isWalkable = false;
+                    continue;
                 }
-                *ptr++ = clr;
-                ++idx;
-            }
-        }
-        for (auto &p: knownMaps) {
-            auto *m = p.second;
-            offX = m->levelOrigin.x - totalX0;
-            offY = m->levelOrigin.y - totalY0;
-            totalWidth = m->totalWidth;
-            auto mx0 = m->cropX, my0 = m->cropY,
-                 mx1 = m->cropX2, my1 = m->cropY2;
-            for (int y = my0; y < my1; ++y) {
-                int idx = y * totalWidth + mx0;
-                auto *ptr = pixels + offX + mx0 + (offY + y) * width;
-                for (int x = mx0; x < mx1; ++x) {
-                    bool blocked = m->map[idx] & 1;
-                    uint32_t clr = blocked ? 0 : walkableColor_;
-                    if (hasEdge && !blocked && (
-                        (x > mx0 && (m->map[idx - 1] & 1))
-                            || (x + 1 < mx1 && (m->map[idx + 1] & 1))
-                            || (y > my0 && (m->map[idx - totalWidth] & 1))
-                            || (y + 1 < my1 && (m->map[idx + totalWidth] & 1))
-                    )) {
-                        clr = edgeColor;
+                if (!isWalkable) {
+                    /* draw bottom edge */
+                    if (hasEdge && y > 0) {
+                        auto *ptr = pixels + offX + x + (offY + y) * width;
+                        for (int z = v; z; z--, ptr++) {
+                            if (*(ptr - width) != 0) {
+                                *(ptr - width) = edgeColor;
+                            }
+                        }
                     }
-                    *ptr++ = clr;
-                    ++idx;
+                } else {
+                    auto *ptr = pixels + offX + x + (offY + y) * width;
+                    int z = v;
+                    if (hasEdge && y + 1 == y1 && y1 < mh) {
+                        /* bottom of cropped area, but not whole area */
+                        for (; z; z--) {
+                            *ptr++ = edgeColor;
+                        }
+                    } else {
+                        /* draw left edge */
+                        if (hasEdge && x > 0) {
+                            *ptr++ = edgeColor;
+                            z -= 2;
+                        }
+                        /* if only 1 dot block, skip this */
+                        if (z > 0) {
+                            bool drawEdge = hasEdge && y > 0;
+                            for (; z; z--) {
+                                /* check if this is top edge */
+                                *ptr++ = drawEdge && *(ptr - width) == 0 ? edgeColor : walkableColor_;
+                            }
+                            /* draw right edge */
+                            if (hasEdge && x < mw) {
+                                *ptr = edgeColor;
+                            }
+                        }
+                    }
                 }
+                isWalkable = !isWalkable;
+                x += v;
             }
+        };
+        decodeMapFunc(currMap);
+        for (auto &p: knownMaps) {
+            decodeMapFunc(p.second);
         }
         mapTex.setData(width, height, pixels);
         delete[] pixels;
@@ -237,9 +252,9 @@ void MapRenderer::update() {
         auto widthf = float(x1 - x0) * .5f, heightf = float(y1 - y0) * .5f;
         auto realTombLevelId = d2rProcess_.realTombLevelId();
         auto superUniqueTombLevelId = d2rProcess_.superUniqueTombLevelId();
-        for (auto &p: currMap->adjacentLevels) {
+        for (auto &p: currMap->exits) {
             if (p.first >= gamedata->levels.size()) { continue; }
-            for (auto &e: p.second.exits) {
+            for (auto &e: p.second.offsets) {
                 auto px = float(e.x - totalX0);
                 auto py = float(e.y - totalY0);
                 const auto *lngarr = gamedata->levels[p.first].second;
@@ -261,7 +276,7 @@ void MapRenderer::update() {
                 }
             }
         }
-        const std::map<uint32_t, std::vector<Point>> *objs[2] = {&currMap->objects, &currMap->npcs};
+        const std::map<uint32_t, std::vector<d2mapapi::Point>> *objs[2] = {&currMap->objects, &currMap->npcs};
         for (int i = 0; i < 2; ++i) {
             for (const auto &[id, vec]: *objs[i]) {
                 auto ite = gamedata->objects[i].find(id);
@@ -387,7 +402,7 @@ void MapRenderer::updateWindowPos() {
     auto width = d2rRect.right - d2rRect.left, height = d2rRect.bottom - d2rRect.top;
     renderer_.owner()->move(d2rRect.left, d2rRect.top, width, height);
 
-    int x0 = currMap->cropX, y0 = currMap->cropY, x1 = currMap->cropX2, y1 = currMap->cropY2;
+    int x0 = currMap->cropX0, y0 = currMap->cropY0, x1 = currMap->cropX1, y1 = currMap->cropY1;
     int w, h;
     auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
     if (cfg->mapAreaW > .0f) {
