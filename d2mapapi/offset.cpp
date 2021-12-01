@@ -1,7 +1,6 @@
-#define _DEFINE_VARS
-
 #include "offset.h"
 
+#define _DEFINE_VARS
 #include "d2ptrs.h"
 
 #include <iostream>
@@ -10,69 +9,54 @@
 namespace d2mapapi {
 
 bool defineOffsets() {
-    void *ptrToLoad[] = {
-        &D2CLIENT_InitGameMisc_I,
-        &p_STORM_MPQHashTable,
-        &D2CLIENT_LoadAct_1,
-        &D2CLIENT_LoadAct_2,
-        &D2COMMON_AddRoomData,
-        &D2COMMON_RemoveRoomData,
-        &D2COMMON_GetLevel,
-        &D2COMMON_InitLevel,
-        &D2COMMON_LoadAct,
-        &D2COMMON_UnloadAct,
-        &FOG_10021,
-        &FOG_10101,
-        &FOG_10089,
-        &FOG_10218,
-        &D2WIN_10086,
-        &D2WIN_10005,
-        &D2LANG_10008,
-        &D2COMMON_InitDataTables,
+    const struct {
+        const char *dll;
+        void *data;
+        int32_t ordinal;
+    } offsets[] = {
+        {"STORM.DLL", &p_STORM_MPQHashTable, 0x53120},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_1, 0x62AA0},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_2, 0x62760},
+        {"D2CLIENT.DLL", &D2CLIENT_InitGameMisc_I, 0x4454B},
+        {"D2COMMON.DLL", &D2COMMON_AddRoomData, -10401},
+        {"D2COMMON.DLL", &D2COMMON_RemoveRoomData, -11099},
+        {"D2COMMON.DLL", &D2COMMON_GetLevel, -10207},
+
+        {"D2COMMON.DLL", &D2COMMON_InitLevel, -10322},
+        {"D2COMMON.DLL", &D2COMMON_LoadAct, -10951},
+        {"D2COMMON.DLL", &D2COMMON_UnloadAct, -10868},
+
+        {"FOG.DLL", &FOG_10021, -10021},
+        {"FOG.DLL", &FOG_10101, -10101},
+        {"FOG.DLL", &FOG_10089, -10089},
+        {"FOG.DLL", &FOG_10218, -10218},
+
+        {"D2WIN.DLL", &D2WIN_10086, -10086},
+        {"D2WIN.DLL", &D2WIN_10005, -10005},
+
+        {"D2LANG.DLL", &D2LANG_10008, -10008},
+        {"D2COMMON.DLL", &D2COMMON_InitDataTables, -10943},
     };
-    DWORD ptrSaved[sizeof(ptrToLoad) / sizeof(void*)] = {};
-    /* Store pointers for restore use */
-    for (int i = 0; i < sizeof(ptrToLoad) / sizeof(void*); ++i) {
-        ptrSaved[i] = *(DWORD*)ptrToLoad[i];
-    }
-    bool result = true;
-    for (auto *ptr: ptrToLoad) {
-        auto *p = (DWORD*)ptr;
-        auto offset = getDllOffset(*p);
-        if (!offset) { result = false; break; }
-        *p = offset;
-    }
-    if (!result) {
-        /* Restore pointers on failure */
-        for (int i = 0; i < sizeof(ptrToLoad) / sizeof(void*); ++i) {
-            *(DWORD*)ptrToLoad[i] = ptrSaved[i];
+    for (const auto &off: offsets) {
+        HMODULE hMod = GetModuleHandle(off.dll);
+        if (!hMod) {
+            hMod = LoadLibrary(off.dll);
         }
+        if (!hMod) {
+            return false;
+        }
+        uintptr_t addr;
+        if (off.ordinal < 0) {
+            addr = (uintptr_t)GetProcAddress(hMod, (const char *)-off.ordinal);
+        } else {
+            addr = (uintptr_t)hMod + off.ordinal;
+        }
+        if (!addr) {
+            return false;
+        }
+        *(uintptr_t*)off.data = addr;
     }
-    return result;
-}
-
-uint32_t GetDllOffset(const char *DllName, int Offset) {
-    HMODULE hMod = GetModuleHandle(DllName);
-
-    if (!hMod)
-        hMod = LoadLibrary(DllName);
-
-    if (!hMod)
-        return 0;
-
-    if (Offset < 0)
-        return (DWORD)GetProcAddress(hMod, (LPCSTR)(-Offset));
-
-    return ((DWORD)hMod) + Offset;
-}
-
-uint32_t getDllOffset(int num) {
-    static const char *dlls[] = {"D2Client.DLL", "D2Common.DLL", "D2Gfx.DLL", "D2Lang.DLL",
-                                 "D2Win.DLL", "D2Net.DLL", "D2Game.DLL", "D2Launch.DLL", "Fog.DLL", "BNClient.DLL",
-                                 "Storm.DLL", "D2Cmp.DLL"};
-    if ((num & 0xff) > 12)
-        return 0;
-    return GetDllOffset(dlls[num & 0xff], num >> 8);
+    return true;
 }
 
 }

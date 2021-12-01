@@ -3,8 +3,11 @@
 #include "d2map.h"
 #include "d2ptrs.h"
 
+#include <json.hpp>
+
 #include <set>
 #include <vector>
+#include <sstream>
 
 namespace d2mapapi {
 
@@ -56,10 +59,10 @@ CollisionMap::CollisionMap(Act *act, unsigned int areaId) : id(areaId) {
                 const int nLimitY = y + cy;
 
                 uint16_t *p = pRoom2->pRoom1->Coll->pMapStart;
-                if (cropX0 < 0 || x < cropX0) cropX0 = x;
-                if (cropY0 < 0 || y < cropY0) cropY0 = y;
-                if (cropX1 < 0 || nLimitX > cropX1) cropX1 = nLimitX;
-                if (cropY1 < 0 || nLimitY > cropY1) cropY1 = nLimitY;
+                if (crop.x0 < 0 || x < crop.x0) crop.x0 = x;
+                if (crop.y0 < 0 || y < crop.y0) crop.y0 = y;
+                if (crop.x1 < 0 || nLimitX > crop.x1) crop.x1 = nLimitX;
+                if (crop.y1 < 0 || nLimitY > crop.y1) crop.y1 = nLimitY;
                 for (int j = y; j < nLimitY; j++) {
                     int index = j * width + x;
                     for (int i = x; i < nLimitX; i++) {
@@ -204,11 +207,11 @@ CollisionMap::CollisionMap(Act *act, unsigned int areaId) : id(areaId) {
 
         /* run length encoding map data */
         mapData.clear();
-        for (int j = cropY0; j < cropY1; ++j) {
-            int index = j * width + cropX0;
+        for (int j = crop.y0; j < crop.y1; ++j) {
+            int index = j * width + crop.x0;
             bool lastIsWalkable = false;
             int count = 0;
-            for (int i = cropX0; i < cropX1; ++i) {
+            for (int i = crop.x0; i < crop.x1; ++i) {
                 bool walkable = !(map[index++] & 1);
                 if (walkable == lastIsWalkable) {
                     ++count;
@@ -222,6 +225,30 @@ CollisionMap::CollisionMap(Act *act, unsigned int areaId) : id(areaId) {
             mapData.emplace_back(-1);
         }
     }
+    built = true;
+}
+
+CollisionMap::CollisionMap(std::string_view str) {
+    decode(str);
+}
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point, x, y)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Size, width, height)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Rect, x0, y0, x1, y1)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Exit, offsets, isPortal)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CollisionMap, id, offset, size, crop, mapData, exits, npcs, objects)
+
+std::string CollisionMap::encode() const {
+    nlohmann::json j = *this;
+    std::ostringstream oss;
+    oss << j;
+    return oss.str();
+}
+
+void CollisionMap::decode(std::string_view str) {
+    auto j = nlohmann::json::parse(str, nullptr, false);
+    if (j.empty()) { built = false; return; }
+    from_json(j, *this);
     built = true;
 }
 

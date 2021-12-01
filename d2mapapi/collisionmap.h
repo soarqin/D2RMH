@@ -4,6 +4,8 @@
 
 #include <map>
 #include <vector>
+#include <string>
+#include <string_view>
 
 namespace d2mapapi {
 
@@ -17,6 +19,10 @@ struct Size {
     int height = 0;
 };
 
+struct Rect {
+    int x0, y0, x1, y1;
+};
+
 struct Exit {
     std::vector<Point> offsets;
     bool isPortal = false;
@@ -25,6 +31,10 @@ struct Exit {
 class CollisionMap {
 public:
     CollisionMap(Act *act, unsigned int areaId);
+    CollisionMap(std::string_view str);
+
+    std::string encode() const;
+    void decode(std::string_view str);
 
     bool built = false;
     unsigned int id;
@@ -32,8 +42,8 @@ public:
     Point offset;
     Size size;
 
-    /* Collission maps are cropped in rect [cropX0, cropY0] to [cropX1, cropY1] relative to [offset.x, offset.y] */
-    int cropX0 = -1, cropY0 = -1, cropX1 = -1, cropY1 = -1;
+    /* Collission maps are cropped in rect [crop.x0, crop.y0] to [crop.x1, crop.y1] relative to [offset.x, offset.y] */
+    Rect crop;
 
     /* Collision maps are encoded using a simple run length encoding to save memory space
      *  -1 ends of a row

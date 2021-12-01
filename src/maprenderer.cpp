@@ -117,8 +117,8 @@ void MapRenderer::update() {
         }
         auto originX = currMap->offset.x, originY = currMap->offset.y;
         std::map<uint32_t, const d2mapapi::CollisionMap*> knownMaps;
-        int x0 = currMap->cropX0, y0 = currMap->cropY0,
-            x1 = currMap->cropX1, y1 = currMap->cropY1;
+        int x0 = currMap->crop.x0, y0 = currMap->crop.y0,
+            x1 = currMap->crop.x1, y1 = currMap->crop.y1;
         int totalX0 = originX + x0, totalY0 = originY + y0, totalX1 = originX + x1, totalY1 = originY + y1;
         auto cx = currMap->offset.x + (x1 + x0) / 2;
         auto cy = currMap->offset.y + (y1 + y0) / 2;
@@ -143,10 +143,10 @@ void MapRenderer::update() {
             }
             knownMaps.erase(currMap->id);
             for (auto ite = knownMaps.begin(); ite != knownMaps.end();) {
-                auto tx0 = ite->second->offset.x + ite->second->cropX0;
-                auto ty0 = ite->second->offset.y + ite->second->cropY0;
-                auto tx1 = ite->second->offset.x + ite->second->cropX1;
-                auto ty1 = ite->second->offset.y + ite->second->cropY1;
+                auto tx0 = ite->second->offset.x + ite->second->crop.x0;
+                auto ty0 = ite->second->offset.y + ite->second->crop.y0;
+                auto tx1 = ite->second->offset.x + ite->second->crop.x1;
+                auto ty1 = ite->second->offset.y + ite->second->crop.y1;
                 if (tx0 < mx0 || ty0 < my0 || tx1 > mx1 || ty1 > my1) {
                     ite = knownMaps.erase(ite);
                     continue;
@@ -176,7 +176,7 @@ void MapRenderer::update() {
             auto offY = currMap->offset.y - totalY0;
             auto edgeColor = cfg->edgeColor;
             bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
-            auto x0 = currMap->cropX0, y0 = currMap->cropY0, y1 = currMap->cropY1,
+            auto x0 = currMap->crop.x0, y0 = currMap->crop.y0, y1 = currMap->crop.y1,
                  mw = currMap->size.width, mh = currMap->size.height;
             int y = y0;
             int x = x0;
@@ -402,7 +402,7 @@ void MapRenderer::updateWindowPos() {
     auto width = d2rRect.right - d2rRect.left, height = d2rRect.bottom - d2rRect.top;
     renderer_.owner()->move(d2rRect.left, d2rRect.top, width, height);
 
-    int x0 = currMap->cropX0, y0 = currMap->cropY0, x1 = currMap->cropX1, y1 = currMap->cropY1;
+    int x0 = currMap->crop.x0, y0 = currMap->crop.y0, x1 = currMap->crop.x1, y1 = currMap->crop.y1;
     int w, h;
     auto mw = float(x1 - x0) * .5f, mh = float(y1 - y0) * .5f;
     if (cfg->mapAreaW > .0f) {

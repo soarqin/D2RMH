@@ -2,62 +2,35 @@
 
 #include "d2structs.h"
 
-namespace d2mapapi {
-
-#ifdef _DEFINE_VARS
-
-enum {DLLNO_D2CLIENT, DLLNO_D2COMMON, DLLNO_D2GFX, DLLNO_D2LANG, DLLNO_D2WIN, DLLNO_D2NET, DLLNO_D2GAME, DLLNO_D2LAUNCH, DLLNO_FOG, DLLNO_BNCLIENT, DLLNO_STORM, DLLNO_D2CMP, DLLNO_D2MULTI, DLLNO_D2SOUND};
-
-#define DLLOFFSET(a1,b1)         ((DLLNO_##a1)|((b1)<<8))
-#define FUNCPTR(d1,v1,t1,t2,o1)  typedef t1 d1##_##v1##_t t2; d1##_##v1##_t *d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
-#define VARPTR(d1,v1,t1,o1)      typedef t1 d1##_##v1##_t;    d1##_##v1##_t *p_##d1##_##v1 = (d1##_##v1##_t *)DLLOFFSET(d1,o1);
-#define ASMPTR(d1,v1,o1)         uint32_t d1##_##v1 = DLLOFFSET(d1,o1);
-
+#if defined(_DEFINE_VARS)
+#define D2EXTERN
 #else
-
-#define FUNCPTR(d1, v1, t1, t2, o1)  typedef t1 d1##_##v1##_t t2; extern d1##_##v1##_t *d1##_##v1;
-#define VARPTR(d1, v1, t1, o1)       typedef t1 d1##_##v1##_t;    extern d1##_##v1##_t *p_##d1##_##v1;
-#define ASMPTR(d1, v1, o1)           extern uint32_t d1##_##v1;
-
+#define D2EXTERN extern
 #endif
 
-FUNCPTR(D2CLIENT, InitGameMisc_I, void __stdcall, (uint32_t Dummy1, uint32_t Dummy2, uint32_t Dummy3), 0x4454B) // Updated
-VARPTR(STORM, MPQHashTable, uint32_t, 0x53120) // Updated
-ASMPTR(D2CLIENT, LoadAct_1, 0x62AA0) // Updated
-ASMPTR(D2CLIENT, LoadAct_2, 0x62760) // Updated
-FUNCPTR(D2COMMON,
-        AddRoomData,
-        void __stdcall,
-        (Act * ptAct, int LevelId, int Xpos, int Ypos, Room1 * pRoom),
-        -10401)//Updated  // 1.12 -10184
-FUNCPTR(D2COMMON,
-        RemoveRoomData,
-        void __stdcall,
-        (Act * ptAct, int LevelId, int Xpos, int Ypos, Room1 * pRoom),
-        -11099)//Updated // 1.12 -11009
-FUNCPTR(D2COMMON, GetLevel, Level * __fastcall, (ActMisc * pMisc, uint32_t dwLevelNo), -10207)//Updated // 1.12 -11020
+namespace d2mapapi {
 
-FUNCPTR(D2COMMON, InitLevel, void __stdcall, (Level * pLevel), -10322)//Updated // 1.12 -10721
-FUNCPTR(D2COMMON,
-        LoadAct,
-        Act* __stdcall,
-        (uint32_t ActNumber, uint32_t Seed, uint32_t Unk, void *pGame, uint32_t Difficulty, void *pMempool, uint32_t TownLevelId, uint32_t Func_1, uint32_t Func_2),
-        -10951)//Updated 1.13 0x3CB30 // 1.12  0x56780
-FUNCPTR(D2COMMON, UnloadAct, void __stdcall, (Act * pAct), -10868) //Updated // 1.12 -10710
+D2EXTERN uint32_t *p_STORM_MPQHashTable;
+D2EXTERN uint32_t D2CLIENT_LoadAct_1;
+D2EXTERN uint32_t D2CLIENT_LoadAct_2;
+D2EXTERN void (__stdcall* D2CLIENT_InitGameMisc_I)(uint32_t Dummy1, uint32_t Dummy2, uint32_t Dummy3);
+D2EXTERN void (__stdcall* D2COMMON_AddRoomData)(Act * ptAct, int LevelId, int Xpos, int Ypos, Room1 * pRoom);
+D2EXTERN void (__stdcall* D2COMMON_RemoveRoomData)(Act * ptAct, int LevelId, int Xpos, int Ypos, Room1 * pRoom);
+D2EXTERN Level * (__fastcall* D2COMMON_GetLevel)(ActMisc * pMisc, uint32_t dwLevelNo);
 
-FUNCPTR(FOG, 10021, void __fastcall, (const char *szProg), -10021) // 1.12 & 1.13
-FUNCPTR(FOG, 10101, uint32_t __fastcall, (uint32_t _1, uint32_t _2), -10101) // 1.12 & 1.13
-FUNCPTR(FOG, 10089, uint32_t __fastcall, (uint32_t _1), -10089) // 1.12 & 1.13
-FUNCPTR(FOG, 10218, uint32_t __fastcall, (void), -10218) // 1.12 & 1.13
+D2EXTERN void (__stdcall* D2COMMON_InitLevel)(Level * pLevel);
+D2EXTERN Act* (__stdcall* D2COMMON_LoadAct)(uint32_t ActNumber, uint32_t Seed, uint32_t Unk, void *pGame, uint32_t Difficulty, void *pMempool, uint32_t TownLevelId, uint32_t Func_1, uint32_t Func_2);
+D2EXTERN void (__stdcall* D2COMMON_UnloadAct)(Act * pAct);
 
-FUNCPTR(D2WIN, 10086, uint32_t __fastcall, (void), -10086) // Updated
-FUNCPTR(D2WIN, 10005, uint32_t __fastcall, (uint32_t _1, uint32_t _2, uint32_t _3, d2client_struct * pD2Client), -10005) //Updated
+D2EXTERN void (__fastcall* FOG_10021)(const char *szProg);
+D2EXTERN uint32_t (__fastcall* FOG_10101)(uint32_t Dummy1, uint32_t Dummy2);
+D2EXTERN uint32_t (__fastcall* FOG_10089)(uint32_t Dummy1);
+D2EXTERN uint32_t (__fastcall* FOG_10218)(void);
 
-FUNCPTR(D2LANG, 10008, uint32_t __fastcall, (uint32_t _1, const char *_2, uint32_t _3), -10008) //Updated
-FUNCPTR(D2COMMON, InitDataTables, uint32_t __stdcall, (uint32_t _1, uint32_t _2, uint32_t _3), -10943)//Updated //1.12 -10797
+D2EXTERN uint32_t (__fastcall* D2WIN_10086)(void);
+D2EXTERN uint32_t (__fastcall* D2WIN_10005)(uint32_t Dummy1, uint32_t Dummy2, uint32_t Dummy3, d2client_struct * pD2Client);
 
-#undef FUNCPTR
-#undef VARPTR
-#undef ASMPTR
+D2EXTERN uint32_t (__fastcall* D2LANG_10008)(uint32_t Dummy1, const char *_2, uint32_t Dummy3);
+D2EXTERN uint32_t (__stdcall* D2COMMON_InitDataTables)(uint32_t Dummy1, uint32_t Dummy2, uint32_t Dummy3);
 
 }

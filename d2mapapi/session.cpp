@@ -44,6 +44,8 @@ const CollisionMap *Session::getMap(unsigned int areaid) {
         }
         auto map = std::make_unique<CollisionMap>(acts_[actId], areaid);
         if (!map->built) { return nullptr; }
+        auto str = map->encode();
+        map = std::make_unique<CollisionMap>(str);
         auto &output = maps_[areaid];
         output = std::move(map);
         return output.get();
