@@ -31,19 +31,19 @@ struct Exit {
 class CollisionMap {
 public:
     CollisionMap(Act *act, unsigned int areaId);
-    CollisionMap(std::string_view str);
+    explicit CollisionMap(std::string_view str);
 
-    std::string encode() const;
+    [[nodiscard]] std::string encode() const;
     void decode(std::string_view str);
 
     bool built = false;
     unsigned int id;
 
-    Point offset;
-    Size size;
+    Point offset = {0, 0};
+    Size size = {0, 0};
 
     /* Collission maps are cropped in rect [crop.x0, crop.y0] to [crop.x1, crop.y1] relative to [offset.x, offset.y] */
-    Rect crop;
+    Rect crop = {-1, -1, -1, -1};
 
     /* Collision maps are encoded using a simple run length encoding to save memory space
      *  -1 ends of a row

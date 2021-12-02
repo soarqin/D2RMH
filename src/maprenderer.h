@@ -18,8 +18,6 @@
 #include "collisionmap.h"
 #include "session.h"
 
-#include "../common/jsonlng.h"
-
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -30,6 +28,23 @@
 #include <tuple>
 #include <string>
 #include <chrono>
+
+enum LNG {
+    LNG_enUS,
+    LNG_zhTW,
+    LNG_deDE,
+    LNG_esES,
+    LNG_frFR,
+    LNG_itIT,
+    LNG_koKR,
+    LNG_plPL,
+    LNG_esMX,
+    LNG_jaJP,
+    LNG_ptBR,
+    LNG_ruRU,
+    LNG_zhCN,
+    LNG_MAX,
+};
 
 class MapRenderer {
     struct SessionInfo {
@@ -73,7 +88,7 @@ private:
     bool enabled_ = false;
     RECT d2rRect = {};
     uint32_t walkableColor_ = 0;
-    JsonLng::LNG lng_ = JsonLng::LNG_enUS;
+    LNG lng_ = LNG_enUS;
 
     std::map<void*, std::unique_ptr<SessionInfo>> sessions_;
     void *currHWND_ = nullptr;

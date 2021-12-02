@@ -12,8 +12,8 @@
 #include "util.h"
 #include "cfg.h"
 
-static JsonLng::LNG lngFromString(const std::string &language) {
-#define CHECK_LNG(n) if (language == #n) { return JsonLng::LNG_##n; }
+static LNG lngFromString(const std::string &language) {
+#define CHECK_LNG(n) if (language == #n) { return LNG_##n; }
     CHECK_LNG(enUS)
     CHECK_LNG(zhTW)
     CHECK_LNG(deDE)
@@ -27,7 +27,7 @@ static JsonLng::LNG lngFromString(const std::string &language) {
     CHECK_LNG(ptBR)
     CHECK_LNG(ruRU)
     CHECK_LNG(zhCN)
-    return JsonLng::LNG_enUS;
+    return LNG_enUS;
 #undef CHECK_LNG
 }
 

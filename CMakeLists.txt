@@ -59,7 +59,6 @@ if(MSVC)
     )
 endif()
 
-add_subdirectory(common)
 add_subdirectory(inih)
 add_subdirectory(d2mapapi)
 add_subdirectory(src)
