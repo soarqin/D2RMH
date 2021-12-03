@@ -159,7 +159,7 @@ Window::~Window() {
     delete ctx_;
 }
 
-BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+INT_PTR CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_COMMAND:
         switch (LOWORD(wParam)) {

@@ -31,13 +31,14 @@ static LNG lngFromString(const std::string &language) {
 #undef CHECK_LNG
 }
 
-MapRenderer::MapRenderer(Renderer &renderer) :
+MapRenderer::MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &childProcess) :
     renderer_(renderer),
     mapPipeline_(renderer),
     framePipeline_(renderer),
     dynamicPipeline_(renderer),
     messagePipeline_(renderer),
-    ttfgl_(renderer) {
+    ttfgl_(renderer),
+    childProcess_(childProcess) {
     d2rProcess_.setWindowPosCallback([this](int left, int top, int right, int bottom) {
         d2rRect = {left, top, right, bottom};
         updateWindowPos();
@@ -95,7 +96,11 @@ void MapRenderer::update() {
         nextPanelUpdateTime_ = getCurrTime();
         switched = true;
     }
-    if (currSession_->session.update(currPlayer->seed, currPlayer->difficulty)) {
+    if (currSession_->currSeed != currPlayer->seed || currSession_->currDifficulty != currPlayer->difficulty) {
+        currSession_->maps.clear();
+        currSession_->currMap = nullptr;
+        currSession_->currSeed = currPlayer->seed;
+        currSession_->currDifficulty = currPlayer->difficulty;
         currSession_->mapStartTime = getCurrTime();
         changed = true;
     }
@@ -109,8 +114,8 @@ void MapRenderer::update() {
     if (changed) {
         currSession_->textStrings.clear();
         currSession_->lines.clear();
-        currSession_->currMap = currSession_->session.getMap(currSession_->currLevelId);
-        auto *currMap = currSession_->currMap;
+        auto *currMap = getMap(currSession_->currLevelId);
+        currSession_->currMap = currMap;
         if (!currMap) {
             enabled_ = false;
             return;
@@ -138,7 +143,10 @@ void MapRenderer::update() {
                 for (auto &p: map->exits) {
                     if (p.second.isPortal) { continue; }
                     if (knownMaps.find(p.first) != knownMaps.end()) { continue; }
-                    mapsToProcess.emplace_back(currSession_->session.getMap(p.first), step + 1);
+                    auto *nearMap = getMap(p.first);
+                    if (nearMap) {
+                        mapsToProcess.emplace_back(nearMap, step + 1);
+                    }
                 }
             }
             knownMaps.erase(currMap->id);
@@ -731,4 +739,17 @@ void MapRenderer::loadFromCfg() {
     ttf_->setAltColor(13, 255, 255, 255);
     ttf_->setAltColor(14, 255, 255, 255);
     ttf_->setAltColor(15, 255, 255, 255);
+}
+
+d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {
+    if (!currSession_) { return nullptr; }
+    d2mapapi::CollisionMap *currMap;
+    auto &map = currSession_->maps[levelId];
+    if (!map) {
+        currMap = childProcess_.queryMap(currSession_->currSeed, currSession_->currDifficulty, levelId);
+        map = std::unique_ptr<d2mapapi::CollisionMap>(currMap);
+    } else {
+        currMap = map.get();
+    }
+    return currMap;
 }

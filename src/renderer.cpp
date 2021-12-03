@@ -452,63 +452,63 @@ void Pipeline::init(ShaderProgram *prog, int stri, const VertexAttribPointer *va
         VertexAttribPointerLayout vapp;
         switch (vap->fmt) {
         case VERTEXFORMAT_FLOAT:
-            vapp = { 1, GL_FLOAT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 1, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_FLOAT2:
-            vapp = { 2, GL_FLOAT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 2, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 8;
             break;
         case VERTEXFORMAT_FLOAT3:
-            vapp = { 3, GL_FLOAT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 3, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 12;
             break;
         case VERTEXFORMAT_FLOAT4:
-            vapp = { 4, GL_FLOAT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 16;
             break;
         case VERTEXFORMAT_BYTE4:
-            vapp = { 4, GL_BYTE, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_BYTE, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_BYTE4N:
-            vapp = { 4, GL_BYTE, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_BYTE, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_UBYTE4:
-            vapp = { 4, GL_UNSIGNED_BYTE, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_UNSIGNED_BYTE, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_UBYTE4N:
-            vapp = { 4, GL_UNSIGNED_BYTE, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_UNSIGNED_BYTE, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_SHORT2:
-            vapp = { 2, GL_SHORT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 2, GL_SHORT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_SHORT2N:
-            vapp = { 2, GL_SHORT, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 2, GL_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_USHORT2N:
-            vapp = { 2, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 2, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 4;
             break;
         case VERTEXFORMAT_SHORT4:
-            vapp = { 4, GL_SHORT, GL_FALSE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_SHORT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 8;
             break;
         case VERTEXFORMAT_SHORT4N:
-            vapp = { 4, GL_SHORT, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 8;
             break;
         case VERTEXFORMAT_USHORT4N:
-            vapp = { 4, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             total += 8;
             break;
         case VERTEXFORMAT_UINT10_N2:
-            vapp = { 4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_TRUE, (const void*)(vap->offset == 0 ? total : vap->offset) };
+            vapp = { 4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
             break;
         default:
             continue;

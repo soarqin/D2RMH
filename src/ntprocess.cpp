@@ -6,7 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-#include "wow64_process.h"
+#include "ntprocess.h"
 
 #include "os_structs.h"
 
@@ -14,9 +14,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-#ifndef _M_IX86
-#   error "This application must be built as an x86 executable"
-#endif
+#if defined(_M_IX86)
 
 #define IS_TRUE(clause, msg) if (!(clause)) { throw std::runtime_error(msg); }
 
@@ -40,7 +38,7 @@ uint32_t readMemory64(HANDLE handle, uint64_t address, uint32_t length, void *da
 void readPBI(HANDLE handle, sys::PROCESS_BASIC_INFORMATION64 &pbi) {
     IS_TRUE(handle, "No process handle obtained");
 
-    NTSTATUS status = NtWow64QueryInformationProcess64(handle, sys::ProcessBasicInformation, &pbi, sizeof(pbi), NULL);
+    NTSTATUS status = NtWow64QueryInformationProcess64(handle, sys::ProcessBasicInformation, &pbi, sizeof(pbi), nullptr);
 
     IS_TRUE(NT_SUCCESS(status), "NtQueryInformationProcess failed");
 }
@@ -52,7 +50,7 @@ uint32_t readPEBData(HANDLE handle, sys::PEB64 *peb) {
     return readMemory64(handle, pbi.PebBaseAddress, sizeof(sys::PEB64), peb);
 }
 
-bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb) {
+bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb) {
     sys::PEB64 peb;
     readPEBData(handle, &peb);
 
@@ -61,12 +59,9 @@ bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t
     // ------------------------------------------------------------------------
     std::vector<uint8_t> read_peb_ldr_data(sizeof(sys::PEB_LDR_DATA64));
     readMemory64(handle, (uint64_t)peb.LoaderData, sizeof(sys::PEB_LDR_DATA64), read_peb_ldr_data.data());
-    sys::PEB_LDR_DATA64 *peb_ldr_data = (sys::PEB_LDR_DATA64 *)read_peb_ldr_data.data();
-    sys::PEB_LDR_DATA64 *loader_data = (sys::PEB_LDR_DATA64 *)peb.LoaderData;
+    auto *peb_ldr_data = (sys::PEB_LDR_DATA64 *)read_peb_ldr_data.data();
 
     ULONGLONG address = peb_ldr_data->InLoadOrderModuleList.Flink;
-
-    uint32_t counter = 1;
 
     // ------------------------------------------------------------------------
     // Traversing loader data structures.
@@ -75,7 +70,7 @@ bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t
         std::vector<uint8_t> read_ldr_table_entry(sizeof(sys::LDR_DATA_TABLE_ENTRY64));
         readMemory64(handle, address, sizeof(sys::LDR_DATA_TABLE_ENTRY64), read_ldr_table_entry.data());
 
-        sys::LDR_DATA_TABLE_ENTRY64 *ldr_table_entry = (sys::LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
+        auto *ldr_table_entry = (sys::LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
         if (!ldr_table_entry->BaseAddress) {
             break;
         }
@@ -96,3 +91,40 @@ bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t
 
     return true;
 }
+
+#elif defined(_M_X64)
+
+#include <tlhelp32.h>
+
+uint32_t readMemory64(HANDLE handle, uint64_t address, uint32_t length, void *data) {
+    SIZE_T bytesRead;
+    if (!ReadProcessMemory(handle, (LPCVOID)(UINT_PTR)(address), data, length, &bytesRead)) {
+        return 0;
+    }
+    return uint32_t(bytesRead);
+}
+
+bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb) {
+    auto snap = CreateToolhelp32Snapshot( TH32CS_SNAPMODULE, GetProcessId(handle) );
+    if (snap == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    MODULEENTRY32W me32 = {.dwSize = sizeof(me32)};
+    if(!Module32FirstW(snap, &me32)) {
+        CloseHandle( snap );
+        return false;
+    }
+    do {
+        if (!cb((uint64_t)(UINT_PTR)me32.modBaseAddr, me32.modBaseSize, me32.szModule)) {
+            break;
+        }
+    } while (Module32NextW(snap, &me32));
+    CloseHandle(snap);
+    return true;
+}
+
+#else
+
+#   error "This application must be built as an x86 executable"
+
+#endif

@@ -16,4 +16,4 @@
 #include <cstdint>
 
 extern uint32_t readMemory64(HANDLE handle, uint64_t address, uint32_t length, void *data);
-extern bool getModulesViaPEB(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb);
+extern bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb);

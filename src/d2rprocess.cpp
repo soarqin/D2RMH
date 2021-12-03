@@ -8,7 +8,7 @@
 
 #include "d2rprocess.h"
 
-#include "wow64_process.h"
+#include "ntprocess.h"
 #include "cfg.h"
 #include "data.h"
 #include "d2rdefs.h"
@@ -607,7 +607,7 @@ void D2RProcess::searchForProcess(void *hwnd) {
     if (StrCmpIW(PathFindFileNameW(fullpath), L"D2R.exe") != 0) { CloseHandle(handle); return; }
     Sleep(1000);
     uint64_t baseAddr, baseSize = 0;
-    getModulesViaPEB(handle, [&baseAddr, &baseSize](uint64_t addr, uint64_t size, const wchar_t *name) {
+    getModules(handle, [&baseAddr, &baseSize](uint64_t addr, uint64_t size, const wchar_t *name) {
         if (StrCmpIW(name, L"D2R.exe") != 0) {
             return true;
         }
@@ -625,38 +625,6 @@ void D2RProcess::searchForProcess(void *hwnd) {
     procInfo.baseAddr = baseAddr;
     procInfo.baseSize = baseSize;
 
-    /*
-    PROCESSENTRY32W entry;
-    entry.dwSize = sizeof(PROCESSENTRY32W);
-
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-
-    if (Process32FirstW(snapshot, &entry) == TRUE) {
-        while (Process32NextW(snapshot, &entry) == TRUE) {
-            if (StrCmpIW(entry.szExeFile, L"D2R.exe") == 0) {
-                handle_ = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | SYNCHRONIZE, FALSE, entry.th32ProcessID);
-                if (!handle_) { break; }
-                Sleep(1000);
-                getModulesViaPEB(handle_, [this](uint64_t addr, uint64_t size, const wchar_t *name) {
-                    if (StrCmpIW(name, L"D2R.exe") != 0) {
-                        return true;
-                    }
-                    baseAddr_ = addr;
-                    baseSize_ = size;
-                    return false;
-                });
-                if (baseSize_) {
-                    hwnd_ = findMainWindow(entry.th32ProcessID);
-                    processId = entry.th32ProcessID;
-                } else {
-                    resetData();
-                }
-                break;
-            }
-        }
-    }
-    CloseHandle(snapshot);
-     */
     currProcess_ = &procInfo;
     procInfo.hook = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     onSizeChange(HWND(procInfo.hwnd));

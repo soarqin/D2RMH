@@ -16,7 +16,7 @@
 #include "HandmadeMath.h"
 
 #include "collisionmap.h"
-#include "session.h"
+#include "pipehost.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -48,9 +48,11 @@ enum LNG {
 
 class MapRenderer {
     struct SessionInfo {
-        d2mapapi::Session session;
         Texture mapTex;
+        uint32_t currSeed = uint32_t(-1);
+        uint8_t currDifficulty = uint8_t(-1);
         uint32_t currLevelId = 0;
+        std::map<uint32_t, std::unique_ptr<d2mapapi::CollisionMap>> maps;
         int x0 = 0, y0 = 0, x1 = 0, y1 = 0, cx = 0, cy = 0;
         const d2mapapi::CollisionMap *currMap = nullptr;
         std::vector<std::pair<const d2mapapi::CollisionMap*, Texture>> mapAround;
@@ -60,7 +62,7 @@ class MapRenderer {
         std::chrono::steady_clock::time_point mapStartTime;
     };
 public:
-    explicit MapRenderer(Renderer &renderer);
+    MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &);
     void update();
     void render();
     void reloadConfig();
@@ -71,6 +73,8 @@ private:
     void drawObjects();
     void updatePanelText();
     void loadFromCfg();
+
+    d2mapapi::CollisionMap *getMap(uint32_t levelId);
 
 private:
     Renderer &renderer_;
@@ -106,4 +110,6 @@ private:
 
     std::chrono::steady_clock::time_point nextPanelUpdateTime_;
     std::vector<std::wstring> panelText_;
+
+    d2mapapi::PipedChildProcess &childProcess_;
 };

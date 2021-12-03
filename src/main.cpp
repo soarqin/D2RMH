@@ -28,26 +28,8 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
     loadCfg();
-    const auto *errstr = d2mapapi::d2Init(cfg->d2Path.c_str());
-    if (errstr) {
-        do {
-            HKEY key;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"SOFTWARE\\Blizzard Entertainment\\Diablo II", 0, KEY_READ, &key) == ERROR_SUCCESS) {
-                wchar_t path[MAX_PATH];
-                DWORD pathSize = sizeof(path);
-                if (RegQueryValueExW(key, L"InstallPath", nullptr, nullptr, LPBYTE(path), &pathSize) == ERROR_SUCCESS) {
-                    errstr = d2mapapi::d2Init(path);
-                    if (!errstr) {
-                        RegCloseKey(key);
-                        break;
-                    }
-                }
-                RegCloseKey(key);
-            }
-            MessageBoxA(nullptr, errstr, "D2RMH", MB_OK | MB_ICONERROR);
-            return 0;
-        } while (false);
-    }
+    d2mapapi::PipedChildProcess pcp;
+    pcp.start(L"d2mapapi_piped.exe", (wchar_t*)cfg->d2Path.c_str());
     loadData();
 
     Window wnd(100, 100, 500, 400);
@@ -58,7 +40,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         Renderer::setSwapInterval(-cfg->fps);
     }
 
-    MapRenderer map(renderer);
+    MapRenderer map(renderer, pcp);
     wnd.enableTrayMenu(true, (const wchar_t*)1, L"D2RMH", L"D2RMH is running.\nYou can close it from tray-icon popup menu.", L"D2RMH");
     wnd.addAboutMenu();
     wnd.addTrayMenuItem(L"Reload Config", -1, 0, [&wnd, &renderer, &map]() {
