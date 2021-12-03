@@ -56,7 +56,7 @@ set(ZLIB_FILES
     src/zlib/zutil.c
     )
 
-add_library(casc STATIC ${SRC_FILES} ${HEADER_FILES} ${ZLIB_FILES})
+add_library(casc STATIC EXCLUDE_FROM_ALL ${SRC_FILES} ${HEADER_FILES} ${ZLIB_FILES})
 target_compile_definitions(casc PRIVATE _7ZIP_ST BZ_STRICT_ANSI PUBLIC _UNICODE UNICODE)
 target_include_directories(casc PUBLIC src)
 target_link_libraries(casc ws2_32)
