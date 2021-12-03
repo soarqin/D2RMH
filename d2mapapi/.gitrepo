@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:soarqin/d2mapapi_mod.git
+	branch = master
+	commit = ff823611e64273269b29fac33a20fe4909460db2
+	parent = f0bef656ea509f4873c69ed87ee210b8dad5423e
+	method = rebase
+	cmdver = 0.4.3
