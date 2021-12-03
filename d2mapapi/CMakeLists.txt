@@ -27,12 +27,20 @@ set_target_properties(d2mapapi_pipehost PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CM
 
 add_executable(d2mapapi_httpd EXCLUDE_FROM_ALL httpd.cpp)
 target_link_libraries(d2mapapi_httpd d2mapapi simphttp)
-target_link_options(d2mapapi_httpd PRIVATE -municode)
+if(MSVC)
+    target_link_options(d2mapapi_httpd PRIVATE /ENTRY:wmainCRTStartup)
+else()
+    target_link_options(d2mapapi_httpd PRIVATE -municode)
+endif()
 set_target_properties(d2mapapi_httpd PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(d2mapapi_piped EXCLUDE_FROM_ALL piped.cpp)
+add_executable(d2mapapi_piped WIN32 EXCLUDE_FROM_ALL piped.cpp)
 target_link_libraries(d2mapapi_piped d2mapapi)
-target_link_options(d2mapapi_piped PRIVATE -municode)
+if(MSVC)
+    target_link_options(d2mapapi_piped PRIVATE /ENTRY:wmainCRTStartup)
+else()
+    target_link_options(d2mapapi_piped PRIVATE -municode)
+endif()
 set_target_properties(d2mapapi_piped PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # this is a test program for d2mapapi_piped functions
