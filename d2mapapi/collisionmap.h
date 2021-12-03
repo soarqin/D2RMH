@@ -32,12 +32,12 @@ public:
     explicit CollisionMap(std::string_view str);
     virtual ~CollisionMap() = default;
 
-    [[nodiscard]] std::string encode() const;
+    [[nodiscard]] std::string encode(int indentation = 0) const;
     void decode(std::string_view str);
 
     bool built = false;
 
-    unsigned int id;
+    unsigned int id = 0;
 
     Point offset = {0, 0};
     Size size = {0, 0};

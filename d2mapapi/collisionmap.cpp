@@ -16,12 +16,24 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Rect, x0, y0, x1, y1)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Exit, offsets, isPortal)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CollisionMap, id, offset, size, crop, mapData, exits, npcs, objects)
 
-std::string CollisionMap::encode() const {
+template<typename T>
+void to_json(nlohmann::json &j, const std::map<uint32_t, T> &objs) {
+    for (auto &p: objs) {
+        j[std::to_string(p.first)] = p.second;
+    }
+}
+
+template<typename T>
+void from_json(const nlohmann::json &j, std::map<uint32_t, T> &objs) {
+    for (auto &[key, value]: j.items()) {
+        nlohmann::adl_serializer<T>::from_json(value, objs[uint32_t(strtoul(key.c_str(), nullptr, 0))]);
+    }
+}
+
+std::string CollisionMap::encode(int indentation) const {
     if (!built) { return ""; }
     nlohmann::json j = *this;
-    std::ostringstream oss;
-    oss << j;
-    return oss.str();
+    return j.dump(indentation > 0 ? indentation : -1);
 }
 
 void CollisionMap::decode(std::string_view str) {

@@ -47,6 +47,7 @@ int wmain(int argc, wchar_t *argv[]) {
         uint32_t seed = 0;
         uint8_t difficulty = 0;
         uint32_t levelId = 0;
+        int indentation = 0;
         bool success = false;
         const char *url = req.url.c_str();
         do {
@@ -63,6 +64,16 @@ int wmain(int argc, wchar_t *argv[]) {
             url = next + 1;
             levelId = uint32_t(strtoul(url, &next, 0));
             if (url == next || (*next != '/' && *next != 0)) break;
+
+            if (*next == '/') {
+                url = next + 1;
+                indentation = int(strtoul(url, &next, 0));
+                if (url == next && (*next == '/' || *next == 0)) {
+                    indentation = 0;
+                } else if (*next != '/' && *next != 0) {
+                    break;
+                }
+            }
             success = true;
         } while (false);
         res.setStatus(200);
@@ -88,7 +99,7 @@ int wmain(int argc, wchar_t *argv[]) {
         }
         const auto *map = session->getMap(levelId);
         if (map) {
-            auto str = map->encode();
+            auto str = map->encode(indentation);
             res.setHeader("Content-Length", std::to_string(str.size()));
             res.end(str);
         } else {

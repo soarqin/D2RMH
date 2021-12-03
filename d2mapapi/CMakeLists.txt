@@ -9,41 +9,45 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${PROJECT_SOURCE_DIR}")
     add_static_runtime_option()
 endif()
 
-add_subdirectory(simphttp)
-add_library(d2mapapi STATIC EXCLUDE_FROM_ALL
-    collisionmap.cpp collisionmap.h
-    mapdata.cpp mapdata.h
-    d2map.cpp d2map.h
-    d2ptrs.h d2structs.h
-    offset.cpp offset.cpp
-    session.cpp session.h)
-target_include_directories(d2mapapi PUBLIC . PRIVATE json)
-set_target_properties(d2mapapi PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-add_library(d2mapapi_pipehost STATIC EXCLUDE_FROM_ALL
-    collisionmap.cpp collisionmap.h
-    pipehost.cpp pipehost.h)
-target_include_directories(d2mapapi_pipehost PUBLIC . PRIVATE json)
-set_target_properties(d2mapapi_pipehost PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    add_subdirectory(simphttp)
+    add_library(d2mapapi STATIC EXCLUDE_FROM_ALL
+        collisionmap.cpp collisionmap.h
+        mapdata.cpp mapdata.h
+        d2map.cpp d2map.h
+        d2ptrs.h d2structs.h
+        offset.cpp offset.cpp
+        session.cpp session.h)
+    target_include_directories(d2mapapi PUBLIC . PRIVATE json)
+    set_target_properties(d2mapapi PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    add_library(d2mapapi_pipehost STATIC EXCLUDE_FROM_ALL
+        collisionmap.cpp collisionmap.h
+        pipehost.cpp pipehost.h)
+    target_include_directories(d2mapapi_pipehost PUBLIC . PRIVATE json)
+    set_target_properties(d2mapapi_pipehost PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_executable(d2mapapi_httpd EXCLUDE_FROM_ALL httpd.cpp)
-target_link_libraries(d2mapapi_httpd d2mapapi simphttp)
-if(MSVC)
-    target_link_options(d2mapapi_httpd PRIVATE /ENTRY:wmainCRTStartup)
-else()
-    target_link_options(d2mapapi_httpd PRIVATE -municode)
+    add_executable(d2mapapi_httpd EXCLUDE_FROM_ALL httpd.cpp)
+    target_link_libraries(d2mapapi_httpd d2mapapi simphttp)
+    if(MSVC)
+        target_link_options(d2mapapi_httpd PRIVATE /ENTRY:wmainCRTStartup)
+    else()
+        target_link_options(d2mapapi_httpd PRIVATE -municode)
+    endif()
+    set_target_properties(d2mapapi_httpd PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
-set_target_properties(d2mapapi_httpd PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(d2mapapi_piped WIN32 EXCLUDE_FROM_ALL piped.cpp)
-target_link_libraries(d2mapapi_piped d2mapapi)
-if(MSVC)
-    target_link_options(d2mapapi_piped PRIVATE /ENTRY:wmainCRTStartup)
-else()
-    target_link_options(d2mapapi_piped PRIVATE -municode)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    add_executable(d2mapapi_piped WIN32 EXCLUDE_FROM_ALL piped.cpp)
+    target_link_libraries(d2mapapi_piped d2mapapi)
+    if(MSVC)
+        target_link_options(d2mapapi_piped PRIVATE /ENTRY:wmainCRTStartup)
+    else()
+        target_link_options(d2mapapi_piped PRIVATE -municode)
+    endif()
+    set_target_properties(d2mapapi_piped PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+    # this is a test program for d2mapapi_piped functions
+    add_executable(d2mapapi_host EXCLUDE_FROM_ALL host.cpp)
+    target_link_libraries(d2mapapi_host d2mapapi_pipehost)
+    set_target_properties(d2mapapi_host PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
-set_target_properties(d2mapapi_piped PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-# this is a test program for d2mapapi_piped functions
-add_executable(d2mapapi_host EXCLUDE_FROM_ALL host.cpp)
-target_link_libraries(d2mapapi_host d2mapapi_pipehost)
-set_target_properties(d2mapapi_host PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
