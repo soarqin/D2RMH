@@ -10,6 +10,7 @@
 
 extern "C" {
 
+#if defined(_M_IX86)
 NtWow64QueryInformationProcess64Proc NtWow64QueryInformationProcess64;
 NtWow64ReadVirtualMemory64Proc NtWow64ReadVirtualMemory64;
 
@@ -17,12 +18,15 @@ static HMODULE getNtDllMod() {
     static HMODULE ntdllMod = LoadLibraryA("ntdll.dll");
     return ntdllMod;
 }
+#endif
 
 void osInit() {
+#if defined(_M_IX86)
     NtWow64QueryInformationProcess64 =
         (NtWow64QueryInformationProcess64Proc)GetProcAddress(getNtDllMod(), "NtWow64QueryInformationProcess64");
     NtWow64ReadVirtualMemory64 =
         (NtWow64ReadVirtualMemory64Proc)GetProcAddress(getNtDllMod(), "NtWow64ReadVirtualMemory64");
+#endif
 }
 
 }

@@ -65,8 +65,8 @@ public:
     }
 
     inline int fontSize() const { return fontSize_; }
-    void setColor(uint8_t r, uint8_t g, uint8_t b);
-    void setAltColor(int index, uint8_t r, uint8_t g, uint8_t b);
+    void setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
+    void setAltColor(int index, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
 
     template<typename T>
     void render(const T &str, float x, float y, bool shadow, int fontSize = -1, int preSelColorIndex = 0) {

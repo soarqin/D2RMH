@@ -723,22 +723,23 @@ void MapRenderer::loadFromCfg() {
     objColors_[TypeUniqueMonster] = cfg->uniqueMonsterColor;
     objColors_[TypeNpc] = cfg->npcColor;
     objColors_[TypeDoor] = cfg->doorColor;
-    ttf_->setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF);
-    ttf_->setAltColor(1, 228, 88, 67);
-    ttf_->setAltColor(2, 31, 255, 0);
-    ttf_->setAltColor(3, 104, 104, 223);
-    ttf_->setAltColor(4, 192, 166, 130);
-    ttf_->setAltColor(5, 104, 104, 104);
-    ttf_->setAltColor(6, 0, 0, 0);
-    ttf_->setAltColor(7, 223, 202, 130);
-    ttf_->setAltColor(8, 255, 171, 41);
-    ttf_->setAltColor(9, 255, 239, 130);
-    ttf_->setAltColor(10, 31, 130, 10);
-    ttf_->setAltColor(11, 213, 41, 255);
-    ttf_->setAltColor(12, 52, 161, 26);
-    ttf_->setAltColor(13, 255, 255, 255);
-    ttf_->setAltColor(14, 255, 255, 255);
-    ttf_->setAltColor(15, 255, 255, 255);
+    auto alpha = (cfg->textColor >> 24);
+    ttf_->setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF, alpha);
+    ttf_->setAltColor(1, 228, 88, 67, alpha);
+    ttf_->setAltColor(2, 31, 255, 0, alpha);
+    ttf_->setAltColor(3, 104, 104, 223, alpha);
+    ttf_->setAltColor(4, 192, 166, 130, alpha);
+    ttf_->setAltColor(5, 104, 104, 104, alpha);
+    ttf_->setAltColor(6, 0, 0, 0, alpha);
+    ttf_->setAltColor(7, 223, 202, 130, alpha);
+    ttf_->setAltColor(8, 255, 171, 41, alpha);
+    ttf_->setAltColor(9, 255, 239, 130, alpha);
+    ttf_->setAltColor(10, 31, 130, 10, alpha);
+    ttf_->setAltColor(11, 213, 41, 255, alpha);
+    ttf_->setAltColor(12, 52, 161, 26, alpha);
+    ttf_->setAltColor(13, 255, 255, 255, alpha);
+    ttf_->setAltColor(14, 255, 255, 255, alpha);
+    ttf_->setAltColor(15, 255, 255, 255, alpha);
 }
 
 d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {

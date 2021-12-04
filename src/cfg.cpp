@@ -29,13 +29,21 @@ const Cfg *cfg = &sCfg;
 #define LOADVALC(n, m) else if (!strcmp(name, #n)) { sCfg.m = calcColor(value); }
 
 inline uint32_t calcColor(const char *value) {
-    uint32_t c = 0xFF000000u | strtoul(value, nullptr, 0);
+    uint32_t c = strtoul(value, nullptr, 0);
     const char *tok = strchr(value, ',');
-    if (!tok) { return c; }
-    c |= strtoul(++tok, nullptr, 0) << 8;
-    tok = strchr(tok, ',');
-    if (!tok) { return c; }
-    c |= strtoul(++tok, nullptr, 0) << 16;
+    if (tok) {
+        c |= strtoul(++tok, nullptr, 0) << 8;
+        tok = strchr(tok, ',');
+        if (tok) {
+            c |= strtoul(++tok, nullptr, 0) << 16;
+            tok = strchr(tok, ',');
+            if (tok) {
+                c |= strtoul(++tok, nullptr, 0) * sCfg.alpha / 255 << 24;
+            } else {
+                c |= 0xFF000000u;
+            }
+        }
+    }
     return c;
 }
 
@@ -207,5 +215,12 @@ void loadCfg(const std::string &filename) {
         if (sz > 2) {
             sCfg.panelAlign = std::clamp(int(strtol(vec[2].c_str(), nullptr, 0)), 0, 2);
         }
+    }
+    for (auto *color:
+        {&sCfg.walkableColor, &sCfg.edgeColor, &sCfg.textColor, &sCfg.playerInnerColor, &sCfg.playerOuterColor,
+         &sCfg.lineColor, &sCfg.waypointColor, &sCfg.portalColor, &sCfg.chestColor, &sCfg.questColor, &sCfg.shrineColor,
+         &sCfg.wellColor, &sCfg.uniqueMonsterColor, &sCfg.monsterColor, &sCfg.npcColor, &sCfg.doorColor,
+         &sCfg.msgBgColor,}) {
+        *color = (((*color >> 24) * sCfg.alpha / 255) << 24) | (*color & 0xFFFFFFu);
     }
 }

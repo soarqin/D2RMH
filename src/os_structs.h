@@ -10,6 +10,8 @@
 
 #include <windows.h>
 
+#if defined(_M_IX86)
+
 #define NT_SUCCESS(x) ((x) >= 0)
 
 // Namespace is present Not to collide with "winbase.h"
@@ -102,10 +104,15 @@ typedef struct _LDR_DATA_TABLE_ENTRY64 {
 
 }  // namespace sys
 
+#endif
+
 // ------------------------------------------------------------------------
 // Function prototypes.
 // ------------------------------------------------------------------------
 extern "C" {
+
+#if defined(_M_IX86)
+
 typedef NTSTATUS (NTAPI *NtWow64QueryInformationProcess64Proc)(
     IN HANDLE ProcessHandle,
     ULONG ProcessInformationClass,
@@ -122,6 +129,8 @@ typedef NTSTATUS (NTAPI *NtWow64ReadVirtualMemory64Proc)(
 
 extern NtWow64QueryInformationProcess64Proc NtWow64QueryInformationProcess64;
 extern NtWow64ReadVirtualMemory64Proc NtWow64ReadVirtualMemory64;
+
+#endif
 
 extern void osInit();
 

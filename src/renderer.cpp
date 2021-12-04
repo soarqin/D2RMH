@@ -43,7 +43,7 @@ struct RendererCtx {
     int width = 0, height = 0;
     Texture *background = nullptr;
 
-    float clearColor[4] = {.0, .0, .0, 1.};
+    float clearColor[4] = {.0, .0, .0, .0};
 };
 
 Renderer::Renderer(Window *wnd): ctx_(new RendererCtx) {
@@ -56,10 +56,10 @@ Renderer::Renderer(Window *wnd): ctx_(new RendererCtx) {
     ctx_->wglDeleteContext = (PFNWGLDELETECONTEXTPROC)GetProcAddress(ctx_->lib, "wglDeleteContext");
     ctx_->wglMakeCurrent = (PFNWGLMAKECURRENTPROC)GetProcAddress(ctx_->lib, "wglMakeCurrent");
     PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-        PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        24, 8, 0, PFD_MAIN_PLANE,
+        sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SUPPORT_COMPOSITION,
+        PFD_TYPE_RGBA, 32, 8, 0, 8, 0, 8, 0,
+        8, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, PFD_MAIN_PLANE,
         0, 0, 0, 0
     };
     ctx_->dc = GetDC((HWND)wnd->hwnd());
@@ -131,7 +131,7 @@ void Renderer::begin() {
 
     auto *c = ctx_->clearColor;
     glClearColor(c[0], c[1], c[2], c[3]);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 void Renderer::end() {
     SwapBuffers(ctx_->dc);

@@ -17,6 +17,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include "cfg.h"
 
 #include <windows.h>
+#include <versionhelpers.h>
+#include <dwmapi.h>
 #include <commctrl.h>
 #include <stdexcept>
 #include <map>
@@ -50,6 +52,35 @@ struct WindowCtx {
         std::wstring tip, info, infoTitle;
     } trayMenuBase;
 };
+
+static bool updateFramebufferTransparency(HWND hwnd) {
+    BOOL composition, opaque;
+    DWORD color;
+
+    if (!IsWindowsVistaOrGreater())
+        return false;
+
+    if (FAILED(DwmIsCompositionEnabled(&composition)) || !composition)
+        return false;
+
+    if (IsWindows8OrGreater() ||
+        (SUCCEEDED(DwmGetColorizationColor(&color, &opaque)) && !opaque)) {
+        HRGN region = CreateRectRgn(0, 0, -1, -1);
+        DWM_BLURBEHIND bb = {0};
+        bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+        bb.hRgnBlur = region;
+        bb.fEnable = TRUE;
+
+        DwmEnableBlurBehindWindow(hwnd, &bb);
+        MARGINS m = {-1};
+        DeleteObject(region);
+    } else {
+        DWM_BLURBEHIND bb = {0};
+        bb.dwFlags = DWM_BB_ENABLE;
+        DwmEnableBlurBehindWindow(hwnd, &bb);
+    }
+    return true;
+}
 
 static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static UINT taskbarRestartMsg;
@@ -96,6 +127,12 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             break;
         }
         ite->second.cb();
+        return 0;
+    }
+    case WM_DWMCOMPOSITIONCHANGED:
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+        auto *ctx = ((Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->ctx();
+        updateFramebufferTransparency(ctx->hwnd);
         return 0;
     }
     default:
@@ -147,7 +184,8 @@ Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
         throw std::runtime_error("Unable to create window");
     }
     SetWindowLongPtr(ctx_->hwnd, GWLP_USERDATA, (LONG_PTR)this);
-    SetLayeredWindowAttributes(ctx_->hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
+    SetLayeredWindowAttributes(ctx_->hwnd, 0, 0, 0);
+    updateFramebufferTransparency(ctx_->hwnd);
     ShowWindow(ctx_->hwnd, SW_SHOW);
     ctx_->running = true;
 }
@@ -343,7 +381,8 @@ void Window::move(int x, int y, int w, int h) {
 }
 
 void Window::reloadConfig() {
-    SetLayeredWindowAttributes(ctx_->hwnd, 0, cfg->alpha, LWA_COLORKEY | LWA_ALPHA);
+    SetLayeredWindowAttributes(ctx_->hwnd, 0, 0, 0);
+    updateFramebufferTransparency(ctx_->hwnd);
 }
 
 void *Window::hwnd() {

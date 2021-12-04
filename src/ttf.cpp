@@ -177,13 +177,13 @@ void TTF::charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int f
 
 #define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
 
-void TTF::setColor(uint8_t r, uint8_t g, uint8_t b) {
-    altColor_[0] = RGBA(r, g, b, 255);
+void TTF::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    altColor_[0] = RGBA(r, g, b, a);
 }
 
-void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b) {
+void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     if (index > 0 && index < 16) {
-        altColor_[index] = RGBA(r, g, b, 255);
+        altColor_[index] = RGBA(r, g, b, a);
     }
 }
 
