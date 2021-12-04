@@ -3,10 +3,10 @@ name: CMake
 on:
   push:
     branches: [ master ]
-    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
+    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'tools/**', 'inih/**' ]
   pull_request:
     branches: [ master ]
-    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'common/**', 'tools/**', 'json/**', 'inih/**' ]
+    paths: [ ".github/workflows/build.yml", CMakeLists.txt, 'src/**', 'd2mapapi/**', 'tools/**', 'inih/**' ]
 
 env:
   BUILD_TYPE: Release

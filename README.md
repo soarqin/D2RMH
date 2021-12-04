@@ -61,7 +61,7 @@ Check [TODO](TODO.md)
   * Compiled binaries are located in `build_d2mapapi\bin` folder
 
 # Credits
-* Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
+* [d2mapapi_mod](https://github.com/soarqin/d2mapapi_mod) modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
 * Idea and memory offsets from [MapAssist](https://github.com/misterokaygo/MapAssist).
 * [Handmade Math](https://github.com/HandmadeMath/Handmade-Math) for matrix calculations.
 * [glad](https://glad.dav1d.de) for loading OpenGL(Core)/WGL functions.
