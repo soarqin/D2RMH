@@ -18,7 +18,7 @@ namespace d2mapapi {
 class PipedChildProcess final {
 public:
     ~PipedChildProcess();
-    bool start(const wchar_t *filename, wchar_t *parameters);
+    bool start(const wchar_t *filename, const wchar_t *parameters);
 
     bool writePipe(const void *data, size_t size);
     bool readPipe(void *data, size_t size);

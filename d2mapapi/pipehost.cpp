@@ -22,30 +22,26 @@ PipedChildProcess::~PipedChildProcess() {
     }
 }
 
-bool PipedChildProcess::start(const wchar_t *filename, wchar_t *parameters) {
-    SECURITY_ATTRIBUTES saAttr;
-    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-    saAttr.bInheritHandle = TRUE;
-    saAttr.lpSecurityDescriptor = nullptr;
+bool PipedChildProcess::start(const wchar_t *filename, const wchar_t *parameters) {
+    SECURITY_ATTRIBUTES saAttr = {
+        .nLength = sizeof(SECURITY_ATTRIBUTES),
+        .lpSecurityDescriptor = nullptr,
+        .bInheritHandle = TRUE,
+    };
     if (!CreatePipe((HANDLE*)&childStdoutRd, (HANDLE*)&childStdoutWr, &saAttr, 0) ||
-        !SetHandleInformation(HANDLE(childStdoutRd), HANDLE_FLAG_INHERIT, 0) ||
-        !CreatePipe((HANDLE*)&childStdinRd, (HANDLE*)&childStdinWr, &saAttr, 0) ||
-        !SetHandleInformation(HANDLE(childStdinWr), HANDLE_FLAG_INHERIT, 0)) {
+        !CreatePipe((HANDLE*)&childStdinRd, (HANDLE*)&childStdinWr, &saAttr, 0)) {
         return false;
     }
 
-    PROCESS_INFORMATION piProcInfo;
-    STARTUPINFOW siStartInfo;
+    SetHandleInformation(HANDLE(childStdoutRd), HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(HANDLE(childStdinWr), HANDLE_FLAG_INHERIT, 0);
+    PROCESS_INFORMATION piProcInfo = {};
+    STARTUPINFOW siStartInfo = {.cb = sizeof(STARTUPINFOW), .dwFlags = STARTF_USESTDHANDLES, .hStdInput = childStdinRd, .hStdOutput = childStdoutWr, .hStdError = childStdoutWr};
     BOOL bSuccess = FALSE;
-    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
-    ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
-    siStartInfo.cb = sizeof(STARTUPINFO);
-    siStartInfo.hStdError = childStdoutWr;
-    siStartInfo.hStdOutput = childStdoutWr;
-    siStartInfo.hStdInput = childStdinRd;
-    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    bSuccess = CreateProcessW(filename, parameters, nullptr, nullptr, TRUE, 0, nullptr, nullptr, &siStartInfo, &piProcInfo);
+    wchar_t cmdLine[1024];
+    wsprintfW(cmdLine, L"\"%s\" \"%s\"", filename, parameters);
+    bSuccess = CreateProcessW(nullptr, cmdLine, nullptr, nullptr, TRUE, 0, nullptr, nullptr, &siStartInfo, &piProcInfo);
     process = piProcInfo.hProcess;
 
     if (!bSuccess) {
@@ -59,12 +55,12 @@ bool PipedChildProcess::start(const wchar_t *filename, wchar_t *parameters) {
 
 bool PipedChildProcess::writePipe(const void *data, size_t size) {
     DWORD dwWritten;
-    return WriteFile(HANDLE(childStdinWr), data, size, &dwWritten, nullptr);
+    return WriteFile(HANDLE(childStdinWr), data, DWORD(size), &dwWritten, nullptr);
 }
 
 bool PipedChildProcess::readPipe(void *data, size_t size) {
     DWORD dwRead;
-    return ReadFile(HANDLE(childStdoutRd), data, size, &dwRead, nullptr);
+    return ReadFile(HANDLE(childStdoutRd), data, DWORD(size), &dwRead, nullptr);
 }
 
 std::string PipedChildProcess::queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId) {
