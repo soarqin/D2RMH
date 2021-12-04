@@ -50,7 +50,8 @@ bool PipedChildProcess::start(const wchar_t *filename, const wchar_t *parameters
     CloseHandle(piProcInfo.hThread);
     CloseHandle(HANDLE(childStdoutWr));
     CloseHandle(HANDLE(childStdinRd));
-    return true;
+    int ret;
+    return readPipe(&ret, 4) && ret == 0;
 }
 
 bool PipedChildProcess::writePipe(const void *data, size_t size) {

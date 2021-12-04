@@ -24,6 +24,7 @@ int wmain(int argc, wchar_t *argv[]) {
         ExitProcess(1);
     }
 
+    int ret = 0;
     const auto *errstr = argc > 1 ? d2mapapi::d2Init(argv[1]) : "Usage: d2mapapi_piped <D2 Game Path>";
     if (errstr) {
         do {
@@ -42,10 +43,15 @@ int wmain(int argc, wchar_t *argv[]) {
                 RegCloseKey(key);
             }
             MessageBoxA(nullptr, errstr, "d2mapapi", MB_OK | MB_ICONERROR);
+            ret = -1;
+            DWORD written;
+            WriteFile(hStdout, &ret, sizeof(int), &written, nullptr);
             return -1;
         } while (false);
     }
 
+    DWORD written;
+    WriteFile(hStdout, &ret, sizeof(int), &written, nullptr);
     std::unordered_map<uint64_t, std::unique_ptr<d2mapapi::Session>> sessions;
     std::vector<uint64_t> sessionsOrder;
     for (;;) {
@@ -55,7 +61,7 @@ int wmain(int argc, wchar_t *argv[]) {
             uint32_t levelId;
         };
         Req req = {};
-        DWORD bytesRead, written;
+        DWORD bytesRead;
         if (!ReadFile(hStdin, &req, sizeof(uint32_t) * 3, &bytesRead, nullptr)) {
             break;
         }

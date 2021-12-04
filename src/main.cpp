@@ -29,7 +29,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     loadCfg();
     d2mapapi::PipedChildProcess pcp;
-    pcp.start(L"d2mapapi_piped.exe", (wchar_t *)cfg->d2Path.c_str());
+    if (!pcp.start(L"d2mapapi_piped.exe", (wchar_t *)cfg->d2Path.c_str())) {
+        return -1;
+    }
     loadData();
 
     Window wnd(100, 100, 500, 400);
