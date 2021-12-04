@@ -56,6 +56,7 @@
         # this is not a portal (so that you can walk between the map areas)
         "isPortal": false,
         # exit offsets in list, sometimes there can be multiple exits to another map area
+        # note: the offsets are not always correct while `isPortal` is false, because they are calculated by an inaccurate algorithm
         "offsets": [{"x": 5672, "y": 5880}]
       }
     },

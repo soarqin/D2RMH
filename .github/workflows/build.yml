@@ -20,10 +20,6 @@ jobs:
         compiler: ["msys2_mingw", "msvc2019"]
 
     steps:
-      - name: Setup Environment
-        shell: pwsh
-        run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-
       - name: Checkout Repository
         uses: actions/checkout@v2
 
