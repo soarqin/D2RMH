@@ -27,9 +27,11 @@ Check [TODO](TODO.md)
 
 # How to build
 ## Quick instruction
-* Just use [cmake](https://www.cmake.org/) to build, Visual Studio 2019/2022 and MinGW GCC 32bit 9.0+(better using MSYS2) are supported
-* For Visual Studio 2019/2022: add `-A Win32` to cmake commandline to ensure builds a 32-bit exe
-## Detailed instruction
+* Just use [cmake](https://www.cmake.org/) to build
+* Add `cmake\bin` to your `PATH` environment variable so that you can type `cmake` in command line to call it directly
+* Run `build_msvc2019.bat`, `build_msvc2022.bat`, `build_msys2_clang.bat` or `build_msys2_mingw.bat` to build.  
+  Note: You should have certain compilers intalled
+## Detailed instruction w/o .bat scripts 
 ### MinGW GCC 32bit
 * Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make git mingw-w64-i686-toolchain mingw-w64-i686-cmake mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake` in MSYS2 command line to install required components
 * Build D2RMH(64bit):
