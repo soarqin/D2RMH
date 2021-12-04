@@ -5,7 +5,7 @@ Diablo II Resurrected map revealing tool.
 
 # Disclaimer
 **D2RMH is only reading process memory from D2R, without injects, hooks or memory writes,  
-but it is not guarenteed that it is totally ban-free, use at your own risk.**
+but I do not guarentee that it is totally ban-free, use at your own risk.**
 
 # What's New
 Check [ChangeLog](ChangeLog.md)
@@ -14,6 +14,9 @@ Check [ChangeLog](ChangeLog.md)
 * Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
 
 # Usage
+0. Virus/Malware detection WARNING:  
+   * If you are using Windows Defender, disable it or add D2RMH to whitelist to avoid misreporting of malware.
+   * D2RMH can pass most Anti-Virus software detections, but not all of them, you can compile it your self if worry about it, check `How to build` section below
 1. Download from `Releases` section, or any snapshot packs from `Actions` section(You need to log-in to GitHub). 
 2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
    or just put extracted `D2RMH.exe` and all `.ini` files to D2 v1.13c folder.
