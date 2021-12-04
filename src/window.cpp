@@ -14,8 +14,6 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "window.h"
 
-#include "cfg.h"
-
 #include <windows.h>
 #include <versionhelpers.h>
 #include <dwmapi.h>
@@ -199,6 +197,9 @@ Window::~Window() {
 
 INT_PTR CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_CLOSE:
+        EndDialog(hWnd, TRUE);
+        break;
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
         case IDOK:
@@ -230,7 +231,23 @@ INT_PTR CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         auto width = rc2.right - rc2.left;
         auto height = rc2.bottom - rc2.top;
         MoveWindow(hWnd, (rc.right + rc.left - width) / 2, (rc.top + rc.bottom - height) / 2, width, height, FALSE);
+        auto caption = GetDlgItem(hWnd, 1000);
+        SetWindowTextW(caption, L"D2RMH " VERSION_STRING_FULL);
+        auto font = HFONT(SendMessage(caption, WM_GETFONT, 0, 0));
+        LOGFONTW lf = {};
+        GetObjectW(font, sizeof(lf), &lf);
+        lf.lfHeight *= 2; lf.lfWidth *= 2;
+        auto font2 = CreateFontIndirectW(&lf);
+        SendMessage(caption, WM_SETFONT, (WPARAM)font2, TRUE);
         break;
+    }
+    case WM_CTLCOLORSTATIC: {
+        if (GetDlgCtrlID((HWND)lParam) == 1000) {
+            SetTextColor((HDC)wParam, 0x881111);
+            SetBkMode((HDC)wParam, TRANSPARENT);
+            return (INT_PTR)::GetStockObject(NULL_BRUSH);
+        }
+        return FALSE;
     }
     default:
         return FALSE;

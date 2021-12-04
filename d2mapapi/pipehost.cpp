@@ -51,7 +51,16 @@ bool PipedChildProcess::start(const wchar_t *filename, const wchar_t *parameters
     CloseHandle(HANDLE(childStdoutWr));
     CloseHandle(HANDLE(childStdinRd));
     int ret;
-    return readPipe(&ret, 4) && ret == 0;
+    if (!readPipe(&ret, 4)) {
+        errMsg_ = "failed to read from child process!";
+        return false;
+    }
+    if (ret == 0) { return true; }
+    uint32_t len;
+    readPipe(&len, 4);
+    errMsg_.resize(len);
+    readPipe(errMsg_.data(), len);
+    return false;
 }
 
 bool PipedChildProcess::writePipe(const void *data, size_t size) {

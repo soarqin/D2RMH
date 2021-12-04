@@ -30,6 +30,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     loadCfg();
     d2mapapi::PipedChildProcess pcp;
     if (!pcp.start(L"d2mapapi_piped.exe", (wchar_t *)cfg->d2Path.c_str())) {
+        MessageBoxA(nullptr, pcp.errMsg().c_str(), nullptr, 0);
         return -1;
     }
     loadData();
@@ -45,9 +46,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     MapRenderer map(renderer, pcp);
     wnd.enableTrayMenu(true,
                        (const wchar_t *)1,
-                       L"D2RMH",
+                       L"D2RMH " VERSION_STRING_FULL,
                        L"D2RMH is running.\nYou can close it from tray-icon popup menu.",
-                       L"D2RMH");
+                       L"D2RMH " VERSION_STRING);
     wnd.addAboutMenu();
     wnd.addTrayMenuItem(L"Reload Config", -1, 0, [&wnd, &renderer, &map]() {
         loadCfg();

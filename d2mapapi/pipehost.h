@@ -23,6 +23,8 @@ public:
     bool writePipe(const void *data, size_t size);
     bool readPipe(void *data, size_t size);
 
+    [[nodiscard]] inline const std::string &errMsg() const { return errMsg_; }
+
     std::string queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId);
     CollisionMap *queryMap(uint32_t seed, uint8_t difficulty, uint32_t levelId);
 
@@ -32,6 +34,7 @@ private:
     void *childStdoutRd = nullptr;
     void *childStdoutWr = nullptr;
     void *process = nullptr;
+    std::string errMsg_;
 };
 
 }

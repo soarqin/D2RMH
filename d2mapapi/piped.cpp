@@ -42,10 +42,12 @@ int wmain(int argc, wchar_t *argv[]) {
                 }
                 RegCloseKey(key);
             }
-            MessageBoxA(nullptr, errstr, "d2mapapi", MB_OK | MB_ICONERROR);
             ret = -1;
             DWORD written;
             WriteFile(hStdout, &ret, sizeof(int), &written, nullptr);
+            auto sz = strlen(errstr);
+            WriteFile(hStdout, &sz, sizeof(uint32_t), &written, nullptr);
+            WriteFile(hStdout, errstr, sz, &written, nullptr);
             return -1;
         } while (false);
     }

@@ -1,3 +1,8 @@
+# next release
+* new transparency mechanism, now you can set each color with alpha channel, and are stack with global `alpha` setting
+* separate d2mapapi out as a standalone project, and re-add by git-subrepo, with lots of tweaks
+* D2RMH main program can be built in 64bit now, while using `d2mapapi_piped` as a child process for querying map data
+
 # v0.8.1
 * fix lines for some quest targets
 * fix random color blocks outside of map area sometime

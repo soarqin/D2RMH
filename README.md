@@ -27,12 +27,11 @@ Check [TODO](TODO.md)
 
 # How to build
 ## Quick instruction
-* Just use [cmake](https://www.cmake.org/) to build
-* Add `cmake\bin` to your `PATH` environment variable so that you can type `cmake` in command line to call it directly
+* Install [cmake](https://www.cmake.org/) and add `cmake\bin` to your `PATH` environment variable so that you can type `cmake` in command line to call it directly
 * Run `build_msvc2019.bat`, `build_msvc2022.bat`, `build_msys2_clang.bat` or `build_msys2_mingw.bat` to build.  
-  Note: You should have certain compilers intalled
-## Detailed instruction w/o .bat scripts 
-### MinGW GCC 32bit
+  Note: You should have certain compilers intalled. For msys2 builds, install required packages as instructions below.
+## Detailed instruction without .bat scripts 
+### MinGW GCC
 * Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make git mingw-w64-i686-toolchain mingw-w64-i686-cmake mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake` in MSYS2 command line to install required components
 * Build D2RMH(64bit):
   * Open new Shell using ucrt64.exe
@@ -44,6 +43,14 @@ Check [TODO](TODO.md)
   * Change current directory to D2RMH source
   * Type `cmake -Bbuild_d2mapapi -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON d2mapapi`
   * Then `make -Cbuild_d2mapapi d2mapapi-piped` to get the compiled binary in `build_d2mapapi/bin` folder
+### MSYS2 Clang
+* Mostly same as MinGW GCC, with following changes:
+  * `mingw-w64-i686-toolchain`->`mingw-w64-clang-i686-toolchain`
+  * `mingw-w64-i686-cmake`->`mingw-w64-clang-i686-cmake`
+  * `mingw-w64-ucrt-x86_64-toolchain`->`mingw-w64-clang-x86_64-toolchain`
+  * `mingw-w64-ucrt-x86_64-cmake`->`mingw-w64-clang-x86_64-cmake`
+  * `ucrt64.exe`->`clang64.exe`
+  * `mingw32.exe`->`clang32.exe`
 ### Microsoft Visual Studio 2019/2022
 * Install Visual Studio 2019 or 2022 Community Edition(or Pro/Ent if you have)
 * Unpack downloaded source code file, or you can use git to Clone D2RMH source by type: `git clone https://github.com/soarqin/D2RMH`. Note: Using git requires [Git for windows](https://git-scm.com/download/win) installed
