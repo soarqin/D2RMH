@@ -31,21 +31,34 @@ Check [TODO](TODO.md)
 * For Visual Studio 2019/2022: add `-A Win32` to cmake commandline to ensure builds a 32-bit exe
 ## Detailed instruction
 ### MinGW GCC 32bit
-* Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make git mingw-w64-i686-toolchain mingw-w64-i686-cmake` in MSYS2 command line to install required components
-* Open new Shell using mingw32.exe
-* Clone D2RMH source by type `git clone https://github.com/soarqin/D2RMH`
-* Type `cd D2RMH && cmake -Bbuild -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON`
-* Then `make -Cbuild` to get the compiled binary in `build/bin` folder
-* (Optional) You can strip symbols from generated binary by `strip build/bin/D2RMH.exe`
+* Install MSYS2(https://www.msys2.org), type `pacman -Syu --noconfirm && pacman -S --noconfirm --needed make git mingw-w64-i686-toolchain mingw-w64-i686-cmake mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake` in MSYS2 command line to install required components
+* Build D2RMH(64bit):
+  * Open new Shell using ucrt64.exe
+  * Clone D2RMH source by type `git clone https://github.com/soarqin/D2RMH`
+  * Type `cd D2RMH && cmake -Bbuild -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON`
+  * Then `make -Cbuild D2RMH` to get the compiled binary in `build/bin` folder
+* Build d2mapapi-piped(32bit):
+  * Open new Shell using mingw32.exe
+  * Change current directory to D2RMH source
+  * Type `cmake -Bbuild_d2mapapi -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON d2mapapi`
+  * Then `make -Cbuild_d2mapapi d2mapapi-piped` to get the compiled binary in `build_d2mapapi/bin` folder
 ### Microsoft Visual Studio 2019/2022
 * Install Visual Studio 2019 or 2022 Community Edition(or Pro/Ent if you have)
 * Unpack downloaded source code file, or you can use git to Clone D2RMH source by type: `git clone https://github.com/soarqin/D2RMH`. Note: Using git requires [Git for windows](https://git-scm.com/download/win) installed
-* (Visual Studio 2019) Type `cmake -Bbuild -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON`  
-  (Visual Studio 2022) Type `cmake -Bbuild -G "Visual Studio 17 2022" -A Win32 -DUSE_STATIC_CRT=ON`
-* Now you can either:
-    * Type `cmake --build build --config Release`
-    * Open generated `D2RMH.sln` and build
-* Compiled binaries are located in `build\bin` folder
+* Build D2RMH(64bit):
+  * (Visual Studio 2019) Type `cmake -Bbuild -G "Visual Studio 16 2019" -A x64 -DUSE_STATIC_CRT=ON`  
+    (Visual Studio 2022) Type `cmake -Bbuild -G "Visual Studio 17 2022" -A x64 -DUSE_STATIC_CRT=ON`
+  * Now you can either:
+    * Type `cmake --build build --config Release --target D2RMH`
+    * Open generated `build\D2RMH.sln` and build `D2RMH` target
+  * Compiled binaries are located in `build\bin` folder
+* Build d2mapapi-piped(32bit):
+  * (Visual Studio 2019) Type `cmake -Bbuild_d2mapapi -G "Visual Studio 16 2019" -A Win32 -DUSE_STATIC_CRT=ON d2mapapi`  
+    (Visual Studio 2022) Type `cmake -Bbuild_d2mapapi -G "Visual Studio 17 2022" -A Win32 -DUSE_STATIC_CRT=ON d2mapapi`
+  * Now you can either:
+    * Type `cmake --build build_d2mapapi --config Release --target d2mapapi_piped`
+    * Open generated `build_d2mapapi\d2mapapi.sln` and build `d2mapapi_piped` target
+  * Compiled binaries are located in `build_d2mapapi\bin` folder
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
@@ -53,6 +66,6 @@ Check [TODO](TODO.md)
 * [Handmade Math](https://github.com/HandmadeMath/Handmade-Math) for matrix calculations.
 * [glad](https://glad.dav1d.de) for loading OpenGL(Core)/WGL functions.
 * [inih](https://github.com/benhoyt/inih) for reading INI files.
-* [JSON for Modern C++](https://github.com/nlohmann/json) for reading JSON files.
+* [JSON for Modern C++](https://github.com/nlohmann/json) for processing JSON files.
 * [CascLib](https://github.com/ladislav-zezula/CascLib) for reading Casc Storage from Diablo II Resurrected.
 * [stb](https://github.com/nothings/stb), stb_truetype and stb_rect_pack are used.

@@ -93,5 +93,5 @@
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
-* [JSON for Modern C++](https://github.com/nlohmann/json) for reading JSON files.
+* [JSON for Modern C++](https://github.com/nlohmann/json) for processing JSON files.
 * [libuv](https://github.com/libuv/libuv) and [llhttp](https://github.com/nodejs/llhttp), for httpd server.
