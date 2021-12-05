@@ -19,6 +19,7 @@ struct Cfg {
     std::string language = "enUS";
 
     int fps = -1;
+    int renderDelay = 50; // in milliseconds
     int show = 0;
     uint32_t panelMask = 0xFF;
     int fullLine = 0;

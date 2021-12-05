@@ -47,3 +47,4 @@ Release
 
 # Build directory(ies)
 **/build/
+/src/version_generated

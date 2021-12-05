@@ -72,6 +72,7 @@ void loadCfg(const std::string &filename) {
         case 1:
             if (false) {}
             LOADVALN(fps, fps)
+            LOADVALN(render_delay, renderDelay)
             LOADVALN(show, show)
             LOADVALN(panel_mask, panelMask)
             LOADVALN(full_line, fullLine)

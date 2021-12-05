@@ -68,6 +68,9 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         renderer.begin();
         map.render();
         renderer.end();
+        if (cfg->renderDelay > 0) {
+            Sleep(cfg->renderDelay);
+        }
     }
     return 0;
 }
