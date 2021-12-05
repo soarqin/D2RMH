@@ -12,6 +12,7 @@
 #include "ttfgl.h"
 #include "d2rprocess.h"
 #include "data.h"
+#include "plugin.h"
 
 #include "HandmadeMath.h"
 
@@ -112,4 +113,6 @@ private:
     std::vector<std::wstring> panelText_;
 
     d2mapapi::PipedChildProcess &childProcess_;
+
+    Plugin plugin_;
 };

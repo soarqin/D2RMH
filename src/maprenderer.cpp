@@ -38,7 +38,8 @@ MapRenderer::MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &childP
     dynamicPipeline_(renderer),
     messagePipeline_(renderer),
     ttfgl_(renderer),
-    childProcess_(childProcess) {
+    childProcess_(childProcess),
+    plugin_(&d2rProcess_) {
     d2rProcess_.setWindowPosCallback([this](int left, int top, int right, int bottom) {
         d2rRect = {left, top, right, bottom};
         updateWindowPos();
@@ -62,6 +63,7 @@ void MapRenderer::update() {
         enabled_ = false;
         return;
     }
+    plugin_.run();
     const auto *currPlayer = d2rProcess_.currPlayer();
     if (!currPlayer || !currPlayer->seed || !currPlayer->levelId) {
         enabled_ = false;
@@ -743,6 +745,7 @@ void MapRenderer::loadFromCfg() {
     ttf_->setAltColor(13, 255, 255, 255, alpha);
     ttf_->setAltColor(14, 255, 255, 255, alpha);
     ttf_->setAltColor(15, 255, 255, 255, alpha);
+    plugin_.load();
 }
 
 d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {

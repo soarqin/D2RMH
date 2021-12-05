@@ -30,6 +30,7 @@ public:
         char name[16];
         uint8_t difficulty;
         bool levelChanged;
+        int32_t stats[16];
     };
     struct MapMonster {
         int x, y;
@@ -85,6 +86,8 @@ public:
 public:
     explicit D2RProcess(uint32_t searchInterval = 100);
 
+    void killProcess();
+
     void updateData();
     void setWindowPosCallback(const std::function<void(int, int, int, int)> &cb);
     void setProcessCloseCallback(const std::function<void(void*)> &cb) {
@@ -110,7 +113,8 @@ private:
     void searchForProcess(void *hwnd);
     void updateOffset();
     void readUnitHashTable(uint64_t addr, const std::function<void(const UnitAny&)> &callback);
-    void readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList&)> &callback);
+    void readStatList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList&)> &callback);
+    void readPlayerStats(const UnitAny &unit, const std::function<void(uint16_t, int32_t)> &callback);
     void readRoomUnits(const DrlgRoom1 &room1, std::unordered_set<uint64_t> &roomList);
     void readUnit(const UnitAny &unit);
     void readUnitPlayer(const UnitAny &unit);

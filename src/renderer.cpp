@@ -123,6 +123,7 @@ void Renderer::prepare() {
             if (ctx_->nextRenderTime < now) { ctx_->nextRenderTime = now + ctx_->renderInterval; }
             break;
         } while(true);
+        updateTime();
     }
 }
 void Renderer::begin() {

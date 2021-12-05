@@ -359,6 +359,10 @@ D2RProcess::D2RProcess(uint32_t searchInterval):
     loadFromCfg();
 }
 
+void D2RProcess::killProcess() {
+    TerminateProcess(HANDLE(currProcess_->handle), 0);
+}
+
 inline bool matchMem(size_t sz, const uint8_t* mem, const uint8_t* search, const uint8_t* mask) {
     for (size_t i = 0; i < sz; ++i) {
         uint8_t m = mask[i];
@@ -446,6 +450,13 @@ void D2RProcess::updateData() {
             player.act = act.actId;
             player.seed = act.seed;
             READ(act.miscPtr + 0x830, player.difficulty);
+            memset(player.stats, 0, sizeof(player.stats));
+            readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
+                if (statId > 15) {
+                    return;
+                }
+                player.stats[statId] = value;
+            });
             DynamicPath path;
             if (!READ(unit.pathPtr, path)) { return; }
             player.posX = path.posX;
@@ -466,6 +477,13 @@ void D2RProcess::updateData() {
         currProcess->focusedPlayer = unit.unitId;
         currPlayer = &player;
         READ(act.miscPtr + 0x830, player.difficulty);
+        memset(player.stats, 0, sizeof(player.stats));
+        readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
+            if (statId > 15) {
+                return;
+            }
+            player.stats[statId] = value;
+        });
         player.levelChanged = false;
         player.seed = act.seed;
         if (lastDifficulty != player.difficulty || lastSeed != act.seed) {
@@ -602,7 +620,7 @@ void D2RProcess::searchForProcess(void *hwnd) {
     }
     DWORD processId = 0;
     if (!GetWindowThreadProcessId((HWND)hwnd, &processId)) { return; }
-    HANDLE handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | SYNCHRONIZE, FALSE, processId);
+    HANDLE handle = OpenProcess(PROCESS_VM_READ | PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE, FALSE, processId);
     if (!handle) { return; }
     wchar_t fullpath[MAX_PATH];
     if (!GetProcessImageFileNameW(handle, fullpath, MAX_PATH)) { CloseHandle(handle); return; }
@@ -631,7 +649,6 @@ void D2RProcess::searchForProcess(void *hwnd) {
     procInfo.hook = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, nullptr, hookCb, processId, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     onSizeChange(HWND(procInfo.hwnd));
     updateOffset();
-    updateData();
 }
 
 void D2RProcess::updateOffset() {
@@ -684,18 +701,35 @@ void D2RProcess::readUnitHashTable(uint64_t addr, const std::function<void(const
         }
     }
 }
-void D2RProcess::readStateList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList &)> &callback) {
+
+void D2RProcess::readStatList(uint64_t addr, uint32_t unitId, const std::function<void(const StatList &)> &callback) {
     auto *currProcess = currProcess_;
     StatList stats;
     if (!READ(addr, stats)) { return; }
     do {
         /* check if this is owner stat or aura */
-        if (stats.ownerId == unitId) {
+        if (!unitId || stats.ownerId == unitId) {
             callback(stats);
         }
         if (!(stats.flag & 0x80000000u)) { break; }
         if (!stats.nextListEx || !READ(stats.nextListEx, stats)) { break; }
     } while (true);
+}
+
+void D2RProcess::readPlayerStats(const UnitAny &unit, const std::function<void(uint16_t, int32_t)> &callback) {
+    readStatList(unit.statListPtr, 0, [this, &callback](const StatList &stats) {
+        if (!(stats.flag & 0x80000000u)) { return; }
+        static StatEx statEx[256];
+        auto cnt = std::min(255u, uint32_t(stats.fullStat.statCount));
+        if (!readMemory64(currProcess_->handle, stats.fullStat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+        StatEx *st = statEx;
+        st[cnt].statId = 0xFFFF;
+        uint16_t statId;
+        for (; (statId = st->statId) != 0xFFFF; ++st) {
+            if (statId >= 16) { break; }
+            callback(statId, statId >= 6 && statId <= 11 ? (st->value >> 8) : st->value);
+        }
+    });
 }
 
 void D2RProcess::readRoomUnits(const DrlgRoom1 &room1, std::unordered_set<uint64_t> &roomList) {
@@ -711,8 +745,7 @@ void D2RProcess::readRoomUnits(const DrlgRoom1 &room1, std::unordered_set<uint64
         addr = unit.roomNextPtr;
     }
     auto count = std::min(64u, room1.roomsNear);
-    if (readMemory64(currProcess_->handle, room1.roomsNearListPtr, count * sizeof(uint64_t), roomsNear)) {
-        auto *currProcess = currProcess_;
+    if (readMemory64(currProcess->handle, room1.roomsNearListPtr, count * sizeof(uint64_t), roomsNear)) {
         for (auto i = 0u; i < count; ++i) {
             auto addr = roomsNear[i];
             if (roomList.find(addr) != roomList.end()) { continue; }
@@ -740,6 +773,7 @@ void D2RProcess::readUnit(const UnitAny &unit) {
         break;
     }
 }
+
 void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     auto *currProcess = currProcess_;
     if (unit.unitId == currProcess->focusedPlayer) { return; }
@@ -751,7 +785,15 @@ void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     player.levelChanged = false;
     player.act = act.actId;
     player.seed = act.seed;
+    memset(player.stats, 0, sizeof(player.stats));
     READ(act.miscPtr + 0x830, player.difficulty);
+    memset(player.stats, 0, sizeof(player.stats));
+    readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
+        if (statId > 15) {
+            return;
+        }
+        player.stats[statId] = value;
+    });
     DynamicPath path;
     if (!READ(unit.pathPtr, path)) { return; }
     player.posX = path.posX;
@@ -762,6 +804,7 @@ void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     if (!READ(room1.room2Ptr, room2)) { return; }
     if (!READ(room2.levelPtr + 0x1F8, player.levelId)) { return; }
 }
+
 void D2RProcess::readUnitMonster(const UnitAny &unit) {
     if (unit.mode == 0 || unit.mode == 12 || unit.txtFileNo >= gamedata->monsters.size()) { return; }
     auto *currProcess = currProcess_;
@@ -819,7 +862,7 @@ void D2RProcess::readUnitMonster(const UnitAny &unit) {
         mon.enchants[off] = 0;
         return;
     }
-    readStateList(unit.statListPtr, unit.unitId, [this, &off, &mon, hasAura, showMI](const StatList &stats) {
+    readStatList(unit.statListPtr, unit.unitId, [this, &off, &mon, hasAura, showMI](const StatList &stats) {
         if (stats.stateNo) {
             if (!hasAura) { return; }
             const wchar_t *str = auraStrings[stats.stateNo];
@@ -831,15 +874,14 @@ void D2RProcess::readUnitMonster(const UnitAny &unit) {
         if (!showMI) { return; }
         auto *currProcess = currProcess_;
         static StatEx statEx[64];
-        auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
-        if (!readMemory64(currProcess->handle, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+        auto cnt = std::min(64u, uint32_t(stats.baseStat.statCount));
+        if (!readMemory64(currProcess->handle, stats.baseStat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
         StatEx *st = statEx;
         for (; cnt; --cnt, ++st) {
-            if (st->value < 100) { continue; }
-            auto statId = st->stateId;
+            auto statId = st->statId;
             if (statId >= uint16_t(StatId::TotalCount)) { continue; }
             auto mapping = statsMapping[statId];
-            if (!mapping) { continue; }
+            if (!mapping || st->value < 100) { continue; }
             const wchar_t *str = immunityStrings[mapping];
             while (*str) {
                 mon.enchants[off++] = *str++;
@@ -897,15 +939,15 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
     /* the item is on the ground */
     uint32_t sockets = 0;
     if (item.itemFlags & 0x800u) {
-        readStateList(unit.statListPtr, unit.unitId, [this, &sockets](const StatList &stats) {
+        readStatList(unit.statListPtr, unit.unitId, [this, &sockets](const StatList &stats) {
             if (stats.stateNo) { return; }
             auto *currProcess = currProcess_;
             static StatEx statEx[64];
-            auto cnt = std::min(64u, uint32_t(stats.stat.statCount));
-            if (!readMemory64(currProcess->handle, stats.stat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
+            auto cnt = std::min(64u, uint32_t(stats.baseStat.statCount));
+            if (!readMemory64(currProcess->handle, stats.baseStat.statPtr, sizeof(StatEx) * cnt, statEx)) { return; }
             StatEx *st = statEx;
             for (; cnt; --cnt, ++st) {
-                if (st->stateId != uint16_t(StatId::ItemNumsockets)) { continue; }
+                if (st->statId != uint16_t(StatId::ItemNumsockets)) { continue; }
                 sockets = st->value;
                 break;
             }

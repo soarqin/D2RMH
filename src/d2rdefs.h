@@ -525,8 +525,15 @@ struct ItemData {
 
 struct StatEx {
     uint16_t param;
-    uint16_t stateId;
-    uint32_t value;
+    uint16_t statId;
+    int32_t value;
+};
+
+struct Stats {
+    /* StatEx *pStat */
+    uint64_t statPtr;
+    uint64_t statCount;
+    uint64_t statCapacity;
 };
 
 struct StatList {
@@ -541,17 +548,18 @@ struct StatList {
     uint32_t skillNo;
     uint32_t skillLevel;
     /* State sBaseStat */
-    struct {
-        /* StatEx *pStat */
-        uint64_t statPtr;
-        uint64_t statCount;
-        uint64_t statCapacity;
-        uint64_t unk2;
-    } stat;
+    Stats baseStat;
+    uint64_t unk1;
     uint64_t prevList;
     uint64_t nextList;
-    uint64_t prevListEx;
+    uint64_t prev;
     uint64_t nextListEx;
+    uint64_t next;
+    uint64_t unk2;
+    /* State sFullStat */
+    Stats fullStat;
+    /* State sModStat */
+    Stats modStat;
 };
 
 struct UnitInventory {
