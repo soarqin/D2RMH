@@ -97,7 +97,7 @@ void Renderer::setViewport(int x, int y, int w, int h) {
 }
 void Renderer::limitFPS(uint32_t fps) {
     if (fps) {
-        ctx_->renderInterval = std::chrono::nanoseconds (1000 * 1000 * 1000) / fps;
+        ctx_->renderInterval = std::chrono::nanoseconds(1000 * 1000 * 1000) / fps;
         ctx_->fpsLimit = true;
     } else {
         ctx_->fpsLimit = false;
@@ -116,6 +116,7 @@ void Renderer::prepare() {
             auto now = getCurrTime();
             if (ctx_->nextRenderTime > now) {
                 std::this_thread::sleep_for(ctx_->nextRenderTime - now);
+                updateTime();
                 continue;
             }
             ctx_->nextRenderTime += ctx_->renderInterval;

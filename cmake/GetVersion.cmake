@@ -53,7 +53,7 @@ macro(get_project_version VER_PROJ_NAME)
 
         # Save version to file (which will be used when Git is not available
         # or VERSION_UPDATE_FROM_GIT is disabled)
-        file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/version_generated ${${VER_PROJ_NAME}_VERSION_STRING}
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version_generated ${${VER_PROJ_NAME}_VERSION_STRING}
             "*" ${${VER_PROJ_NAME}_VERSION_MAJOR}
             "*" ${${VER_PROJ_NAME}_VERSION_MINOR}
             "*" ${${VER_PROJ_NAME}_VERSION_PATCH}
@@ -64,7 +64,7 @@ macro(get_project_version VER_PROJ_NAME)
     else()
 
         # Git not available, get version from file
-        file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/version_generated ${VER_PROJ_NAME}_VERSION_LIST)
+        file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/version_generated ${VER_PROJ_NAME}_VERSION_LIST)
         string(REPLACE "*" ";" ${VER_PROJ_NAME}_VERSION_LIST "${${VER_PROJ_NAME}_VERSION_LIST}")
         # Set partial versions
         list(GET ${VER_PROJ_NAME}_VERSION_LIST 0 ${VER_PROJ_NAME}_VERSION_STRING)
