@@ -1,5 +1,3 @@
-add_subdirectory(glad)
-
 include(GetVersion)
 
 file(GLOB D2RMH_SRC_FILES *.cpp *.h res.rc)
@@ -13,6 +11,5 @@ add_dependencies(D2RMH D2RMH_RES)
 if(TARGET d2mapapi_piped)
   add_dependencies(D2RMH d2mapapi_piped)
 endif()
-target_include_directories(D2RMH PRIVATE stb)
-target_link_libraries(D2RMH glad inih d2mapapi_pipehost dwmapi shlwapi comctl32 winmm)
+target_link_libraries(D2RMH glad stb inih sol3 d2mapapi_pipehost dwmapi shlwapi comctl32 winmm)
 set_target_properties(D2RMH PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
