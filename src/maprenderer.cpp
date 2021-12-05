@@ -491,7 +491,10 @@ void MapRenderer::updatePlayerPos() {
             currSession_->playerPosX = posX;
             currSession_->playerPosY = posY;
             framePipeline_.reset();
-            framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
+            framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, cfg->playerOuterColor);
+            framePipeline_.pushQuad(oxf + 2, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
+            framePipeline_.pushQuad(oxf - 2, oyf - 4, oxf + 2, oyf - 2, cfg->playerOuterColor);
+            framePipeline_.pushQuad(oxf - 2, oyf + 2, oxf + 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
             auto c = cfg->lineColor;
             for (auto [x, y]: currSession_->lines) {

@@ -304,6 +304,7 @@ enum {
     */
     InventoryPanelOffset = 0x09,
     CharacterPanelOffset = 0x0A,
+    SkillFloatSelOffset = 0x0B,
     SkillTreePanelOffset = 0x0C,
     ChatMenuOffset = 0x10,
     SystemMenuOffset = 0x11,
@@ -534,6 +535,7 @@ void D2RProcess::updateData() {
     if (mem[PartyPanelOffset]) { panelEnabled |= 0x20; }
     if (mem[MercenaryOffset]) { panelEnabled |= 0x40; }
     if (mem[WaypointPanelOffset]) { panelEnabled |= 0x80; }
+    if (mem[SkillFloatSelOffset]) { panelEnabled |= 0x100; }
     currProcess->panelEnabled = panelEnabled;
     currProcess->currPlayer = currPlayer;
 
@@ -781,7 +783,8 @@ void D2RProcess::readUnitMonster(const UnitAny &unit) {
     if (isNpc) {
         if (cfg->showNpcNames) {
             if (monData.mercNameId == uint16_t(-1) || monData.mercNameId >= gamedata->mercNames.size()) {
-                mon.name = std::get<2>(txtData);
+                /* show only npcs' name, hide summons' name */
+                if (isNpc == 1) { mon.name = std::get<2>(txtData); }
             } else {
                 mon.name = gamedata->mercNames[monData.mercNameId].second;
             }
