@@ -22,10 +22,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: CMake Configure and Build
         shell: cmd
-        run: "${{github.workspace}}\\build_${{matrix.compiler}}.bat"
+        working-directory: ${{github.workspace}}
+        run: "build_${{matrix.compiler}}.bat"
 
       - uses: actions/upload-artifact@v2
         with:

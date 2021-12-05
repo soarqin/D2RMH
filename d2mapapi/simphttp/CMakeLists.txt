@@ -4,7 +4,7 @@ project(simphttp)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-find_package(Git REQUIRED)
+find_package(Git QUIET REQUIRED)
 include(ExternalProject)
 find_package(LibUV QUIET)
 if(LIBUV_FOUND)
