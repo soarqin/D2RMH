@@ -1,5 +1,4 @@
 ### Scheduled
-* use child process mode to handle d2mapapi, to make main program 64bit
 * draw various objects in graphics
 * hotkeys
 

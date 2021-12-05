@@ -25,7 +25,7 @@ jobs:
 
       - name: CMake Configure and Build
         shell: cmd
-        run: "${{github.workspace}}\build_${{matrix.compiler}}.bat"
+        run: "${{github.workspace}}\\build_${{matrix.compiler}}.bat"
 
       - uses: actions/upload-artifact@v2
         with:
