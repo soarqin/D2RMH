@@ -1,7 +1,7 @@
 function chicken_life()
-    local stats = get_player_stats()
-    if stats then
-        if stats[7] < stats[8] * 0.3 then
+    local player = get_player()
+    if player and player.map ~= 1 and player.map ~= 40 and player.map ~= 75 and player.map ~= 103 and player.map ~= 109 then
+        if player.stats[7] < player.stats[8] * 0.3 then
             kill_process()
         end
     end

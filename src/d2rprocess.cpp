@@ -450,7 +450,7 @@ void D2RProcess::updateData() {
             player.act = act.actId;
             player.seed = act.seed;
             READ(act.miscPtr + 0x830, player.difficulty);
-            memset(player.stats, 0, sizeof(player.stats));
+            player.stats.fill(0);
             readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
                 if (statId > 15) {
                     return;
@@ -477,7 +477,7 @@ void D2RProcess::updateData() {
         currProcess->focusedPlayer = unit.unitId;
         currPlayer = &player;
         READ(act.miscPtr + 0x830, player.difficulty);
-        memset(player.stats, 0, sizeof(player.stats));
+        player.stats.fill(0);
         readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
             if (statId > 15) {
                 return;
@@ -785,9 +785,8 @@ void D2RProcess::readUnitPlayer(const UnitAny &unit) {
     player.levelChanged = false;
     player.act = act.actId;
     player.seed = act.seed;
-    memset(player.stats, 0, sizeof(player.stats));
     READ(act.miscPtr + 0x830, player.difficulty);
-    memset(player.stats, 0, sizeof(player.stats));
+    player.stats.fill(0);
     readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
         if (statId > 15) {
             return;

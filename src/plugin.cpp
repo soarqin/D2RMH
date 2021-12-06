@@ -91,16 +91,19 @@ void Plugin::run() {
 
 void Plugin::addCFunctions() {
     auto &lua = ctx_->lua;
-    lua["get_player_stats"] = [this](sol::this_state s)->sol::object {
-        sol::state_view lua(s);
-        auto *plr = d2rProcess_->currPlayer();
-        if (!plr) { return sol::make_object(lua, sol::lua_nil); }
-        auto tbl = lua.create_table();
-        int i = 1;
-        for (auto v: plr->stats) {
-            tbl[i++] = v;
-        }
-        return tbl;
+    lua.new_usertype<D2RProcess::MapPlayer>(
+        "player",
+        "act", &D2RProcess::MapPlayer::act,
+        "seed", &D2RProcess::MapPlayer::seed,
+        "difficulty", &D2RProcess::MapPlayer::difficulty,
+        "map", &D2RProcess::MapPlayer::levelId,
+        "pos_x", &D2RProcess::MapPlayer::posX,
+        "pos_y", &D2RProcess::MapPlayer::posY,
+        "name", &D2RProcess::MapPlayer::name,
+        "stats", &D2RProcess::MapPlayer::stats
+        );
+    lua["get_player"] = [this] {
+        return d2rProcess_->currPlayer();
     };
     lua["kill_process"] = [this] {
         d2rProcess_->killProcess();

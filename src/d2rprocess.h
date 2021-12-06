@@ -30,7 +30,7 @@ public:
         char name[16];
         uint8_t difficulty;
         bool levelChanged;
-        int32_t stats[16];
+        std::array<int32_t, 16> stats;
     };
     struct MapMonster {
         int x, y;
