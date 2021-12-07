@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <string>
 #include <vector>
+#include <array>
 #include <functional>
 #include <chrono>
 #include <cstdint>
