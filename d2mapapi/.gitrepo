@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:soarqin/d2mapapi_mod.git
 	branch = master
-	commit = ba3f21869983be35d6796146984beffb1361ac47
-	parent = a20ec7bcdf60f93cee86b38376f758c765497dbd
+	commit = 3b980ec550d206eb6b6a23aa7e17868c8c2a24ae
+	parent = 767ffa4915c58621786d1c438f5b8c44ca7b8a34
 	method = rebase
 	cmdver = 0.4.3
