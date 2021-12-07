@@ -9,6 +9,7 @@
 #include "plugin.h"
 
 #include "d2rprocess.h"
+#include "maprenderer.h"
 #include "util.h"
 
 #include <sol/sol.hpp>
@@ -27,7 +28,8 @@ struct PluginCtx {
     std::priority_queue<FuncPair, std::vector<FuncPair>, std::greater<>> timedRunning;
 };
 
-Plugin::Plugin(D2RProcess *process): ctx_(new PluginCtx), d2rProcess_(process) {
+Plugin::Plugin(D2RProcess *process, MapRenderer *renderer):
+    ctx_(new PluginCtx), d2rProcess_(process), mapRenderer_(renderer) {
 }
 
 Plugin::~Plugin() {
@@ -107,5 +109,18 @@ void Plugin::addCFunctions() {
     };
     lua["kill_process"] = [this] {
         d2rProcess_->killProcess();
+    };
+    auto table = lua.create_table("text");
+    table["clear"] = [this] {
+        mapRenderer_->clearText();
+    };
+    table["config"] = [this](float x, float y, int a) {
+        mapRenderer_->configText(x, y, a);
+    };
+    table["add"] = [this](const char *txt, uint32_t duration, int fontSize) {
+        mapRenderer_->addText(utf8toucs4(txt), duration, false, fontSize);
+    };
+    table["add_with_stack"] = [this](const char *txt, uint32_t duration, int fontSize) {
+        mapRenderer_->addText(utf8toucs4(txt), duration, true, fontSize);
     };
 }

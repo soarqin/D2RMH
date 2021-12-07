@@ -10,10 +10,11 @@
 
 struct PluginCtx;
 class D2RProcess;
+class MapRenderer;
 
 class Plugin final {
 public:
-    Plugin(D2RProcess *process);
+    Plugin(D2RProcess *process, MapRenderer *renderer);
     ~Plugin();
     void load();
     void run();
@@ -24,4 +25,5 @@ private:
 private:
     PluginCtx *ctx_;
     D2RProcess *d2rProcess_;
+    MapRenderer *mapRenderer_;
 };

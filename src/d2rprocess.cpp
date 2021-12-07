@@ -382,6 +382,35 @@ inline size_t searchMem(const uint8_t *mem, size_t sz, const uint8_t* search, co
     return size_t(-1);
 }
 
+static std::function<void(int, int, int, int)> sizeCallback;
+
+void onSizeChange(HWND hwnd) {
+    if (!sizeCallback) { return; }
+    RECT rc;
+    if (GetClientRect(hwnd, &rc)) {
+        /* check WS_CAPTION for windowed mode */
+        if (GetWindowLong(hwnd, GWL_STYLE) & WS_CAPTION) {
+            POINT pt = {rc.left, rc.top};
+            if (ClientToScreen(hwnd, &pt)) {
+                rc.left = pt.x;
+                rc.top = pt.y;
+            }
+            pt = {rc.right, rc.bottom};
+            if (ClientToScreen(hwnd, &pt)) {
+                rc.right = pt.x;
+                rc.bottom = pt.y;
+            }
+        }
+    } else {
+        HMONITOR hm = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi;
+        mi.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfo(hm, &mi);
+        rc = mi.rcWork;
+    }
+    sizeCallback(rc.left, rc.top, rc.right, rc.bottom);
+}
+
 void D2RProcess::updateData() {
     auto foregroundWnd = GetForegroundWindow();
     if (!currProcess_ || foregroundWnd != currProcess_->hwnd) {
@@ -401,6 +430,9 @@ void D2RProcess::updateData() {
         if (now >= nextSearchTime_) {
             searchForProcess(foregroundWnd);
             nextSearchTime_ = now + searchInterval_;
+            if (currProcess_ && currProcess_->hwnd) {
+                onSizeChange(HWND(currProcess_->hwnd));
+            }
         }
     }
     if (!currProcess_) {
@@ -574,30 +606,6 @@ void D2RProcess::updateData() {
     }
 }
 
-static std::function<void(int, int, int, int)> sizeCallback;
-
-void onSizeChange(HWND hwnd) {
-    if (!sizeCallback) { return; }
-    RECT rc;
-    if (GetClientRect(hwnd, &rc)) {
-        POINT pt = {rc.left, rc.top};
-        ClientToScreen(hwnd, &pt);
-        rc.left = pt.x;
-        rc.top = pt.y;
-        pt = {rc.right, rc.bottom};
-        ClientToScreen(hwnd, &pt);
-        rc.right = pt.x;
-        rc.bottom = pt.y;
-    } else {
-        HMONITOR hm = MonitorFromPoint(POINT{1, 1}, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO mi;
-        mi.cbSize = sizeof(MONITORINFO);
-        GetMonitorInfo(hm, &mi);
-        rc = mi.rcWork;
-    }
-    sizeCallback(rc.left, rc.top, rc.right, rc.bottom);
-}
-
 void D2RProcess::setWindowPosCallback(const std::function<void(int, int, int, int)> &cb) {
     sizeCallback = cb;
     if (currProcess_) {
@@ -615,7 +623,6 @@ void D2RProcess::searchForProcess(void *hwnd) {
     auto ite = processes_.find(hwnd);
     if (ite != processes_.end()) {
         currProcess_ = &ite->second;
-        onSizeChange(HWND(currProcess_->hwnd));
         return;
     }
     DWORD processId = 0;
