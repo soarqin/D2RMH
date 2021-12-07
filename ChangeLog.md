@@ -1,4 +1,11 @@
-# next release
+# v0.9.1
+* finished basic lua plugin support, with plugins: chicken_life and town_portal_check
+* add skill selection popup(0x100) to panel masks
+* fix the bug that `fps` not working while set to positive value
+* fix wrong size fetched on fullscreen mode for multiple monitors
+* fix nearby map exits detection
+
+# v0.9.0 prerelease
 * new transparency mechanism, now you can set each color with alpha channel, and are stack with global `alpha` setting
 * separate d2mapapi out as a standalone project, and re-add by git-subrepo, with lots of tweaks
 * D2RMH main program can be built in 64bit now, while using `d2mapapi_piped` as a child process for querying map data
