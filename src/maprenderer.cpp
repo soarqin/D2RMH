@@ -218,8 +218,8 @@ void MapRenderer::update() {
                         }
                     } else {
                         /* draw left edge */
-                        if (hasEdge && x > 0) {
-                            *ptr++ = edgeColor;
+                        if (hasEdge) {
+                            *ptr++ = x > 0 ? edgeColor : walkableColor_;
                             z -= 2;
                         }
                         /* if only 1 dot block, skip this */
@@ -230,8 +230,8 @@ void MapRenderer::update() {
                                 *ptr++ = drawEdge && *(ptr - width) == 0 ? edgeColor : walkableColor_;
                             }
                             /* draw right edge */
-                            if (hasEdge && x < mw) {
-                                *ptr = edgeColor;
+                            if (hasEdge) {
+                                *ptr = x + v < mw ? edgeColor : walkableColor_;
                             }
                         }
                     }
