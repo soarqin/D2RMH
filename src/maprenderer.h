@@ -68,9 +68,8 @@ public:
     void render();
     void reloadConfig();
 
-    void configText(float x, float y, int align);
-    void addText(const std::wstring &str, uint32_t duration, bool stackCount = false, int fontSize = 0);
-    void clearText();
+    PluginTextList &getPluginText(const std::string &key);
+    void removePluginText(const std::string &key);
 
 private:
     void updateWindowPos();
@@ -119,7 +118,5 @@ private:
     d2mapapi::PipedChildProcess &childProcess_;
 
     Plugin plugin_;
-    float pluginTextPosX_ = .0f,  pluginTextPosY_ = .0f;
-    int pluginTextAlign_ = 0, pluginTextSize_ = 0;
-    std::vector<std::tuple<std::wstring, std::vector<std::chrono::steady_clock::time_point>, int>> pluginTextToDraw_;
+    std::map<std::string, PluginTextList> pluginTextMap_;
 };

@@ -381,7 +381,7 @@ void MapRenderer::render() {
     textToDraw_.clear();
     msgToDraw_.clear();
     updatePanelText();
-    if (!panelText_.empty() || !pluginTextToDraw_.empty()) {
+    if (!panelText_.empty() || !pluginTextMap_.empty()) {
         int vw, vh;
         renderer_.getDimension(vw, vh);
         if (!panelText_.empty()) {
@@ -406,44 +406,33 @@ void MapRenderer::render() {
                 cy = cy + fontSize2 + 2;
             }
         }
-        if (!pluginTextToDraw_.empty()) {
-            auto cx = float(vw) * pluginTextPosX_;
-            auto cy = float(vh) * pluginTextPosY_;
-            auto align = pluginTextAlign_;
+        for (auto &[key, ptext]: pluginTextMap_) {
+            auto cx = float(vw) * (ptext.x - 0.5f);
+            auto cy = float(vh) * (ptext.y - 0.5f);
+            auto align = ptext.align;
             auto fontSize2 = cfg->msgFontSize;
             auto now = getCurrTime();
-            for (auto ite = pluginTextToDraw_.begin(); ite != pluginTextToDraw_.end();) {
-                auto &vec = std::get<1>(*ite);
-                while (!vec.empty() && now >= vec.front()) { vec.erase(vec.begin()); }
-                if (vec.empty()) { ite = pluginTextToDraw_.erase(ite); continue; }
-                auto fsize = std::get<2>(*ite);
-                const auto &s = std::get<0>(*ite);
-                auto cnt = uint32_t(vec.size());
+            for (auto ite = ptext.textList.begin(); ite != ptext.textList.end();) {
+                if (now >= ite->timeout) { ptext.textList.erase(ite); continue; }
+                const auto &s = ite->text;
+                auto fsize = ite->fontSize;
                 if (!fsize) fsize = fontSize2;
-                float nx, cntx;
+                float nx;
                 float sw;
                 switch (align) {
                 case 1:
                     sw = float(ttf_->stringWidth(s, fsize));
                     nx = cx - sw * .5f;
-                    if (cnt > 1) { cntx = nx + sw; }
                     break;
                 case 2:
                     sw = float(ttf_->stringWidth(s, fsize));
                     nx = cx - sw;
-                    if (cnt > 1) { cntx = cx; }
                     break;
                 default:
                     nx = cx;
-                    if (cnt > 1) { cntx = cx + float(ttf_->stringWidth(s, fsize)); }
                     break;
                 }
                 ttf_->render(s, nx, cy, false, fsize, 0);
-                if (cnt > 1) {
-                    wchar_t n[16];
-                    wsprintfW(n, L" x%u", cnt);
-                    ttf_->render(std::wstring_view(n), cntx, cy, false, fsize, 0);
-                }
                 cy = cy + fsize + 2;
                 ++ite;
             }
@@ -520,35 +509,12 @@ void MapRenderer::reloadConfig() {
     d2rProcess_.reloadConfig();
 }
 
-void MapRenderer::configText(float x, float y, int align) {
-    pluginTextPosX_ = x - .5f;
-    pluginTextPosY_ = y - .5f;
-    pluginTextAlign_ = align;
+PluginTextList &MapRenderer::getPluginText(const std::string &key) {
+    return pluginTextMap_[key];
 }
 
-void MapRenderer::addText(const std::wstring &str, uint32_t duration, bool stackCount, int fontSize) {
-    for (auto &p: pluginTextToDraw_) {
-        if (std::get<0>(p) == str) {
-            auto dur = getCurrTime() + std::chrono::milliseconds(duration);
-            if (stackCount) {
-                std::get<1>(p).emplace_back(dur);
-            } else {
-                auto &vec = std::get<1>(p);
-                if (vec.empty()) {
-                    std::get<1>(p).emplace_back(dur);
-                }
-                else if (vec.back() < dur) {
-                    vec.back() = dur;
-                }
-            }
-            return;
-        }
-    }
-    pluginTextToDraw_.emplace_back(str, std::vector<std::chrono::steady_clock::time_point> { getCurrTime() + std::chrono::milliseconds(duration) }, fontSize);
-}
-
-void MapRenderer::clearText() {
-    pluginTextToDraw_.clear();
+void MapRenderer::removePluginText(const std::string &key) {
+    pluginTextMap_.erase(key);
 }
 
 void MapRenderer::updatePlayerPos() {

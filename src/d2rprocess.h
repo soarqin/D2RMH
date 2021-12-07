@@ -19,6 +19,7 @@
 struct UnitAny;
 struct DrlgRoom1;
 struct StatList;
+struct Skill;
 
 class D2RProcess final {
 public:
@@ -31,6 +32,7 @@ public:
         uint8_t difficulty;
         bool levelChanged;
         std::array<int32_t, 16> stats;
+        uint64_t skillPtr;
     };
     struct MapMonster {
         int x, y;
@@ -108,6 +110,9 @@ public:
     [[nodiscard]] inline const std::vector<MapItem> &items() const { return currProcess_->mapItems; }
 
     void reloadConfig() { loadFromCfg(); currProcess_ = nullptr; }
+
+    /* functions for plugins */
+    Skill *getSkill(uint16_t id);
 
 private:
     void searchForProcess(void *hwnd);

@@ -8,6 +8,7 @@
 
 #include "plugin.h"
 
+#include "d2rdefs.h"
 #include "d2rprocess.h"
 #include "maprenderer.h"
 #include "util.h"
@@ -20,6 +21,10 @@
 #include <vector>
 #include <queue>
 #include <cstdint>
+
+void PluginTextList::add(const char *text, uint32_t timeout, int fontSize) {
+    textList.emplace_back(PluginText {utf8toucs4(text), getCurrTime() + std::chrono::milliseconds(timeout), fontSize});
+}
 
 struct PluginCtx {
     sol::state lua;
@@ -93,6 +98,19 @@ void Plugin::run() {
 
 void Plugin::addCFunctions() {
     auto &lua = ctx_->lua;
+    lua.new_usertype<Skill>(
+        "skill",
+        "level", &Skill::skillLevel,
+        "quantity", &Skill::quantity
+    );
+    lua.new_usertype<PluginTextList>(
+        "text_list",
+        "x", &PluginTextList::x,
+        "y", &PluginTextList::y,
+        "align", &PluginTextList::align,
+        "add", &PluginTextList::add,
+        "clear", &PluginTextList::clear
+    );
     lua.new_usertype<D2RProcess::MapPlayer>(
         "player",
         "act", &D2RProcess::MapPlayer::act,
@@ -107,20 +125,18 @@ void Plugin::addCFunctions() {
     lua["get_player"] = [this] {
         return d2rProcess_->currPlayer();
     };
+    lua["get_skill"] = [this](uint16_t id) {
+        return d2rProcess_->getSkill(id);
+    };
     lua["kill_process"] = [this] {
         d2rProcess_->killProcess();
     };
-    auto table = lua.create_table("text");
-    table["clear"] = [this] {
-        mapRenderer_->clearText();
+    lua["create_text_list"] = [this](const std::string &str) {
+        auto &res = mapRenderer_->getPluginText(str);
+        res.textList.clear();
+        return &res;
     };
-    table["config"] = [this](float x, float y, int a) {
-        mapRenderer_->configText(x, y, a);
-    };
-    table["add"] = [this](const char *txt, uint32_t duration, int fontSize) {
-        mapRenderer_->addText(utf8toucs4(txt), duration, false, fontSize);
-    };
-    table["add_with_stack"] = [this](const char *txt, uint32_t duration, int fontSize) {
-        mapRenderer_->addText(utf8toucs4(txt), duration, true, fontSize);
+    lua["remove_text_list"] = [this](const std::string &str) {
+        mapRenderer_->removePluginText(str);
     };
 }

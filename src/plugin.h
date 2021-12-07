@@ -8,9 +8,26 @@
 
 #pragma once
 
+#include <chrono>
+#include <vector>
+#include <string>
+
 struct PluginCtx;
 class D2RProcess;
 class MapRenderer;
+
+struct PluginText {
+    std::wstring text;
+    std::chrono::steady_clock::time_point timeout;
+    int fontSize;
+};
+struct PluginTextList {
+    float x, y;
+    int align;
+    std::vector<PluginText> textList;
+    void add(const char *text, uint32_t timeout, int fontSize);
+    void clear() { textList.clear(); }
+};
 
 class Plugin final {
 public:

@@ -562,6 +562,29 @@ struct StatList {
     Stats modStat;
 };
 
+struct Skill {
+    uint64_t skillTxtPtr;
+    uint64_t nextSkillPtr;
+    uint32_t mode;
+    uint32_t flag0;
+    uint32_t unk0[2];
+    uint32_t tagets;
+    uint32_t targetType;
+    uint32_t targetId;
+    uint64_t unk1;
+    uint32_t skillLevel;
+    uint32_t levelBonus;
+    uint32_t quantity;
+    uint32_t flags;
+};
+
+struct SkillInfo {
+    uint64_t firstSkillPtr;
+    uint64_t leftSkillPtr;
+    uint64_t rightSkillPtr;
+    uint64_t currSkillPtr;
+};
+
 struct UnitInventory {
     uint32_t magic;
     uint32_t unk0;
@@ -622,7 +645,9 @@ struct UnitAny {
     uint64_t statListPtr;
     /* 0x90 UnitInventory *pInventory */
     uint64_t inventoryPtr;
-    uint64_t unk5[23];
+    uint64_t unk5[13];
+    uint64_t skillPtr;
+    uint64_t unk6[9];
     uint64_t nextPtr;
     uint64_t roomNextPtr;
 };

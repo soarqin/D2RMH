@@ -476,6 +476,7 @@ void D2RProcess::updateData() {
             DrlgAct act;
             if (!READ(unit.actPtr, act)) { return; }
             auto &player = currProcess->mapPlayers[unit.unitId];
+            player.skillPtr = unit.skillPtr;
             player.name[0] = 0;
             READ(unit.unionPtr, player.name);
             player.levelChanged = false;
@@ -504,6 +505,7 @@ void D2RProcess::updateData() {
         DrlgAct act;
         if (!READ(unit.actPtr, act)) { return; }
         auto &player = currProcess->mapPlayers[unit.unitId];
+        player.skillPtr = unit.skillPtr;
         player.name[0] = 0;
         READ(unit.unionPtr, player.name);
         currProcess->focusedPlayer = unit.unitId;
@@ -1053,4 +1055,21 @@ void D2RProcess::ProcessData::resetData() {
     mapMonsters.clear();
     mapObjects.clear();
     mapItems.clear();
+}
+
+Skill *D2RProcess::getSkill(uint16_t id) {
+    auto *currProcess = currProcess_;
+    if (!currProcess || !currProcess->currPlayer) { return nullptr; }
+    SkillInfo si;
+    if (READ(currProcess->currPlayer->skillPtr, si)) {
+        static Skill sk;
+        uint64_t ptr = si.firstSkillPtr;
+        while (ptr && READ(ptr, sk)) {
+            uint16_t skillId;
+            READ(sk.skillTxtPtr, skillId);
+            if (skillId == id) { return &sk; }
+            ptr = sk.nextSkillPtr;
+        }
+    }
+    return nullptr;
 }
