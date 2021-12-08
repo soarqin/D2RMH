@@ -1,4 +1,4 @@
-**README in other languages: [English](../README.md)**
+**README in other languages: [English](../../README.md)**
 
 # D2RMH
 Diablo II Resurrected 开图工具
@@ -8,7 +8,7 @@ Diablo II Resurrected 开图工具
 但并不保证完全不会被封号，使用中出现任何问题概不负责。**  
 
 # 版本更新
-请看 [ChangeLog](../doc/ChangeLog.md)
+请看 [ChangeLog](../../doc/ChangeLog.md)
 
 # 需求依赖
 * 本工具需要暗黑2 1.13c版本，你可以由此[HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)下载最精简版的1.13c
@@ -20,10 +20,10 @@ Diablo II Resurrected 开图工具
 
 # 插件系统
 * 插件加载自 `plugins` 目录里的所有 `.lua` 文件
-* 如果想自己写插件请阅读 [文档](../doc/Plugin.md)
+* 如果想自己写插件请阅读 [文档](../../doc/Plugin.md)
 
 # TODO
-请看 [TODO](../doc/TODO.md)
+请看 [TODO](../../doc/TODO.md)
 
 # 如何编译
 ## 快速指引

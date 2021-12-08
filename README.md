@@ -1,4 +1,4 @@
-**README in other languages: [中文说明](contrib/README_CN.md)**
+**README in other languages: [中文说明](contrib/zhCN/README.md)**
 
 # D2RMH
 Diablo II Resurrected map revealing tool.
