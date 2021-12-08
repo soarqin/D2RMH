@@ -55,6 +55,7 @@ Plugin::Plugin(D2RProcess *process, MapRenderer *renderer):
 }
 
 Plugin::~Plugin() {
+    mapRenderer_->getRenderer().owner()->clearHotkeys();
     delete ctx_;
 }
 
