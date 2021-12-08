@@ -60,12 +60,14 @@ MapRenderer::MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &childP
 void MapRenderer::update() {
     d2rProcess_.updateData();
     if (!d2rProcess_.available()) {
+        renderer_.owner()->enableHotkeys(false);
         enabled_ = false;
         return;
     }
     plugin_.run();
     const auto *currPlayer = d2rProcess_.currPlayer();
     if (!currPlayer || !currPlayer->seed || !currPlayer->levelId) {
+        renderer_.owner()->enableHotkeys(false);
         enabled_ = false;
         return;
     }
@@ -98,12 +100,16 @@ void MapRenderer::update() {
         nextPanelUpdateTime_ = getCurrTime();
         switched = true;
     }
-    if (currSession_->currSeed != currPlayer->seed || currSession_->currDifficulty != currPlayer->difficulty) {
+    if (currSession_->currSeed != currPlayer->seed) {
+        plugin_.onEnterGame();
+        currSession_->currSeed = currPlayer->seed;
+        currSession_->mapStartTime = getCurrTime();
+        changed = true;
+    }
+    if (changed || currSession_->currDifficulty != currPlayer->difficulty) {
         currSession_->maps.clear();
         currSession_->currMap = nullptr;
-        currSession_->currSeed = currPlayer->seed;
         currSession_->currDifficulty = currPlayer->difficulty;
-        currSession_->mapStartTime = getCurrTime();
         changed = true;
     }
     if (!enabled_) {
@@ -111,6 +117,10 @@ void MapRenderer::update() {
     }
     if (uint32_t levelId = currPlayer->levelId; levelId != currSession_->currLevelId) {
         currSession_->currLevelId = levelId;
+        changed = true;
+    }
+    if (forceFlush_) {
+        forceFlush_ = false;
         changed = true;
     }
     if (changed) {
@@ -326,9 +336,12 @@ void MapRenderer::update() {
             }
         }
         squadPip.render();
+        renderer_.owner()->enableHotkeys(true);
         enabled_ = true;
     } else {
-        enabled_ = currSession_->currMap != nullptr;
+        auto on = currSession_->currMap != nullptr;
+        renderer_.owner()->enableHotkeys(on);
+        enabled_ = on;
     }
     if (switched || changed) {
         if (auto *currMap = currSession_->currMap) {
@@ -410,6 +423,7 @@ void MapRenderer::render() {
             auto cx = float(vw) * (ptext.x - 0.5f);
             auto cy = float(vh) * (ptext.y - 0.5f);
             auto align = ptext.align;
+            auto valign = ptext.valign;
             auto fontSize2 = cfg->msgFontSize;
             auto now = getCurrTime();
             for (auto ite = ptext.textList.begin(); ite != ptext.textList.end();) {
@@ -432,12 +446,25 @@ void MapRenderer::render() {
                     nx = cx;
                     break;
                 }
+                if (valign) {
+                    cy = cy - fsize + 2;
+                }
                 ttf_->render(s, nx, cy, false, fsize, 0);
-                cy = cy + fsize + 2;
+                if (!valign) {
+                    cy = cy + fsize + 2;
+                }
                 ++ite;
             }
         }
     }
+}
+
+PluginTextList &MapRenderer::getPluginText(const std::string &key) {
+    return pluginTextMap_[key];
+}
+
+void MapRenderer::removePluginText(const std::string &key) {
+    pluginTextMap_.erase(key);
 }
 
 void MapRenderer::updateWindowPos() {
@@ -504,17 +531,10 @@ void MapRenderer::updateWindowPos() {
     messagePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
     updatePlayerPos();
 }
+
 void MapRenderer::reloadConfig() {
     loadFromCfg();
     d2rProcess_.reloadConfig();
-}
-
-PluginTextList &MapRenderer::getPluginText(const std::string &key) {
-    return pluginTextMap_[key];
-}
-
-void MapRenderer::removePluginText(const std::string &key) {
-    pluginTextMap_.erase(key);
 }
 
 void MapRenderer::updatePlayerPos() {

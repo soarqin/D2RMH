@@ -47,7 +47,7 @@ enum LNG {
     LNG_MAX,
 };
 
-class MapRenderer {
+class MapRenderer final {
     struct SessionInfo {
         Texture mapTex;
         uint32_t currSeed = uint32_t(-1);
@@ -64,9 +64,16 @@ class MapRenderer {
     };
 public:
     MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &);
+    inline Renderer &getRenderer() { return renderer_; }
     void update();
     void render();
     void reloadConfig();
+
+    void forceFlush() {
+        forceFlush_ = true;
+        currSession_->playerPosX = 0;
+        currSession_->playerPosY = 0;
+    }
 
     PluginTextList &getPluginText(const std::string &key);
     void removePluginText(const std::string &key);
@@ -117,6 +124,7 @@ private:
 
     d2mapapi::PipedChildProcess &childProcess_;
 
+    bool forceFlush_ = false;
     Plugin plugin_;
     std::map<std::string, PluginTextList> pluginTextMap_;
 };

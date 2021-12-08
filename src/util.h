@@ -12,7 +12,13 @@
 #include <vector>
 #include <chrono>
 
+/* String functions */
 std::wstring utf8toucs4(const std::string &s);
 std::vector<std::string> splitString(const std::string &str, char c);
+
+/* Time series functions */
 void updateTime();
 std::chrono::steady_clock::time_point getCurrTime();
+
+/* Hotkey functions */
+uint32_t mapStringToVKey(const std::string &name, uint32_t &mods);

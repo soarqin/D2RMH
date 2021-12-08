@@ -14,12 +14,15 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "window.h"
 
+#include "util.h"
+
 #include <windows.h>
 #include <versionhelpers.h>
 #include <dwmapi.h>
 #include <commctrl.h>
 #include <stdexcept>
 #include <map>
+#include <tuple>
 #include <string>
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -49,6 +52,9 @@ struct WindowCtx {
         const wchar_t *icon = nullptr;
         std::wstring tip, info, infoTitle;
     } trayMenuBase;
+
+    std::map<int, std::tuple<UINT, UINT, std::function<void()>>> hotkeys;
+    bool hotkeysEnabled = false;
 };
 
 static bool updateFramebufferTransparency(HWND hwnd) {
@@ -133,6 +139,16 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         updateFramebufferTransparency(ctx->hwnd);
         return 0;
     }
+    case WM_HOTKEY: {
+        auto id = int(wParam);
+        if (id < 0) { break; }
+        auto *ctx = ((Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->ctx();
+        auto ite = ctx->hotkeys.find(id);
+        if (ite == ctx->hotkeys.end()) { break; }
+        const auto &func = std::get<2>(ite->second);
+        if (func) { func(); }
+        return 0;
+    }
     default:
         if (uMsg == taskbarRestartMsg) {
             auto *win = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
@@ -189,6 +205,7 @@ Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
 }
 
 Window::~Window() {
+    clearHotkeys();
     if (IsWindow(ctx_->hwnd)) {
         DestroyWindow(ctx_->hwnd);
     }
@@ -398,14 +415,51 @@ void Window::move(int x, int y, int w, int h) {
 }
 
 void Window::reloadConfig() {
+    clearHotkeys();
     SetLayeredWindowAttributes(ctx_->hwnd, 0, 0, 0);
     updateFramebufferTransparency(ctx_->hwnd);
 }
 
-void *Window::hwnd() {
-    return (void*)ctx_->hwnd;
+void Window::enableHotkeys(bool enable) {
+    if (enable == ctx_->hotkeysEnabled) { return; }
+    ctx_->hotkeysEnabled = enable;
+    if (enable) {
+        for (auto &p: ctx_->hotkeys) {
+            RegisterHotKey(ctx_->hwnd, p.first, std::get<0>(p.second) | MOD_NOREPEAT, std::get<1>(p.second));
+        }
+    } else {
+        for (auto &p: ctx_->hotkeys) {
+            UnregisterHotKey(ctx_->hwnd, p.first);
+        }
+    }
+}
+
+void Window::registerHotkey(const std::string &name, const std::function<void()> &cb) {
+    if (!cb) { return; }
+    UINT mods;
+    UINT vkey = mapStringToVKey(name, mods);
+    if (!vkey) { return; }
+    for (int nid = 1; nid < 0xC000; ++nid) {
+        if (ctx_->hotkeys.find(nid) != ctx_->hotkeys.end()) { continue; }
+        ctx_->hotkeys[nid] = std::make_tuple(mods, vkey, cb);
+        if (ctx_->hotkeysEnabled) {
+            RegisterHotKey(ctx_->hwnd, nid, mods | MOD_NOREPEAT, vkey);
+        }
+        break;
+    }
+}
+
+void Window::clearHotkeys() {
+    for (auto &p: ctx_->hotkeys) {
+        UnregisterHotKey(ctx_->hwnd, p.first);
+    }
+    ctx_->hotkeys.clear();
 }
 
 void Window::setSizeCallback(const std::function<void(int, int)> &cb) {
     ctx_->sizeCB = cb;
+}
+
+void *Window::hwnd() {
+    return (void*)ctx_->hwnd;
 }

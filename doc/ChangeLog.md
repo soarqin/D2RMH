@@ -1,3 +1,8 @@
+# v0.9.2
+* add hotkey functions to plugin system
+* chicken_life plugin: disable it by default and toggle by hotkey `Ctrl+/`
+* add a hotkey plugin: `-`/`+`/`\` to do zoom-out/zoom-in/map-show-toggle
+
 # v0.9.1
 * finished basic lua plugin support, with plugins: chicken_life and town_portal_check
 * add skill selection popup(0x100) to panel masks

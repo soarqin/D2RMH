@@ -11,6 +11,8 @@
 #include "d2rdefs.h"
 #include "d2rprocess.h"
 #include "maprenderer.h"
+#include "window.h"
+#include "cfg.h"
 #include "util.h"
 
 #include <sol/sol.hpp>
@@ -20,15 +22,30 @@
 #include <chrono>
 #include <vector>
 #include <queue>
+#include <tuple>
 #include <cstdint>
 
 void PluginTextList::add(const char *text, uint32_t timeout, int fontSize) {
-    textList.emplace_back(PluginText {utf8toucs4(text), getCurrTime() + std::chrono::milliseconds(timeout), fontSize});
+    auto wstr = utf8toucs4(text);
+    for (auto ite = textList.begin(); ite != textList.end(); ++ite) {
+        auto tout = getCurrTime() + std::chrono::milliseconds(timeout);
+        if (ite->text == wstr && (fontSize < 0 || ite->fontSize == fontSize)) {
+            if (fontSize < 0 && ite + 1 != textList.end()) {
+                auto fsize = ite->fontSize;
+                textList.erase(ite);
+                textList.emplace_back(PluginText { wstr, tout, fsize });
+            } else {
+                ite->timeout = tout;
+            }
+            return;
+        }
+    }
+    textList.emplace_back(PluginText {wstr, getCurrTime() + std::chrono::milliseconds(timeout), fontSize < 0 ? 0 : fontSize});
 }
 
 struct PluginCtx {
     sol::state lua;
-    std::vector<std::pair<std::chrono::milliseconds, sol::function>> plugins;
+    std::vector<std::tuple<std::chrono::milliseconds, sol::function, sol::function, bool>> plugins;
     using FuncPair = std::pair<std::chrono::steady_clock::time_point, size_t>;
     std::priority_queue<FuncPair, std::vector<FuncPair>, std::greater<>> timedRunning;
 };
@@ -42,14 +59,10 @@ Plugin::~Plugin() {
 }
 
 void Plugin::load() {
+    mapRenderer_->getRenderer().owner()->clearHotkeys();
     ctx_->lua = sol::state();
     ctx_->lua.open_libraries();
-    ctx_->lua["register_plugin"] = [this](uint32_t interval, const sol::function &func) {
-        auto index = ctx_->plugins.size();
-        auto dur = std::chrono::milliseconds(interval);
-        ctx_->plugins.emplace_back(dur, func);
-        ctx_->timedRunning.push(std::make_pair(getCurrTime() + dur, index));
-    };
+
     addCFunctions();
     WIN32_FIND_DATAW ffd = {};
     HANDLE find = FindFirstFileW(L"plugins\\*.lua", &ffd);
@@ -85,34 +98,51 @@ void Plugin::run() {
             break;
         }
         auto index = pair.second;
-        auto &[dur, func] = ctx_->plugins[index];
+        auto &plugin = ctx_->plugins[index];
+        auto dur = std::get<0>(plugin);
         auto next = pair.first + dur;
         if (next <= now) {
             next = now + dur;
         }
         ctx_->timedRunning.pop();
         ctx_->timedRunning.push(std::make_pair(next, index));
-        func();
+        if (std::get<3>(plugin)) {
+            const auto &func = std::get<1>(plugin);
+            if (func) { func(); }
+        }
     } while(true);
+}
+
+void Plugin::onEnterGame() {
+    for (auto &p: ctx_->plugins) {
+        const auto &func = std::get<2>(p);
+        if (func) { func(std::get<3>(p)); }
+    }
 }
 
 void Plugin::addCFunctions() {
     auto &lua = ctx_->lua;
+    lua.new_usertype<Cfg>(
+        "Config",
+        "show", &Cfg::show,
+        "scale", &Cfg::scale
+    );
     lua.new_usertype<Skill>(
-        "skill",
+        "Skill",
         "level", &Skill::skillLevel,
         "quantity", &Skill::quantity
     );
     lua.new_usertype<PluginTextList>(
-        "text_list",
+        "TextList",
         "x", &PluginTextList::x,
         "y", &PluginTextList::y,
         "align", &PluginTextList::align,
+        "valign", &PluginTextList::valign,
         "add", &PluginTextList::add,
         "clear", &PluginTextList::clear
     );
     lua.new_usertype<D2RProcess::MapPlayer>(
-        "player",
+        "Player",
         "act", &D2RProcess::MapPlayer::act,
         "seed", &D2RProcess::MapPlayer::seed,
         "difficulty", &D2RProcess::MapPlayer::difficulty,
@@ -122,6 +152,55 @@ void Plugin::addCFunctions() {
         "name", &D2RProcess::MapPlayer::name,
         "stats", &D2RProcess::MapPlayer::stats
         );
+
+
+    auto registerFunc = [this](uint32_t interval, const sol::function &func, const sol::function &toggleFunc, bool on) {
+        auto index = ctx_->plugins.size();
+        auto dur = std::chrono::milliseconds(interval);
+        ctx_->plugins.emplace_back(dur, func, toggleFunc, on);
+        ctx_->timedRunning.push(std::make_pair(getCurrTime() + dur, index));
+        return index;
+    };
+    auto registerHotkeyForFunc = [this](const std::string &hotkey, int index) {
+        mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, [this, index] {
+            auto &on = std::get<3>(ctx_->plugins[index]);
+            on = !on;
+            const auto &func = std::get<2>(ctx_->plugins[index]);
+            if (func) {
+                func(on);
+            }
+        });
+    };
+    ctx_->lua["register_plugin"] = sol::overload([registerFunc](uint32_t interval, const sol::function &func) {
+        registerFunc(interval, func, sol::function(), true);
+    }, [registerFunc, registerHotkeyForFunc](const std::string &hotkey, bool on, uint32_t interval, const sol::function &func) {
+        auto index = registerFunc(interval, func, sol::function(), on);
+        registerHotkeyForFunc(hotkey, index);
+    }, [registerFunc, registerHotkeyForFunc](const std::string &hotkey, bool on, uint32_t interval, const sol::function &func, const sol::function &toggleFunc) {
+        auto index = registerFunc(interval, func, toggleFunc, on);
+        registerHotkeyForFunc(hotkey, index);
+    });
+    ctx_->lua["register_hotkey"] = [this](const std::string &hotkey, const sol::function &func) {
+        mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, func);
+    };
+    ctx_->lua["get_config"] = [this] {
+        return (Cfg*)cfg;
+    };
+    ctx_->lua["flush_overlay"] = [this] {
+        mapRenderer_->forceFlush();
+    };
+    ctx_->lua["reload_config"] = [this] {
+        loadCfg();
+        auto &ren = mapRenderer_->getRenderer();
+        ren.owner()->reloadConfig();
+        if (cfg->fps > 0) {
+            ren.limitFPS(cfg->fps);
+        } else {
+            Renderer::setSwapInterval(-cfg->fps);
+        }
+        mapRenderer_->reloadConfig();
+    };
+
     lua["get_player"] = [this] {
         return d2rProcess_->currPlayer();
     };
@@ -138,5 +217,8 @@ void Plugin::addCFunctions() {
     };
     lua["remove_text_list"] = [this](const std::string &str) {
         mapRenderer_->removePluginText(str);
+    };
+    lua["message_box"] = [this](const std::string &str, uint32_t type) {
+        return MessageBoxW(nullptr, utf8toucs4(str).c_str(), L"D2RMH", type);
     };
 }

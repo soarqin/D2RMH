@@ -8,7 +8,7 @@ Diablo II Resurrected map revealing tool.
 but I do not guarentee that it is totally ban-free, use at your own risk.**
 
 # What's New
-Check [ChangeLog](ChangeLog.md)
+Check [ChangeLog](doc/ChangeLog.md)
 
 # Prerequisite
 * Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
@@ -23,7 +23,7 @@ Check [ChangeLog](ChangeLog.md)
 3. Run D2RMH.exe, enjoy!
 
 # TODO
-Check [TODO](TODO.md)
+Check [TODO](doc/TODO.md)
 
 # How to build
 ## Quick instruction

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 
 struct WindowCtx;
 
@@ -38,6 +39,10 @@ public:
     void move(int x, int y, int w, int h);
 
     void reloadConfig();
+
+    void enableHotkeys(bool enable);
+    void registerHotkey(const std::string &name, const std::function<void()> &cb);
+    void clearHotkeys();
 
 private:
     void setSizeCallback(const std::function<void(int, int)> &cb);

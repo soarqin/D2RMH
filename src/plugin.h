@@ -22,8 +22,9 @@ struct PluginText {
     int fontSize;
 };
 struct PluginTextList {
-    float x, y;
-    int align;
+    float x = .2f, y = .78f;
+    int align = 0;
+    int valign = 1;
     std::vector<PluginText> textList;
     void add(const char *text, uint32_t timeout, int fontSize);
     void clear() { textList.clear(); }
@@ -35,6 +36,7 @@ public:
     ~Plugin();
     void load();
     void run();
+    void onEnterGame();
 
 private:
     void addCFunctions();

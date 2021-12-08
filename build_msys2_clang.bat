@@ -22,8 +22,9 @@ cmake -E make_directory build/msys2_clang/dist
 cmake -E copy_if_different build\msys2_clang\main\bin\D2RMH.exe build\msys2_clang\d2mapapi\bin\d2mapapi_piped.exe build\msys2_clang\dist\
 cmake -E copy_if_different bin\D2RMH.ini bin\D2RMH_data.ini bin\D2RMH_item.ini build\msys2_clang\dist\
 cmake -E copy_directory bin\plugins build\msys2_clang\dist\plugins
-cmake -E copy_if_different README.md ChangeLog.md LICENSE TODO.md build\msys2_clang\dist\
+cmake -E copy_directory doc build\msys2_clang\dist\doc
+cmake -E copy_if_different README.md LICENSE build\msys2_clang\dist\
 
 pushd build\msys2_clang\dist >NUL
-cmake -E tar cf D2RMH-snapshot.zip --format=zip D2RMH.exe d2mapapi_piped.exe D2RMH.ini D2RMH_data.ini D2RMH_item.ini README.md ChangeLog.md LICENSE TODO.md plugins
+cmake -E tar cf D2RMH-snapshot.zip --format=zip D2RMH.exe d2mapapi_piped.exe D2RMH.ini D2RMH_data.ini D2RMH_item.ini README.md LICENSE doc plugins
 popd >NUL
