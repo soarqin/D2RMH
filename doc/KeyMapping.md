@@ -68,12 +68,10 @@ Keys:
 | `CAPITAL` `CAPSLOCK`  | CAPS LOCK key                            |
 | `KANA`                | IME Kana mode                            |
 | `HANGUL`              | IME Hangul mode                          |
-| `IME_ON`              | IME On                                   |
 | `JUNJA`               | IME Junja mode                           |
 | `FINAL`               | IME final mode                           |
 | `HANJA`               | IME Hanja mode                           |
 | `KANJI`               | IME Kanji mode                           |
-| `IME_OFF`             | IME Off                                  |
 | `ESCAPE`              | ESC key                                  |
 | `CONVERT`             | IME convert                              |
 | `NONCONVERT`          | IME nonconvert                           |
