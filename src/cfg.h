@@ -18,7 +18,7 @@ struct Cfg {
     int msgFontSize = 24;
     std::string language = "enUS";
 
-    int fps = -1;
+    int fps = 25;
     int show = 0;
     uint32_t panelMask = 0x1FF;
     int fullLine = 0;
