@@ -22,6 +22,11 @@ Check [ChangeLog](doc/ChangeLog.md)
    or just put extracted `D2RMH.exe` and all `.ini` files to D2 v1.13c folder.
 3. Run D2RMH.exe, enjoy!
 
+# Screenshots
+![Screenshot 1](screenshots/screenshot_0.png)
+![Screenshot 2](screenshots/screenshot_1.png)
+![Screenshot 3](screenshots/screenshot_2.png)
+
 # Plugin system
 * Plugins are `.lua` scripts loaded from `plugins` folder
 * Read [document](doc/Plugin.md) if you want to write your own plugin

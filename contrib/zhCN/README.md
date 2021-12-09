@@ -18,6 +18,11 @@ Diablo II Resurrected 开图工具
 2. 修改 D2RMH.ini(中文用户可以使用contrib/D2RMH_CN.ini的内容作为默认设置), 设置 `d2_path` 为你的D2 1.13c目录，也可以直接把`D2MRH.exe`和所有`*.ini`放到D2 1.13c目录里去
 3. 运行 D2RMH.exe
 
+# Screenshots
+![Screenshot 1](screenshots/screenshot_0.png)
+![Screenshot 2](screenshots/screenshot_1.png)
+![Screenshot 3](screenshots/screenshot_2.png)
+
 # 插件系统
 * 插件加载自 `plugins` 目录里的所有 `.lua` 文件
 * 如果想自己写插件请阅读 [文档](../../doc/Plugin.md)
