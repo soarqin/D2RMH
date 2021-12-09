@@ -102,7 +102,6 @@ private:
 
     bool enabled_ = false;
     RECT d2rRect = {};
-    uint32_t walkableColor_ = 0;
     LNG lng_ = LNG_enUS;
 
     std::map<void*, std::unique_ptr<SessionInfo>> sessions_;

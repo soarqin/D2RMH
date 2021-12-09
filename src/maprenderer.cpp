@@ -194,8 +194,10 @@ void MapRenderer::update() {
         auto decodeMapFunc = [this, totalX0, totalY0, width, pixels](const d2mapapi::CollisionMap *currMap) {
             auto offX = currMap->offset.x - totalX0;
             auto offY = currMap->offset.y - totalY0;
+            auto walkableColor = cfg->walkableColor;
+            if (walkableColor == 0) { walkableColor = 1; }
             auto edgeColor = cfg->edgeColor;
-            bool hasEdge = (edgeColor & 0xFFFFFFu) != 0;
+            bool hasEdge = edgeColor != 0;
             auto x0 = currMap->crop.x0, y0 = currMap->crop.y0, y1 = currMap->crop.y1,
                  mw = currMap->size.width, mh = currMap->size.height;
             int y = y0;
@@ -229,7 +231,7 @@ void MapRenderer::update() {
                     } else {
                         /* draw left edge */
                         if (hasEdge) {
-                            *ptr++ = x > 0 ? edgeColor : walkableColor_;
+                            *ptr++ = x > 0 ? edgeColor : walkableColor;
                             z -= 2;
                         }
                         /* if only 1 dot block, skip this */
@@ -237,11 +239,11 @@ void MapRenderer::update() {
                             bool drawEdge = hasEdge && y > 0;
                             for (; z; z--) {
                                 /* check if this is top edge */
-                                *ptr++ = drawEdge && *(ptr - width) == 0 ? edgeColor : walkableColor_;
+                                *ptr++ = drawEdge && *(ptr - width) == 0 ? edgeColor : walkableColor;
                             }
                             /* draw right edge */
                             if (hasEdge) {
-                                *ptr = x + v < mw ? edgeColor : walkableColor_;
+                                *ptr = x + v < mw ? edgeColor : walkableColor;
                             }
                         }
                     }
@@ -781,7 +783,6 @@ void MapRenderer::loadFromCfg() {
     ttf_ = std::make_unique<TTF>(ttfgl_);
     ttf_->add(cfg->fontFilePath);
     lng_ = lngFromString(cfg->language);
-    walkableColor_ = cfg->walkableColor;
     objColors_[TypeWayPoint] = cfg->waypointColor;
     objColors_[TypePortal] = cfg->portalColor;
     objColors_[TypeChest] = cfg->chestColor;
