@@ -1,6 +1,11 @@
 local text = create_text_list("default")
 
 local town_portal_check = function()
+    -- game fully loaded?
+    if not get_skill(0) then
+        return
+    end
+
     local skill = get_skill(220)
     if not skill or skill.quantity < 3 then
         text:add("\x0BWARNING! Town portal scrolls quantity low", 1500, 0)
