@@ -61,6 +61,8 @@ Plugin::~Plugin() {
 
 void Plugin::load() {
     mapRenderer_->getRenderer().owner()->clearHotkeys();
+    delete ctx_;
+    ctx_ = new PluginCtx;
     ctx_->lua = sol::state();
     ctx_->lua.open_libraries();
 
