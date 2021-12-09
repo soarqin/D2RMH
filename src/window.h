@@ -44,6 +44,8 @@ public:
     void registerHotkey(const std::string &name, const std::function<void()> &cb);
     void clearHotkeys();
 
+    int messageBox(const wchar_t *msg, const wchar_t *title, uint32_t type);
+
 private:
     void setSizeCallback(const std::function<void(int, int)> &cb);
     void *hwnd();

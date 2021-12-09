@@ -456,6 +456,10 @@ void Window::clearHotkeys() {
     ctx_->hotkeys.clear();
 }
 
+int Window::messageBox(const wchar_t *msg, const wchar_t *title, uint32_t type) {
+    return MessageBoxW(ctx_->hwnd, msg, title, type);
+}
+
 void Window::setSizeCallback(const std::function<void(int, int)> &cb) {
     ctx_->sizeCB = cb;
 }

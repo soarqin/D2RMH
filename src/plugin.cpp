@@ -15,6 +15,7 @@
 #include "cfg.h"
 #include "util.h"
 
+#define SOL_ALL_SAFETIES_ON 1
 #include <sol/sol.hpp>
 
 #include <windows.h>
@@ -64,7 +65,8 @@ void Plugin::load() {
     delete ctx_;
     ctx_ = new PluginCtx;
     ctx_->lua = sol::state();
-    ctx_->lua.open_libraries();
+    auto &lua = ctx_->lua;
+    lua.open_libraries();
 
     addCFunctions();
     WIN32_FIND_DATAW ffd = {};
@@ -87,7 +89,11 @@ void Plugin::load() {
         DWORD bytesRead;
         ReadFile(file, data.data(), ffd.nFileSizeLow, &bytesRead, nullptr);
         CloseHandle(file);
-        ctx_->lua.script(data);
+        sol::protected_function_result pfr = lua.safe_script(data, &sol::script_pass_on_error);
+        if (!pfr.valid()) {
+            sol::error err = pfr;
+            mapRenderer_->getRenderer().owner()->messageBox(utf8toucs4(err.what()).c_str(), filename, MB_ICONERROR);
+        }
     } while (FindNextFileW(find, &ffd));
     FindClose(find);
 }
@@ -174,7 +180,7 @@ void Plugin::addCFunctions() {
             }
         });
     };
-    ctx_->lua["register_plugin"] = sol::overload([registerFunc](uint32_t interval, const sol::function &func) {
+    lua["register_plugin"] = sol::overload([registerFunc](uint32_t interval, const sol::function &func) {
         registerFunc(interval, func, sol::function(), true);
     }, [registerFunc, registerHotkeyForFunc](const std::string &hotkey, bool on, uint32_t interval, const sol::function &func) {
         auto index = registerFunc(interval, func, sol::function(), on);
@@ -183,16 +189,16 @@ void Plugin::addCFunctions() {
         auto index = registerFunc(interval, func, toggleFunc, on);
         registerHotkeyForFunc(hotkey, index);
     });
-    ctx_->lua["register_hotkey"] = [this](const std::string &hotkey, const sol::function &func) {
+    lua["register_hotkey"] = [this](const std::string &hotkey, const sol::function &func) {
         mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, func);
     };
-    ctx_->lua["get_config"] = [this] {
+    lua["get_config"] = [this] {
         return (Cfg*)cfg;
     };
-    ctx_->lua["flush_overlay"] = [this] {
+    lua["flush_overlay"] = [this] {
         mapRenderer_->forceFlush();
     };
-    ctx_->lua["reload_config"] = [this] {
+    lua["reload_config"] = [this] {
         loadCfg();
         auto &ren = mapRenderer_->getRenderer();
         ren.owner()->reloadConfig();
@@ -222,6 +228,6 @@ void Plugin::addCFunctions() {
         mapRenderer_->removePluginText(str);
     };
     lua["message_box"] = [this](const std::string &str, uint32_t type) {
-        return MessageBoxW(nullptr, utf8toucs4(str).c_str(), L"D2RMH", type);
+        mapRenderer_->getRenderer().owner()->messageBox(utf8toucs4(str).c_str(), L"D2RMH", type);
     };
 }
