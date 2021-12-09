@@ -6,9 +6,9 @@ local town_portal_check = function()
         return
     end
 
-    local skill = get_skill(220)
-    if not skill or skill.quantity < 3 then
-        text:add("\x0BWARNING! Town portal scrolls quantity low", 1500, 0)
+    local portal_book = get_skill(220)
+    if portal_book.quantity < 3 then
+        text:add(string.format("\x0BWARNING! Town portal scrolls quantity low: %d", portal_book.quantity), 1500, 0)
     end
 end
 register_plugin(1000, town_portal_check)
