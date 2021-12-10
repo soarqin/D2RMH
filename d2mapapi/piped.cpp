@@ -9,8 +9,11 @@
 #include "d2map.h"
 #include "session.h"
 
+#include <json.hpp>
+
 #include <windows.h>
 #include <unordered_map>
+#include <string>
 #include <cstdint>
 
 enum {
@@ -45,9 +48,12 @@ int wmain(int argc, wchar_t *argv[]) {
             ret = -1;
             DWORD written;
             WriteFile(hStdout, &ret, sizeof(int), &written, nullptr);
-            auto sz = strlen(errstr);
+            nlohmann::json j;
+            j["error"] = errstr;
+            auto str = j.dump();
+            auto sz = uint32_t(str.size());
             WriteFile(hStdout, &sz, sizeof(uint32_t), &written, nullptr);
-            WriteFile(hStdout, errstr, sz, &written, nullptr);
+            WriteFile(hStdout, str.c_str(), sz, &written, nullptr);
             return -1;
         } while (false);
     }

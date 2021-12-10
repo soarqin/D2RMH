@@ -36,6 +36,7 @@ public:
     void decode(std::string_view str);
 
     bool built = false;
+    std::string errorString;
 
     unsigned int id = 0;
 

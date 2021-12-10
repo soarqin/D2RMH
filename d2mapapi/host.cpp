@@ -12,6 +12,9 @@ int main(int argc, char *argv[]) {
         auto *map = pcp.queryMap(strtoul(argv[i], nullptr, 0),
                      strtoul(argv[i + 1], nullptr, 0),
                      strtoul(argv[i + 2], nullptr, 0));
+        if (!map->built) {
+            MessageBoxA(nullptr, map->errorString.c_str(), nullptr, 0);
+        }
         delete map;
     }
     return 0;

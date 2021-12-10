@@ -8,6 +8,8 @@
 
 #include "pipehost.h"
 
+#include <json.hpp>
+
 #include <windows.h>
 #include <string>
 #include <cstdio>
@@ -58,8 +60,15 @@ bool PipedChildProcess::start(const wchar_t *filename, const wchar_t *parameters
     if (ret == 0) { return true; }
     uint32_t len;
     readPipe(&len, 4);
-    errMsg_.resize(len);
-    readPipe(errMsg_.data(), len);
+    std::string str;
+    str.resize(len);
+    readPipe(str.data(), len);
+    try {
+        auto j = nlohmann::json::parse(str);
+        errMsg_ = j["error"];
+    } catch(const std::exception &e) {
+        errMsg_ = e.what();
+    }
     return false;
 }
 

@@ -39,6 +39,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set_target_properties(d2mapapi_httpd PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
     add_executable(d2mapapi_piped WIN32 EXCLUDE_FROM_ALL piped.cpp)
+    target_include_directories(d2mapapi_piped PRIVATE json)
     target_link_libraries(d2mapapi_piped d2mapapi)
     if(MSVC)
         target_link_options(d2mapapi_piped PRIVATE /ENTRY:wmainCRTStartup)

@@ -23,7 +23,7 @@ bool defineOffsets() {
         {"D2COMMON.DLL", &D2COMMON_GetLevel, -10207},
 
         {"D2COMMON.DLL", &D2COMMON_InitLevel, -10322},
-        {"D2COMMON.DLL", &D2COMMON_LoadAct, -10951},
+        {"D2COMMON.DLL", &D2COMMON_LoadAct, 0x3CB30},
         {"D2COMMON.DLL", &D2COMMON_UnloadAct, -10868},
 
         {"FOG.DLL", &FOG_10021, -10021},

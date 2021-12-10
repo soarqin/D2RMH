@@ -38,9 +38,27 @@ std::string CollisionMap::encode(int indentation) const {
 
 void CollisionMap::decode(std::string_view str) {
     auto j = nlohmann::json::parse(str, nullptr, false);
-    if (j.empty()) { built = false; return; }
-    from_json(j, *this);
+    if (j.empty()) {
+        built = false;
+        errorString = "Wrong input.";
+        return;
+    }
+    auto ite = j.find("error");
+    if (ite != j.end()) {
+        built = false;
+        errorString = ite->get<std::string>();
+        return;
+    }
+
+    try {
+        from_json(j, *this);
+    } catch (const std::exception &e) {
+        built = false;
+        errorString = e.what();
+        return;
+    }
     built = true;
+    errorString.clear();
 }
 
 }
