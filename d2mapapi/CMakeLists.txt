@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(d2mapapi)
-
-set(VERSION_MAJOR)
+project(d2mapapi VERSION 1.2.0)
 
 if(MSVC)
     set(CMAKE_CXX_STANDARD 20)
@@ -30,6 +28,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set_target_properties(d2mapapi PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
     add_executable(d2mapapi_httpd EXCLUDE_FROM_ALL httpd.cpp)
+    target_compile_definitions(d2mapapi_httpd PRIVATE D2MAPAPI_VERSION="${PROJECT_VERSION}")
     target_link_libraries(d2mapapi_httpd d2mapapi simphttp)
     if(MSVC)
         target_link_options(d2mapapi_httpd PRIVATE /ENTRY:wmainCRTStartup)
@@ -39,6 +38,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set_target_properties(d2mapapi_httpd PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
     add_executable(d2mapapi_piped WIN32 EXCLUDE_FROM_ALL piped.cpp)
+    target_compile_definitions(d2mapapi_piped PRIVATE D2MAPAPI_VERSION="${PROJECT_VERSION}")
     target_include_directories(d2mapapi_piped PRIVATE json)
     target_link_libraries(d2mapapi_piped d2mapapi)
     if(MSVC)

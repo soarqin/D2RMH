@@ -36,10 +36,12 @@ int wmain(int argc, wchar_t *argv[]) {
                 }
                 RegCloseKey(key);
             }
-            MessageBoxA(nullptr, errstr, "d2mapapi", MB_OK | MB_ICONERROR);
+            fprintf(stderr, "[d2mapapi_mod v" D2MAPAPI_VERSION "] %s\n", errstr);
             return -1;
         } while (false);
     }
+
+    fprintf(stdout, "[d2mapapi_mod v" D2MAPAPI_VERSION "] HTTP server is listening at localhost:8000\n");
 
     std::unordered_map<uint64_t, std::unique_ptr<d2mapapi::Session>> sessions;
     std::vector<uint64_t> sessionsOrder;

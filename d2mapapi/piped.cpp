@@ -49,7 +49,7 @@ int wmain(int argc, wchar_t *argv[]) {
             DWORD written;
             WriteFile(hStdout, &ret, sizeof(int), &written, nullptr);
             nlohmann::json j;
-            j["error"] = errstr;
+            j["error"] = std::string("[d2mapapi_mod v" D2MAPAPI_VERSION "] ") + errstr;
             auto str = j.dump();
             auto sz = uint32_t(str.size());
             WriteFile(hStdout, &sz, sizeof(uint32_t), &written, nullptr);
@@ -90,7 +90,7 @@ int wmain(int argc, wchar_t *argv[]) {
         if (map) {
             str = map->encode();
         } else {
-            str = R"({"error":"Invalid map id!"})";
+            str = R"({"error":"[d2mapapi_mod v)" D2MAPAPI_VERSION R"(] Invalid map id!"})";
         }
         auto sz = uint32_t(str.size());
         if (!WriteFile(hStdout, &sz, sizeof(uint32_t), &written, nullptr) ||
