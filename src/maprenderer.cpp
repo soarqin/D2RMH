@@ -823,5 +823,5 @@ d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {
     } else {
         currMap = map.get();
     }
-    return currMap;
+    return currMap->built ? currMap : nullptr;
 }
