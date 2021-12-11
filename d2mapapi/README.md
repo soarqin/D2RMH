@@ -10,7 +10,8 @@
 
 # Usage for `d2mapapi_httpd`
 * command line: `d2mapapi_httpd [d2_path]`
-  * `d2_path` is an optional parameter, which set legacy Diablo II v1.13c installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
+  * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
+    * supported Diablo II Legacy client version: `1.12`, `1.13c`, `1.13d`
 * http server is listen on port `8000`
 * http url is in RESTful form:
   * `http://localhost:8000/{seed}/{difficulty}/{map}/{indentation}`
@@ -25,7 +26,8 @@
 
 # Usage for `d2mapapi_piped`
 * command line: `d2mapapi_httpd [d2_path]`
-  * `d2_path` is an optional parameter, which set legacy Diablo II v1.13c installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
+  * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
+    * supported Diablo II Legacy client version: `1.12`, `1.13c`, `1.13d`
 * use `PipedChildProcess::start()` to run the child process, you can pass `d2_path` as its second parameter, or pass `nullptr` for reading from registry.
 * use `PipedChildProcess::queryMapRaw()` to get the encoded JSON(described below) for map data.
 * use `PipedChildProcess::queryMap()` to get the decoded map data.
