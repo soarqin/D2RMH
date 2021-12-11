@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <windows.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace d2mapapi {
 
@@ -102,7 +104,7 @@ bool defineOffsets() {
         { 1093632, 147456, offsets_113c, D2_113c },
         { 1097728, 147456, offsets_113d, D2_113d },
     };
-    __stat64 d2clientStat = {}, d2winStat = {};
+    struct __stat64 d2clientStat = {}, d2winStat = {};
     if (::_wstat64(L"D2Client.dll", &d2clientStat) != 0) {
         return false;
     }
