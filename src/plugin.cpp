@@ -192,7 +192,7 @@ void Plugin::addCFunctions() {
     lua["register_hotkey"] = [this](const std::string &hotkey, const sol::function &func) {
         mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, func);
     };
-    lua["get_config"] = [this] {
+    lua["get_config"] = [] {
         return (Cfg*)cfg;
     };
     lua["flush_overlay"] = [this] {

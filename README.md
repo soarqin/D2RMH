@@ -11,14 +11,14 @@ but I do not guarentee that it is totally ban-free, use at your own risk.**
 Check [ChangeLog](doc/ChangeLog.md)
 
 # Prerequisite
-* Diablo II v1.13c is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
+* Diablo II 1.12, 1.13c or 1.13d is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
 
 # Usage
-0. Virus/Malware detection WARNING:  
+0. Virus/Malware detection WARNING:
    * If you are using Windows Defender, disable it or add D2RMH to whitelist to avoid misreporting of malware.
    * D2RMH can pass most Anti-Virus software detections, but not all of them, you can compile it your self if worry about it, check `How to build` section below
 1. Download from `Releases` section, or any snapshot packs from `Actions` section(You need to log-in to GitHub). 
-2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II v1.13c folder,
+2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II folder,
    or just put extracted `D2RMH.exe` and all `.ini` files to D2 v1.13c folder.
 3. Run D2RMH.exe, enjoy!
 
