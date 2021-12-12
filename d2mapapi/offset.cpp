@@ -2,6 +2,7 @@
 
 #define _DEFINE_VARS
 #include "d2ptrs.h"
+#include "crc32.h"
 
 #include <iostream>
 #include <windows.h>
@@ -21,7 +22,31 @@ bool defineOffsets() {
         const char *dll;
         void *data;
         int32_t ordinal;
-    } offsets_112a[] = {
+    } offsets_111b[] = {
+        {"STORM.DLL", &p_STORM_MPQHashTable, 0x54D30},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_1, 0x52F40},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_2, 0x52C00},
+        {"D2CLIENT.DLL", &D2CLIENT_InitGameMisc_I, 0x32E5B},
+        {"D2COMMON.DLL", &D2COMMON_AddRoomData, -10787},
+        {"D2COMMON.DLL", &D2COMMON_RemoveRoomData, -10672},
+        {"D2COMMON.DLL", &D2COMMON_GetLevel, -11058},
+
+        {"D2COMMON.DLL", &D2COMMON_InitLevel, -10741},
+        {"D2COMMON.DLL", &D2COMMON_LoadAct, 0x264A0}, /* -10669 */
+        {"D2COMMON.DLL", &D2COMMON_UnloadAct, -10651},
+
+        {"FOG.DLL", &FOG_10021, -10021},
+        {"FOG.DLL", &FOG_10101, -10101},
+        {"FOG.DLL", &FOG_10089, -10089},
+        {"FOG.DLL", &FOG_10218, -10218},
+
+        {"D2WIN.DLL", &D2WIN_10086, -10030},
+        {"D2WIN.DLL", &D2WIN_10005, -10051},
+
+        {"D2LANG.DLL", &D2LANG_Init, -10009},
+        {"D2COMMON.DLL", &D2COMMON_InitDataTables, -10506},
+        {nullptr},
+    }, offsets_112a[] = {
         {"STORM.DLL", &p_STORM_MPQHashTable, 0x55358},
         {"D2CLIENT.DLL", &D2CLIENT_LoadAct_1, 0x409E0},
         {"D2CLIENT.DLL", &D2CLIENT_LoadAct_2, 0x406A0},
@@ -31,7 +56,7 @@ bool defineOffsets() {
         {"D2COMMON.DLL", &D2COMMON_GetLevel, -11020},
 
         {"D2COMMON.DLL", &D2COMMON_InitLevel, -10721},
-        {"D2COMMON.DLL", &D2COMMON_LoadAct, 0x56780},
+        {"D2COMMON.DLL", &D2COMMON_LoadAct, 0x56780}, /* -10588 */
         {"D2COMMON.DLL", &D2COMMON_UnloadAct, -10710},
 
         {"FOG.DLL", &FOG_10021, -10021},
@@ -95,24 +120,35 @@ bool defineOffsets() {
         {nullptr},
     }, *offsets = nullptr;
     const struct DllSizeToVersion {
-        int64_t d2clientSize;
-        int64_t d2winSize;
+        uint32_t gameCrc32;
+        uint32_t stormCrc32;
         const DllOffset *offsets;
         D2Version version;
     } sizeMap[] = {
-        { 1093632, 143360, offsets_112a, D2_112a },
-        { 1093632, 147456, offsets_113c, D2_113c },
-        { 1097728, 147456, offsets_113d, D2_113d },
+        { 0x8fd3f392, 0xb6390775, offsets_111b, D2_111b },
+        { 0xab566eaa, 0xe5b0f351, offsets_112a, D2_112a },
+        { 0xea2f0e6e, 0x5711a8b4, offsets_113c, D2_113c },
+        { 0xb3d69c47, 0xbdb6784e, offsets_113d, D2_113d },
     };
-    struct __stat64 d2clientStat = {}, d2winStat = {};
-    if (::_wstat64(L"D2Client.dll", &d2clientStat) != 0) {
-        return false;
-    }
-    if (::_wstat64(L"D2Win.dll", &d2winStat) != 0) {
-        return false;
-    }
+    uint32_t gameCrc32, stormCrc32;
+    auto crc32File = [](const wchar_t *filename)->uint32_t {
+        auto file = CreateFileW(filename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) {
+            return 0;
+        }
+        std::string data;
+        auto size = GetFileSize(file, nullptr);
+        data.resize(size);
+        DWORD bytesRead;
+        ReadFile(file, data.data(), size, &bytesRead, nullptr);
+        CloseHandle(file);
+        return crc::crc32(data.data(), size);
+    };
+    /* Do CRC check for game.exe first, fallback to Storm.dll */
+    gameCrc32 = crc32File(L"Game.exe");
+    stormCrc32 = gameCrc32 ? 0 : crc32File(L"Storm.dll");
     for (auto &sm: sizeMap) {
-        if (d2clientStat.st_size == sm.d2clientSize && d2winStat.st_size == sm.d2winSize) {
+        if (gameCrc32 == sm.gameCrc32 || stormCrc32 == sm.stormCrc32) {
             offsets = sm.offsets;
             d2version = sm.version;
             break;

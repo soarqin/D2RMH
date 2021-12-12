@@ -23,7 +23,7 @@ constexpr int unit_type_object = 2;
 constexpr int unit_type_tile = 5;
 
 MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
-    bool is112a = getD2Version() == D2_112a;
+    auto d2Ver = getD2Version();
     Level *pLevel = getLevel(act, areaId);
 
     if (!pLevel) { return; }
@@ -32,16 +32,16 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
     unsigned int currPosX;
     unsigned int currPosY;
     unsigned int width, height;
-    if (!pLevel->pRoom2First(is112a)) {
+    if (!pLevel->pRoom2First(d2Ver)) {
         D2COMMON_InitLevel(pLevel);
     }
     built = true;
-    if (!pLevel->pRoom2First(is112a)) { return; }
-    currLevelNo = pLevel->dwLevelNo(is112a);
-    currPosX = pLevel->dwPosX(is112a);
-    currPosY = pLevel->dwPosY(is112a);
-    width = pLevel->dwSizeX(is112a) * 5;
-    height = pLevel->dwSizeY(is112a) * 5;
+    if (!pLevel->pRoom2First(d2Ver)) { return; }
+    currLevelNo = pLevel->dwLevelNo(d2Ver);
+    currPosX = pLevel->dwPosX(d2Ver);
+    currPosY = pLevel->dwPosY(d2Ver);
+    width = pLevel->dwSizeX(d2Ver) * 5;
+    height = pLevel->dwSizeY(d2Ver) * 5;
     offset.x = currPosX * 5;
     offset.y = currPosY * 5;
 
@@ -50,30 +50,30 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
     size.height = height;
 
     std::vector<std::tuple<uint32_t, int, int, int>> sides;
-    for (Room2 *pRoom2 = pLevel->pRoom2First(is112a); pRoom2; pRoom2 = pRoom2->pRoom2Next(is112a)) {
+    for (Room2 *pRoom2 = pLevel->pRoom2First(d2Ver); pRoom2; pRoom2 = pRoom2->pRoom2Next(d2Ver)) {
         bool bAdded = false;
-        auto roomPosX = pRoom2->dwPosX(is112a);
-        auto roomPosY = pRoom2->dwPosY(is112a);
+        auto roomPosX = pRoom2->dwPosX(d2Ver);
+        auto roomPosY = pRoom2->dwPosY(d2Ver);
 
-        if (!pRoom2->pRoom1(is112a)) {
+        if (!pRoom2->pRoom1(d2Ver)) {
             bAdded = true;
-            D2COMMON_AddRoomData(act, pLevel->dwLevelNo(is112a), roomPosX, roomPosY, nullptr);
+            D2COMMON_AddRoomData(act, pLevel->dwLevelNo(d2Ver), roomPosX, roomPosY, nullptr);
         }
 
         /* Check near levels' walkable rect (we check 2 pixels from edge)
          * side: 0-left 1-right 2-top 3-bottom
          */
-        for (uint32_t i = 0; i < pRoom2->dwRoomsNear(is112a); i++) {
+        for (uint32_t i = 0; i < pRoom2->dwRoomsNear(d2Ver); i++) {
             int side = -1;
-            auto *pRoom2Near = pRoom2->pRoom2Near(is112a)[i];
-            auto nearLevelNo = pRoom2Near->pLevel(is112a)->dwLevelNo(is112a);
+            auto *pRoom2Near = pRoom2->pRoom2Near(d2Ver)[i];
+            auto nearLevelNo = pRoom2Near->pLevel(d2Ver)->dwLevelNo(d2Ver);
             if (currLevelNo == nearLevelNo) { continue; }
-            auto nearPosX = pRoom2Near->dwPosX(is112a);
-            auto nearPosY = pRoom2Near->dwPosY(is112a);
-            auto nearSizeX = pRoom2Near->dwSizeX(is112a);
-            auto nearSizeY = pRoom2Near->dwSizeY(is112a);
-            auto roomSizeX = pRoom2->dwSizeX(is112a);
-            auto roomSizeY = pRoom2->dwSizeY(is112a);
+            auto nearPosX = pRoom2Near->dwPosX(d2Ver);
+            auto nearPosY = pRoom2Near->dwPosY(d2Ver);
+            auto nearSizeX = pRoom2Near->dwSizeX(d2Ver);
+            auto nearSizeY = pRoom2Near->dwSizeY(d2Ver);
+            auto roomSizeX = pRoom2->dwSizeX(d2Ver);
+            auto roomSizeY = pRoom2->dwSizeY(d2Ver);
             if (nearPosX + nearSizeX == roomPosX && nearPosY == roomPosY) {
                 side = 0;
             } else if (nearPosX == roomPosX + roomSizeX && nearPosY == roomPosY) {
@@ -85,14 +85,14 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
             }
             if (side < 0) { continue; }
             bool bAddedNear = false;
-            if (!pRoom2Near->pRoom1(is112a)) {
-                D2COMMON_AddRoomData(act, pRoom2Near->pLevel(is112a)->dwLevelNo(is112a), nearPosX, nearPosY, nullptr);
+            if (!pRoom2Near->pRoom1(d2Ver)) {
+                D2COMMON_AddRoomData(act, pRoom2Near->pLevel(d2Ver)->dwLevelNo(d2Ver), nearPosX, nearPosY, nullptr);
                 bAddedNear = true;
             }
             int sideStart = -1;
             Room1 *room1;
             CollMap *coll;
-            if ((room1 = pRoom2Near->pRoom1(is112a)) && (coll = room1->Coll(is112a))) {
+            if ((room1 = pRoom2Near->pRoom1(d2Ver)) && (coll = room1->Coll(d2Ver))) {
                 uint16_t *p = coll->pMapStart;
                 auto w = coll->dwSizeGameX, h = coll->dwSizeGameY;
                 switch (side) {
@@ -169,14 +169,14 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
                 }
             }
             if (bAddedNear) {
-                D2COMMON_RemoveRoomData(act, pRoom2Near->pLevel(is112a)->dwLevelNo(is112a), nearPosX, nearPosY, nullptr);
+                D2COMMON_RemoveRoomData(act, pRoom2Near->pLevel(d2Ver)->dwLevelNo(d2Ver), nearPosX, nearPosY, nullptr);
             }
         }
 
         // add collision data
         Room1 *room1;
         CollMap *coll;
-        if ((room1 = pRoom2->pRoom1(is112a)) && (coll = room1->Coll(is112a))) {
+        if ((room1 = pRoom2->pRoom1(d2Ver)) && (coll = room1->Coll(d2Ver))) {
             const int x = coll->dwPosGameX - offset.x;
             const int y = coll->dwPosGameY - offset.y;
             const int cx = coll->dwSizeGameX;
@@ -198,33 +198,33 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
         }
 
         // add unit data
-        for (PresetUnit *pPresetUnit = pRoom2->pPreset(is112a); pPresetUnit; pPresetUnit = pPresetUnit->pPresetNext(is112a)) {
+        for (PresetUnit *pPresetUnit = pRoom2->pPreset(d2Ver); pPresetUnit; pPresetUnit = pPresetUnit->pPresetNext(d2Ver)) {
             // npcs
-            auto type = pPresetUnit->dwType(is112a);
+            auto type = pPresetUnit->dwType(d2Ver);
             if (type == unit_type_npc) {
-                const auto npcX = static_cast<int>(roomPosX * 5 + pPresetUnit->dwPosX(is112a));
-                const auto npcY = static_cast<int>(roomPosY * 5 + pPresetUnit->dwPosY(is112a));
-                npcs[pPresetUnit->dwTxtFileNo(is112a)].push_back(Point{npcX, npcY});
+                const auto npcX = static_cast<int>(roomPosX * 5 + pPresetUnit->dwPosX(d2Ver));
+                const auto npcY = static_cast<int>(roomPosY * 5 + pPresetUnit->dwPosY(d2Ver));
+                npcs[pPresetUnit->dwTxtFileNo(d2Ver)].push_back(Point{npcX, npcY});
             }
 
             // objects
             if (type == unit_type_object) {
-                const auto objectX = static_cast<int>(roomPosX * 5 + pPresetUnit->dwPosX(is112a));
-                const auto objectY = static_cast<int>(roomPosY * 5 + pPresetUnit->dwPosY(is112a));
-                objects[pPresetUnit->dwTxtFileNo(is112a)].push_back(Point{objectX, objectY});
+                const auto objectX = static_cast<int>(roomPosX * 5 + pPresetUnit->dwPosX(d2Ver));
+                const auto objectY = static_cast<int>(roomPosY * 5 + pPresetUnit->dwPosY(d2Ver));
+                objects[pPresetUnit->dwTxtFileNo(d2Ver)].push_back(Point{objectX, objectY});
             }
 
             // level exits
             if (type == unit_type_tile) {
-                auto txtFileNo = pPresetUnit->dwTxtFileNo(is112a);
-                auto presetPosX = pPresetUnit->dwPosX(is112a);
-                auto presetPosY = pPresetUnit->dwPosY(is112a);
-                for (RoomTile *pRoomTile = pRoom2->pRoomTiles(is112a); pRoomTile; pRoomTile = pRoomTile->pNext(is112a)) {
-                    if (*pRoomTile->nNum(is112a) == txtFileNo) {
+                auto txtFileNo = pPresetUnit->dwTxtFileNo(d2Ver);
+                auto presetPosX = pPresetUnit->dwPosX(d2Ver);
+                auto presetPosY = pPresetUnit->dwPosY(d2Ver);
+                for (RoomTile *pRoomTile = pRoom2->pRoomTiles(d2Ver); pRoomTile; pRoomTile = pRoomTile->pNext(d2Ver)) {
+                    if (*pRoomTile->nNum(d2Ver) == txtFileNo) {
                         const auto exitX = static_cast<int>(roomPosX * 5 + presetPosX);
                         const auto exitY = static_cast<int>(roomPosY * 5 + presetPosY);
 
-                        auto &al = exits[pRoomTile->pRoom2(is112a)->pLevel(is112a)->dwLevelNo(is112a)];
+                        auto &al = exits[pRoomTile->pRoom2(d2Ver)->pLevel(d2Ver)->dwLevelNo(d2Ver)];
                         al.isPortal = true;
                         al.offsets.emplace_back(Point{exitX, exitY});
                     }

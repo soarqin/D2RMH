@@ -1,18 +1,24 @@
 #pragma once
 
+#include "offset.h"
 #include <cstdint>
 
 namespace d2mapapi {
 
 struct UnitAny;
+struct Room1_111;
 struct Room1_112;
 struct Room1_113;
+struct Room2_111;
 struct Room2_112;
 struct Room2_113;
+struct Level111;
 struct Level112;
 struct Level113;
+struct Act111;
 struct Act112;
 struct Act113;
+struct ActMisc111;
 struct ActMisc112;
 struct ActMisc113;
 
@@ -52,6 +58,13 @@ struct CollMap {
     uint16_t *pMapEnd;                  //0x24
 };
 
+struct RoomTile111 {
+    uint32_t _1;
+    Room2 *pRoom2; //+04
+    RoomTile *pNext; //+08
+    uint32_t *nNum; //+0c
+};
+
 struct RoomTile112 {
     uint32_t *nNum;                     //0x00
     Room2 *pRoom2;                      //0x04
@@ -64,6 +77,16 @@ struct RoomTile113 {
     RoomTile *pNext;                    //0x04
     uint32_t _2[2];                     //0x08
     uint32_t *nNum;                     //0x10
+};
+
+struct PresetUnit111 {
+    uint32_t _1[2];
+    uint32_t dwPosY; //+08
+    uint32_t dwTxtFileNo; //+0c
+    uint32_t _2[1];
+    PresetUnit *pPresetNext; //+1c
+    uint32_t dwPosX; //+20
+    uint32_t dwType; //+24
 };
 
 struct PresetUnit112 {
@@ -84,6 +107,22 @@ struct PresetUnit113 {
     uint32_t _3;                        //0x10
     uint32_t dwType;                    //0x14
     uint32_t dwPosY;                    //0x18
+};
+
+struct Level111 {
+    uint32_t _1;
+    uint32_t dwPosX;
+    uint32_t dwPosY;
+    uint32_t dwSizeX;
+    uint32_t dwSizeY;
+    uint32_t dwLevelNo; //+14
+    uint32_t _1a[120];
+    uint32_t dwSeed[2]; //+1f8
+    uint32_t _2[1];
+    Room2 *pRoom2First; //+204
+    ActMisc *pMisc; //+208
+    uint32_t _3[8];
+    Level *pNextLevel; //+22c
 };
 
 struct Level112 {
@@ -118,6 +157,28 @@ struct Level113 {
     ActMisc *pMisc;                     //0x1B4
     uint32_t _5[6];                     //0x1BC
     uint32_t dwLevelNo;                 //0x1D0
+};
+
+struct Room2_111 {
+    RoomTile *pRoomTiles; //
+    uint32_t _1[1];
+    uint32_t dwPresetType; //+8
+    uint32_t _2[1];
+    uint32_t dwRoomsNear; //+10
+    uint32_t _2a[2];
+    Level *pLevel; //+1c
+    uint32_t dwPosX; //+20
+    uint32_t dwPosY; //+24
+    uint32_t dwSizeX; //+28
+    uint32_t dwSizeY; //+2c
+    Room2 **pRoom2Near; //+30
+    PresetUnit *pPreset; //+34
+    Room2 *pRoom2Next; //+38
+    uint32_t _4[38];
+    uint32_t dwSeed[2]; //+d4
+    uint32_t *pType2Info; //+dc
+    uint32_t _5[2];
+    Room1 *pRoom1; //+e8
 };
 
 struct Room2_112 {
@@ -160,6 +221,28 @@ struct Room2_113 {
     PresetUnit *pPreset;                //0x5C
 };
 
+struct Room1_111 {
+    uint32_t dwSeed[2]; //+00
+    uint32_t dwXStart; //+08
+    uint32_t dwYStart; //+0c
+    uint32_t dwXSize; //+10
+    uint32_t dwYSize; //+14
+    uint32_t dwXStart2; //+18
+    uint32_t dwYStart2; //+1c
+    uint32_t dwXSize2; //+20
+    uint32_t dwYSize2; //+24
+    uint32_t _2[3];
+    Room1 **pRoomsNear; //+34
+    Room2 *pRoom2; //+38
+    UnitAny *pUnitFirst; //+3c
+    uint32_t _3[8];
+    CollMap *Coll;
+    uint32_t _4[4];
+    Room1 *pRoomNext; // +74
+    uint32_t _5;
+    uint32_t dwRoomsNear; //+7c
+};
+
 struct Room1_112 {
     Room1 **pRoomsNear;                 //0x00
     uint32_t _1[2];                     //0x04
@@ -199,6 +282,16 @@ struct Room1_113 {
     Room1 *pRoomNext;                   //0x7C
 };
 
+struct ActMisc111 {
+    uint32_t _1[33];
+    Act *pAct; //+84
+    uint32_t dwBossTombLvl; //+88
+    uint32_t _2[248];
+    Level *pLevelFirst; //+46c
+    uint32_t _3[2];
+    uint32_t dwStaffTombLevel; // +478
+};
+
 struct ActMisc112 {
     uint32_t _1;                        //0x00
     Act *pAct;                          //0x04
@@ -215,6 +308,11 @@ struct ActMisc113 {
     Act *pAct;                          //0x46C
     uint32_t _3[3];                     //0x470
     Level *pLevelFirst;                 //0x47C
+};
+
+struct Act111 {
+    uint32_t _1[2];
+    ActMisc *pMisc; //+08
 };
 
 struct Act112 {
@@ -235,7 +333,7 @@ struct Act113 {
 };
 
 #define GETTER_BY_VER(n) \
-inline decltype(u113.n) n(bool is112a) { return is112a ? u112.n : u113.n; }
+inline decltype(u113.n) n(D2Version ver) { switch(ver) { case D2_111b: return u111.n; case D2_112a: return u112.n; default: return u113.n; } }
 
 union d2client_struct {
     d2client_struct_112 u112;
@@ -243,6 +341,7 @@ union d2client_struct {
 };
 
 union RoomTile {
+    RoomTile111 u111;
     RoomTile112 u112;
     RoomTile113 u113;
 
@@ -252,6 +351,7 @@ union RoomTile {
 };
 
 union PresetUnit {
+    PresetUnit111 u111;
     PresetUnit112 u112;
     PresetUnit113 u113;
 
@@ -263,6 +363,7 @@ union PresetUnit {
 };
 
 union Room1 {
+    Room1_111 u111;
     Room1_112 u112;
     Room1_113 u113;
 
@@ -270,6 +371,7 @@ union Room1 {
 };
 
 union Room2 {
+    Room2_111 u111;
     Room2_112 u112;
     Room2_113 u113;
 
@@ -287,6 +389,7 @@ union Room2 {
 };
 
 union Level {
+    Level111 u111;
     Level112 u112;
     Level113 u113;
     GETTER_BY_VER(pRoom2First)
@@ -299,12 +402,14 @@ union Level {
 };
 
 union ActMisc {
+    ActMisc111 u111;
     ActMisc112 u112;
     ActMisc113 u113;
     GETTER_BY_VER(pLevelFirst)
 };
 
 union Act {
+    Act111 u111;
     Act112 u112;
     Act113 u113;
     GETTER_BY_VER(pMisc)

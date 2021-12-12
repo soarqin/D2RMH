@@ -18,6 +18,7 @@ endif()
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     add_subdirectory(simphttp)
     add_library(d2mapapi STATIC EXCLUDE_FROM_ALL
+        crc32.h
         collisionmap.cpp collisionmap.h
         mapdata.cpp mapdata.h
         d2map.cpp d2map.h

@@ -29,7 +29,7 @@ const char *d2Init(const wchar_t *dir) {
     auto version = getD2Version();
 
     *p_STORM_MPQHashTable = 0;
-    if (version == D2_112a) {
+    if (version == D2_111b || version == D2_112a) {
         D2Client.u112.dwInit = 1;
         D2Client.u112.fpInit = (uint32_t)D2ClientInterface;
     } else {
@@ -62,11 +62,11 @@ const char *d2Init(const wchar_t *dir) {
 }
 
 Level *__fastcall getLevel(Act *act, uint32_t levelno) {
-    auto is112a = getD2Version() == D2_112a;
-    for (Level *pLevel = act->pMisc(is112a)->pLevelFirst(is112a); pLevel; pLevel = pLevel->pNextLevel(is112a))
-        if (pLevel->dwLevelNo(is112a) == levelno)
+    auto d2Ver = getD2Version();
+    for (Level *pLevel = act->pMisc(d2Ver)->pLevelFirst(d2Ver); pLevel; pLevel = pLevel->pNextLevel(d2Ver))
+        if (pLevel->dwLevelNo(d2Ver) == levelno)
             return (Level*)pLevel;
-    return D2COMMON_GetLevel(act->pMisc(is112a), levelno);
+    return D2COMMON_GetLevel(act->pMisc(d2Ver), levelno);
 }
 
 #if defined(_MSC_VER)
