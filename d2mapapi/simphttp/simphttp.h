@@ -7,7 +7,6 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <unistd.h>
 #include <functional>
 
 #include <llhttp.h>
@@ -66,13 +65,6 @@ class Buffer : public std::stringbuf {
     }
 };
 
-template<class Type>
-class IStream : virtual public std::ostream {
-
-public:
-    IStream() = default;
-};
-
 class Request {
 public:
     std::string url;
@@ -85,7 +77,7 @@ public:
     ~Request() = default;
 };
 
-class Response : public IStream<Response> {
+class Response : public std::ostream {
 
     friend class Buffer<class Response>;
     friend class Server;
@@ -119,7 +111,6 @@ public:
     void end();
 
     Response() :
-        IStream(),
         std::ostream(&buffer),
         buffer(stream) {
         buffer.stream = this;

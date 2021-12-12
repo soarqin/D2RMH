@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstddef>
 
 namespace crc {
 
@@ -60,7 +61,7 @@ static_assert(
     "gen_crc32_table generated unexpected result."
 );
 
-constexpr auto crc32(const void *in, size_t sz) {
+constexpr auto crc32(const void *in, std::size_t sz) {
     const auto *data = static_cast<const uint8_t*>(in);
     auto crc = 0xFFFFFFFFu;
     for (size_t i = 0; i < sz; ++i) {
