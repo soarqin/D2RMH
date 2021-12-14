@@ -1,3 +1,13 @@
+# v0.9.3
+* d2mapapi_mod: add support for Diablo II Legacy 1.11b, 1.12 and 1.13d, now there are 4 versions supported: 1.11b, 1.12, 1.13c and 1.13d
+* (#44) show players on map even out of sight
+* set default FPS value to 25, to reduce extra GPU consumption
+* (#86) fix edge detection when `walkable_color` is 0,0,0,0
+* plugin system:
+  * (#85) possible crash on reloading config or quitting later
+  * do not throw exception on lua script initialization, show a message box with error description instead
+  * (#88) town_portal_check: should not check portal during loading screen
+
 # v0.9.2
 * add hotkey functions to plugin system
 * chicken_life plugin: disable it by default and toggle by hotkey `Ctrl+/`
