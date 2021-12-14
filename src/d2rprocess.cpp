@@ -473,6 +473,8 @@ void D2RProcess::updateData() {
         uint64_t token;
         if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) {
             /* --START-- remove this if using readRoomUnits() */
+            /* mode is 17 when this is a corpse */
+            if (unit.mode != 17) { return; }
             DrlgAct act;
             if (!READ(unit.actPtr, act)) { return; }
             auto &player = currProcess->mapPlayers[unit.unitId];
@@ -591,6 +593,7 @@ void D2RProcess::updateData() {
     currProcess->panelEnabled = panelEnabled;
     currProcess->currPlayer = currPlayer;
 
+    readRosters();
     if (cfg->showMonsters) {
         readUnitHashTable(currProcess->hashTableBaseAddr + 8 * 0x80, [this](const auto &unit) {
             readUnit(unit);
@@ -674,15 +677,16 @@ void D2RProcess::updateOffset() {
             }
         }
 
-        const uint8_t search1[] = {0x40, 0x84, 0xED, 0x0F, 0x94, 0x05};
-        const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        const uint8_t search1[] = {0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x05, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8B};
+        const uint8_t mask1[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF};
         off = searchMem(mem, size_t(currProcess->baseSize), search1, mask1, sizeof(search1));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(currProcess->baseAddr + off + 6, rel)) {
-                currProcess->uiBaseAddr = currProcess->baseAddr + off + 10 + rel - 0x12;
+            if (READ(currProcess->baseAddr + off + 8, rel)) {
+                currProcess->uiBaseAddr = currProcess->baseAddr + off + 12 + rel;
             }
         }
+
         const uint8_t search2[] = {0xC7, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x85, 0xC0, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x83, 0x78, 0x5C, 0x00, 0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x33, 0xD2, 0x41};
         const uint8_t mask2[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF};
         off = searchMem(mem, size_t(currProcess->baseSize), search2, mask2, sizeof(search2));
@@ -690,6 +694,16 @@ void D2RProcess::updateOffset() {
             int32_t rel;
             if (READ(currProcess->baseAddr + off - 4, rel)) {
                 currProcess->isExpansionAddr = currProcess->baseAddr + off + rel;
+            }
+        }
+
+        const uint8_t search3[] = {0x02, 0x45, 0x33, 0xD2, 0x4D, 0x8B};
+        const uint8_t mask3[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        off = searchMem(mem, size_t(currProcess->baseSize), search3, mask3, sizeof(search3));
+        if (off != size_t(-1)) {
+            int32_t rel;
+            if (READ(currProcess->baseAddr + off - 3, rel)) {
+                currProcess->rosterDataAddr = currProcess->baseAddr + off + 1 + rel;
             }
         }
     }
@@ -990,6 +1004,29 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
         }
     }
 }
+
+void D2RProcess::readRosters() {
+    if (!currProcess_) { return; }
+    auto *currProcess = currProcess_;
+    uint64_t addr;
+    READ(currProcess->rosterDataAddr, addr);
+    while (addr) {
+        RosterUnit mem;
+        if (!READ(addr, mem)) { break; }
+        auto &p = currProcess->mapPlayers[mem.unitId];
+        p.classId = mem.classId;
+        p.level = mem.level;
+        p.party = mem.partyId;
+        if (currProcess->focusedPlayer != mem.unitId) {
+            memcpy(p.name, mem.name, 16);
+            p.posX = mem.posX;
+            p.posY = mem.posY;
+            p.act = mem.actId;
+        }
+        addr = mem.nextPtr;
+    }
+}
+
 void D2RProcess::loadFromCfg() {
     loadEncText(enchantStrings[5], cfg->encTxtExtraStrong);
     loadEncText(enchantStrings[6], cfg->encTxtExtraFast);

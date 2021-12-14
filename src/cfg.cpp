@@ -87,6 +87,8 @@ void loadCfg(const std::string &filename) {
             LOADVALC(text_color, textColor)
             LOADVALC(player_inner_color, playerInnerColor)
             LOADVALC(player_outer_color, playerOuterColor)
+            LOADVALC(non_party_player_inner_color, nonPartyPlayerInnerColor)
+            LOADVALC(non_party_player_outer_color, nonPartyPlayerOuterColor)
             LOADVALC(line_color, lineColor)
             LOADVALC(waypoint_color, waypointColor)
             LOADVALC(portal_color, portalColor)

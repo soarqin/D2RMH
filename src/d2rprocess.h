@@ -30,6 +30,9 @@ public:
         uint32_t levelId;
         int posX, posY;
         char name[16];
+        uint32_t classId;
+        uint16_t level;
+        uint16_t party;
         uint8_t difficulty;
         bool levelChanged;
         std::array<int32_t, 16> stats;
@@ -70,6 +73,7 @@ public:
         uint64_t hashTableBaseAddr = 0;
         uint64_t uiBaseAddr = 0;
         uint64_t isExpansionAddr = 0;
+        uint64_t rosterDataAddr = 0;
 
         uint8_t mapEnabled = 0;
         uint32_t panelEnabled = 0;
@@ -127,6 +131,7 @@ private:
     void readUnitMonster(const UnitAny &unit);
     void readUnitObject(const UnitAny &unit);
     void readUnitItem(const UnitAny &unit);
+    void readRosters();
     void loadFromCfg();
 
 private:

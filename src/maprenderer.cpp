@@ -531,7 +531,6 @@ void MapRenderer::updateWindowPos() {
     messagePipeline_.setViewport(0, 0, width, height);
     messagePipeline_.reset();
     messagePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
-    updatePlayerPos();
 }
 
 void MapRenderer::reloadConfig() {
@@ -544,6 +543,7 @@ void MapRenderer::updatePlayerPos() {
     auto cx = currSession_->cx, cy = currSession_->cy;
     const auto *currPlayer = d2rProcess_.currPlayer();
     bool showPlayerNames = cfg->showPlayerNames;
+    framePipeline_.reset();
     for (const auto &[id, plr]: d2rProcess_.players()) {
         auto posX = plr.posX;
         auto posY = plr.posY;
@@ -553,12 +553,8 @@ void MapRenderer::updatePlayerPos() {
             dynamicTextStrings_.emplace_back(DynamicTextString { oxf, oyf, plr.name, float(ttf_->stringWidth(plr.name, cfg->fontSize)) * .5f });
         }
         if (&plr == currPlayer) {
-            if (posX == currSession_->playerPosX && posY == currSession_->playerPosY) {
-                continue;
-            }
             currSession_->playerPosX = posX;
             currSession_->playerPosY = posY;
-            framePipeline_.reset();
             framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf + 2, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 4, oxf + 2, oyf - 2, cfg->playerOuterColor);
@@ -618,8 +614,14 @@ void MapRenderer::updatePlayerPos() {
             framePipeline_.setTransform(&transform_.Elements[0][0]);
             dynamicPipeline_.setTransform(&transform_.Elements[0][0]);
         } else {
-            dynamicPipeline_.pushQuad(oxf - 4, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
-            dynamicPipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
+            auto inParty = plr.party != uint16_t(-1) && plr.party == currPlayer->party;
+            auto outerColor = inParty ? cfg->playerOuterColor : cfg->nonPartyPlayerOuterColor;
+            auto innerColor = inParty ? cfg->playerInnerColor : cfg->nonPartyPlayerInnerColor;
+            framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, outerColor);
+            framePipeline_.pushQuad(oxf + 2, oyf - 4, oxf + 4, oyf + 4, outerColor);
+            framePipeline_.pushQuad(oxf - 2, oyf - 4, oxf + 2, oyf - 2, outerColor);
+            framePipeline_.pushQuad(oxf - 2, oyf + 2, oxf + 2, oyf + 4, outerColor);
+            framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, innerColor);
         }
     }
 }

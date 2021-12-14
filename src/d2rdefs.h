@@ -652,4 +652,29 @@ struct UnitAny {
     uint64_t roomNextPtr;
 };
 
+struct PvPInfo {
+    uint32_t unitId;
+    uint32_t flags; /* 0x01-unlocked, 0x02-mute, 0x04-muted, 0x08-hostile */
+    uint64_t nextPtr;
+};
+
+struct RosterUnit {
+    char name[16];
+    uint64_t unk0;
+    uint32_t unitId;
+    uint32_t lifePercent;
+    uint32_t kills;
+    uint32_t classId;
+    uint16_t level;
+    uint16_t partyId;
+    uint32_t actId;
+    uint32_t posX;
+    uint32_t posY;
+    uint32_t flags; /* 0x01-normal, 0x02-invited */
+    uint32_t unk3;
+    uint64_t pvpInfoPtr;
+    uint64_t unk4[24];
+    uint64_t nextPtr;
+};
+
 #pragma pack(pop)
