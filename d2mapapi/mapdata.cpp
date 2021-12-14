@@ -86,7 +86,7 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
             if (side < 0) { continue; }
             bool bAddedNear = false;
             if (!pRoom2Near->pRoom1(d2Ver)) {
-                D2COMMON_AddRoomData(act, pRoom2Near->pLevel(d2Ver)->dwLevelNo(d2Ver), nearPosX, nearPosY, nullptr);
+                D2COMMON_AddRoomData(act, nearLevelNo, nearPosX, nearPosY, nullptr);
                 bAddedNear = true;
             }
             int sideStart = -1;
@@ -169,7 +169,7 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
                 }
             }
             if (bAddedNear) {
-                D2COMMON_RemoveRoomData(act, pRoom2Near->pLevel(d2Ver)->dwLevelNo(d2Ver), nearPosX, nearPosY, nullptr);
+                D2COMMON_RemoveRoomData(act, nearLevelNo, nearPosX, nearPosY, nullptr);
             }
         }
 

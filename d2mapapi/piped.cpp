@@ -75,8 +75,8 @@ int wmain(int argc, wchar_t *argv[]) {
         }
         auto key = uint64_t(req.seed) | (uint64_t(req.difficulty) << 32);
         auto &session = sessions[key];
-        sessionsOrder.emplace_back(key);
         if (!session) {
+            sessionsOrder.emplace_back(key);
             session = std::make_unique<d2mapapi::Session>();
             session->update(req.seed, req.difficulty);
             if (sessionsOrder.size() > SessionsCacheSize) {
