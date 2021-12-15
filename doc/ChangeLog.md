@@ -1,3 +1,6 @@
+# v0.9.4
+* fix support for D2R 1.1.67554
+
 # v0.9.3
 * d2mapapi_mod: add support for Diablo II Legacy 1.11b, 1.12 and 1.13d, now there are 4 versions supported: 1.11b, 1.12, 1.13c and 1.13d
 * (#44) show players on map even out of sight

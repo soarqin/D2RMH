@@ -298,21 +298,17 @@ void loadEncText(wchar_t *output, const std::wstring &input) {
 static uint8_t statsMapping[size_t(StatId::TotalCount)] = {};
 
 enum {
-    /* These 2 offsets are no more used, use memory search now
-    HashTableBase = 0x20AF660,
-    UIBaseAddr = 0x20BF310,
-    */
-    InventoryPanelOffset = 0x09,
-    CharacterPanelOffset = 0x0A,
-    SkillFloatSelOffset = 0x0B,
-    SkillTreePanelOffset = 0x0C,
-    ChatMenuOffset = 0x10,
-    SystemMenuOffset = 0x11,
-    InGameMapOffset = 0x12,
-    QuestPanelOffset = 0x16,
-    WaypointPanelOffset = 0x1B,
-    PartyPanelOffset = 0x1D,
-    MercenaryOffset = 0x26,
+    InventoryPanelOffset = 0x01,
+    CharacterPanelOffset = 0x02,
+    SkillFloatSelOffset = 0x03,
+    SkillTreePanelOffset = 0x04,
+    ChatMenuOffset = 0x08,
+    SystemMenuOffset = 0x09,
+    InGameMapOffset = 0x0A,
+    QuestPanelOffset = 0x0E,
+    WaypointPanelOffset = 0x13,
+    PartyPanelOffset = 0x15,
+    MercenaryOffset = 0x1E,
 };
 
 struct handle_data {
@@ -677,13 +673,13 @@ void D2RProcess::updateOffset() {
             }
         }
 
-        const uint8_t search1[] = {0x0F, 0x84, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x05, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8B};
-        const uint8_t mask1[] = {0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF};
+        const uint8_t search1[] = {0x41, 0x0F, 0xB6, 0xAC, 0x3F, 0x00, 0x00, 0x00, 0x00};
+        const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
         off = searchMem(mem, size_t(currProcess->baseSize), search1, mask1, sizeof(search1));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(currProcess->baseAddr + off + 8, rel)) {
-                currProcess->uiBaseAddr = currProcess->baseAddr + off + 12 + rel;
+            if (READ(currProcess->baseAddr + off + 5, rel)) {
+                currProcess->uiBaseAddr = currProcess->baseAddr + rel;
             }
         }
 
