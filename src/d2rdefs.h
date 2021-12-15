@@ -673,7 +673,15 @@ struct RosterUnit {
     uint32_t flags; /* 0x01-normal, 0x02-invited */
     uint32_t unk3;
     uint64_t pvpInfoPtr;
-    uint64_t unk4[24];
+    uint64_t unk4[6];
+    uint16_t unk5;
+    char name2[16];
+    uint64_t unk6;
+    wchar_t wideName[16];
+    uint16_t unk7[3];
+    uint64_t unk8[8];
+    uint32_t order;
+    uint32_t unk9[3];
     uint64_t nextPtr;
 };
 

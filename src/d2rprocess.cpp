@@ -459,15 +459,12 @@ void D2RProcess::updateData() {
         currProcess->mapItems.clear();
     }
 
-    uint8_t expansion = 0;
-    READ(currProcess->isExpansionAddr, expansion);
-
-    currPlayer = nullptr;
-    readUnitHashTable(currProcess->hashTableBaseAddr, [this, expansion, &currPlayer, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
+    readRosters();
+    readUnitHashTable(currProcess->hashTableBaseAddr, [this, lastDifficulty, lastSeed, lastAct, lastLevelId](const UnitAny &unit) {
         if (!unit.unitId || !unit.actPtr || !unit.inventoryPtr) { return; }
         auto *currProcess = currProcess_;
         uint64_t token;
-        if (!READ(unit.inventoryPtr + (expansion ? 0x70 : 0x30), token) || token == (expansion ? 0 : 1)) {
+        if (unit.unitId != currProcess_->focusedPlayer) {
             /* --START-- remove this if using readRoomUnits() */
             /* mode is 17 when this is a corpse */
             if (unit.mode != 17) { return; }
@@ -501,14 +498,10 @@ void D2RProcess::updateData() {
             return;
         }
         DrlgAct act;
-        if (!READ(unit.actPtr, act)) { return; }
         auto &player = currProcess->mapPlayers[unit.unitId];
         player.skillPtr = unit.skillPtr;
         player.name[0] = 0;
         READ(unit.unionPtr, player.name);
-        currProcess->focusedPlayer = unit.unitId;
-        currPlayer = &player;
-        READ(act.miscPtr + 0x830, player.difficulty);
         player.stats.fill(0);
         readPlayerStats(unit, [&player](uint16_t statId, int32_t value) {
             if (statId > 15) {
@@ -516,6 +509,8 @@ void D2RProcess::updateData() {
             }
             player.stats[statId] = value;
         });
+        if (!READ(unit.actPtr, act)) { return; }
+        READ(act.miscPtr + 0x830, player.difficulty);
         player.levelChanged = false;
         player.seed = act.seed;
         if (lastDifficulty != player.difficulty || lastSeed != act.seed) {
@@ -557,21 +552,8 @@ void D2RProcess::updateData() {
         readRoomUnits(room1, rset);
 */
     });
-    if (currProcess->mapPlayers.empty()) {
-        currProcess->focusedPlayer = 0;
-        return;
-    }
     if (!currProcess->focusedPlayer) {
-        auto ite = currProcess->mapPlayers.begin();
-        currProcess->focusedPlayer = ite->first;
-        currPlayer = &ite->second;
-    } else if (!currPlayer) {
-        auto ite = currProcess->mapPlayers.find(currProcess->focusedPlayer);
-        if (ite == currProcess->mapPlayers.end()) {
-            ite = currProcess->mapPlayers.begin();
-            currProcess->focusedPlayer = ite->first;
-        }
-        currPlayer = &ite->second;
+        return;
     }
     uint8_t mem[0x28];
     READ(currProcess->uiBaseAddr, mem);
@@ -587,9 +569,7 @@ void D2RProcess::updateData() {
     if (mem[WaypointPanelOffset]) { panelEnabled |= 0x80; }
     if (mem[SkillFloatSelOffset]) { panelEnabled |= 0x100; }
     currProcess->panelEnabled = panelEnabled;
-    currProcess->currPlayer = currPlayer;
 
-    readRosters();
     if (cfg->showMonsters) {
         readUnitHashTable(currProcess->hashTableBaseAddr + 8 * 0x80, [this](const auto &unit) {
             readUnit(unit);
@@ -1013,8 +993,11 @@ void D2RProcess::readRosters() {
         p.classId = mem.classId;
         p.level = mem.level;
         p.party = mem.partyId;
-        if (currProcess->focusedPlayer != mem.unitId) {
-            memcpy(p.name, mem.name, 16);
+        memcpy(p.name, mem.name, 16);
+        if (mem.wideName[0]) {
+            currProcess->focusedPlayer = mem.unitId;
+            currProcess->currPlayer = &p;
+        } else {
             p.posX = mem.posX;
             p.posY = mem.posY;
             p.act = mem.actId;
