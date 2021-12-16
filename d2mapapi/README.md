@@ -3,10 +3,18 @@
 
 # Projects
 * `d2mapapi`: basic library for generating map data
+* `d2mapapi_gen_image`: generate map into image files (support PNG, BMP, TGA and JPG)
 * `d2mapapi_httpd`: httpd server, depends on `d2mapapi`
 * `d2mapapi_piped`: pipe query server, depends on `d2mapapi`
 * `d2mapapi_pipehost`: pipe querying library for communicating with `d2mapapi_piped`
 * `d2mapapi_host`: example and test project for do pipe query using `d2mapapi_pipehost`
+
+# Usage for `d2mapapi_gen_image`
+* command line: `d2mapapi_gen_image [d2_path] <seed> <difficulty> <map> <image filename>`
+  * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
+    * supported Diablo II Legacy client version: `1.11b`, `1.12`, `1.13c`, `1.13d`
+  * `seed`, `difficulty`, `map`: d2 map seed, game difficualty and map area id
+  * `image filename`: image filename, format is determined by file extension, supported: `.png`, `.tga`, `.bmp` and `.jpg`
 
 # Usage for `d2mapapi_httpd`
 * command line: `d2mapapi_httpd [d2_path]`
@@ -92,9 +100,10 @@
 
 # Build
 * Just use [cmake](https://cmake.org) to build
-  * Note: `d2mapapi`, `d2mapapi_httpd` and `d2mapapi_piped` can only be compiled in 32-bit.
+  * Note: `d2mapapi`, `d2mapapi_httpd`, `d2mapapi_piped` and `d2mapapi_gen_image` can only be compiled in 32-bit.
 
 # Credits
 * Core functions modified from [d2mapapi](https://github.com/jcageman/d2mapapi).
 * [JSON for Modern C++](https://github.com/nlohmann/json) for processing JSON files.
 * [libuv](https://github.com/libuv/libuv) and [llhttp](https://github.com/nodejs/llhttp), for httpd server.
+* [stb](https://github.com/nothings/stb), stb_image_write is used to write to image files.

@@ -35,6 +35,31 @@ public:
     [[nodiscard]] std::string encode(int indentation = 0) const;
     void decode(std::string_view str);
 
+    template<typename T>
+    inline void extractCellData(std::vector<T> &output, T nonwalkableVal, T walkableVal) {
+        auto w = std::max(crop.x1 - crop.x0, 0);
+        auto h = std::max(crop.y1 - crop.y0, 0);
+        auto sz = w * h;
+        int x = 0, y = 0;
+        int index = 0;
+        bool walkable = false;
+        output.resize(sz);
+        for (auto v: mapData) {
+            if (v < 0) {
+                if (++y >= h) { break; }
+                x = 0;
+                index = y * w;
+                walkable = false;
+                continue;
+            }
+            int cnt = std::min(int(v), w - x);
+            std::fill_n(output.begin() + index, cnt, walkable ? walkableVal : nonwalkableVal);
+            index += cnt;
+            x += v;
+            walkable = !walkable;
+        }
+    }
+
     bool built = false;
     std::string errorString;
 

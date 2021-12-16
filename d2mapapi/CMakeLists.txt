@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(d2mapapi VERSION 1.2.0)
+project(d2mapapi VERSION 1.3.0)
 
 if(MSVC)
     set(CMAKE_CXX_STANDARD 20)
@@ -27,6 +27,16 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         session.cpp session.h)
     target_include_directories(d2mapapi PUBLIC . PRIVATE json)
     set_target_properties(d2mapapi PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+    add_executable(d2mapapi_gen_image EXCLUDE_FROM_ALL genimage.cpp)
+    target_compile_definitions(d2mapapi_gen_image PRIVATE D2MAPAPI_VERSION="${PROJECT_VERSION}")
+    target_link_libraries(d2mapapi_gen_image d2mapapi shlwapi)
+    if(MSVC)
+        target_link_options(d2mapapi_gen_image PRIVATE /ENTRY:wmainCRTStartup)
+    else()
+        target_link_options(d2mapapi_gen_image PRIVATE -municode)
+    endif()
+    set_target_properties(d2mapapi_gen_image PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
     add_executable(d2mapapi_httpd EXCLUDE_FROM_ALL httpd.cpp)
     target_compile_definitions(d2mapapi_httpd PRIVATE D2MAPAPI_VERSION="${PROJECT_VERSION}")
