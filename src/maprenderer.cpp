@@ -544,7 +544,9 @@ void MapRenderer::updatePlayerPos() {
     const auto *currPlayer = d2rProcess_.currPlayer();
     bool showPlayerNames = cfg->showPlayerNames;
     framePipeline_.reset();
+    auto currAct = currPlayer->act;
     for (const auto &[id, plr]: d2rProcess_.players()) {
+        if (plr.act != currAct) { continue; }
         auto posX = plr.posX;
         auto posY = plr.posY;
         auto oxf = float(posX - cx);
