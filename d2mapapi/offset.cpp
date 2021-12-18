@@ -22,7 +22,31 @@ bool defineOffsets() {
         const char *dll;
         void *data;
         int32_t ordinal;
-    } offsets_111b[] = {
+    } offsets_111a[] = {
+        {"STORM.DLL", &p_STORM_MPQHashTable, 0x52B00},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_1, 0x5AF10},
+        {"D2CLIENT.DLL", &D2CLIENT_LoadAct_2, 0x5ABD0},
+        {"D2CLIENT.DLL", &D2CLIENT_InitGameMisc_I, 0x8901B},
+        {"D2COMMON.DLL", &D2COMMON_AddRoomData, -10432},
+        {"D2COMMON.DLL", &D2COMMON_RemoveRoomData, -10716},
+        {"D2COMMON.DLL", &D2COMMON_GetLevel, -10204},
+
+        {"D2COMMON.DLL", &D2COMMON_InitLevel, -10972},
+        {"D2COMMON.DLL", &D2COMMON_LoadAct, 0x137F0}, /* -10141 */
+        {"D2COMMON.DLL", &D2COMMON_UnloadAct, -10155},
+
+        {"FOG.DLL", &FOG_10021, -10021},
+        {"FOG.DLL", &FOG_10101, -10101},
+        {"FOG.DLL", &FOG_10089, -10089},
+        {"FOG.DLL", &FOG_10218, -10218},
+
+        {"D2WIN.DLL", &D2WIN_10086, -10176},
+        {"D2WIN.DLL", &D2WIN_10005, -10063},
+
+        {"D2LANG.DLL", &D2LANG_Init, -10001},
+        {"D2COMMON.DLL", &D2COMMON_InitDataTables, -10149},
+        {nullptr},
+    }, offsets_111b[] = {
         {"STORM.DLL", &p_STORM_MPQHashTable, 0x54D30},
         {"D2CLIENT.DLL", &D2CLIENT_LoadAct_1, 0x52F40},
         {"D2CLIENT.DLL", &D2CLIENT_LoadAct_2, 0x52C00},
@@ -125,6 +149,7 @@ bool defineOffsets() {
         const DllOffset *offsets;
         D2Version version;
     } sizeMap[] = {
+        { 0xf44cd0cf, 0x9f06891d, offsets_111a, D2_111a },
         { 0x8fd3f392, 0xb6390775, offsets_111b, D2_111b },
         { 0xab566eaa, 0xe5b0f351, offsets_112a, D2_112a },
         { 0xea2f0e6e, 0x5711a8b4, offsets_113c, D2_113c },

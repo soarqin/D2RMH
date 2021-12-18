@@ -333,7 +333,7 @@ struct Act113 {
 };
 
 #define GETTER_BY_VER(n) \
-inline decltype(u113.n) n(D2Version ver) { switch(ver) { case D2_111b: return u111.n; case D2_112a: return u112.n; default: return u113.n; } }
+inline decltype(u113.n) n(D2Version ver) { switch(ver) { case D2_111a: case D2_111b: return u111.n; case D2_112a: return u112.n; default: return u113.n; } }
 
 union d2client_struct {
     d2client_struct_112 u112;

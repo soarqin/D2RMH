@@ -29,7 +29,7 @@ const char *d2Init(const wchar_t *dir) {
     auto version = getD2Version();
 
     *p_STORM_MPQHashTable = 0;
-    if (version == D2_111b || version == D2_112a) {
+    if (version < D2_113c) {
         D2Client.u112.dwInit = 1;
         D2Client.u112.fpInit = (uint32_t)D2ClientInterface;
     } else {
@@ -98,7 +98,7 @@ void __attribute__((naked)) D2CLIENT_InitGameMisc() {
 #endif
 
 uint32_t D2ClientInterface() {
-    if (getD2Version() == D2_112a) {
+    if (getD2Version() < D2_113c) {
         return D2Client.u112.dwInit;
     }
     return D2Client.u113.dwInit;

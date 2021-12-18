@@ -12,14 +12,14 @@
 # Usage for `d2mapapi_gen_image`
 * command line: `d2mapapi_gen_image [d2_path] <seed> <difficulty> <map> <image filename>`
   * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
-    * supported Diablo II Legacy client version: `1.11b`, `1.12`, `1.13c`, `1.13d`
+    * supported Diablo II Legacy client version: `1.11`, `1.11b`, `1.12`, `1.13c`, `1.13d`
   * `seed`, `difficulty`, `map`: d2 map seed, game difficualty and map area id
   * `image filename`: image filename, format is determined by file extension, supported: `.png`, `.tga`, `.bmp` and `.jpg`
 
 # Usage for `d2mapapi_httpd`
 * command line: `d2mapapi_httpd [d2_path]`
   * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
-    * supported Diablo II Legacy client version: `1.11b`, `1.12`, `1.13c`, `1.13d`
+    * supported Diablo II Legacy client version: `1.11`, `1.11b`, `1.12`, `1.13c`, `1.13d`
 * http server is listen on port `8000`
 * http url is in RESTful form:
   * `http://localhost:8000/{seed}/{difficulty}/{map}/{indentation}`
@@ -35,7 +35,7 @@
 # Usage for `d2mapapi_piped`
 * command line: `d2mapapi_httpd [d2_path]`
   * `d2_path` is an optional parameter, which set legacy Diablo II installation path, `d2mapapi_httpd` will search registry for installation path if this parameter is absent or does not point to a correct installed game path.
-    * supported Diablo II Legacy client version: `1.11b`, `1.12`, `1.13c`, `1.13d`
+    * supported Diablo II Legacy client version: `1.11`, `1.11b`, `1.12`, `1.13c`, `1.13d`
 * use `PipedChildProcess::start()` to run the child process, you can pass `d2_path` as its second parameter, or pass `nullptr` for reading from registry.
 * use `PipedChildProcess::queryMapRaw()` to get the encoded JSON(described below) for map data.
 * use `PipedChildProcess::queryMap()` to get the decoded map data.
