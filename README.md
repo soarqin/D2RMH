@@ -11,7 +11,7 @@ but I do not guarentee that it is totally ban-free, use at your own risk.**
 Check [ChangeLog](doc/ChangeLog.md)
 
 # Prerequisite
-* Diablo II 1.11b, 1.12, 1.13c or 1.13d is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
+* Diablo II 1.11, 1.11b, 1.12, 1.13c or 1.13d is required. You can get a minimal subset of v1.13c files [HERE](https://archive.org/details/diablo-ii-1.13c-minimal.-7z)
 
 # Usage
 0. Virus/Malware detection WARNING:
