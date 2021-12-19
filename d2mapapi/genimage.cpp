@@ -74,24 +74,26 @@ int wmain(int argc, wchar_t *argv[]) {
     auto *collmap = new d2mapapi::CollisionMap(str);
 
     auto [x0, y0, x1, y1] = collmap->crop;
-    std::vector<uint8_t> vec;
-    collmap->extractCellData<uint8_t>(vec, 0, 128);
+    auto w = collmap->size.width;
+    auto h = collmap->size.height;
+    std::vector<uint8_t> vec(w * h);
+    collmap->extractCellData<uint8_t>(vec.data(), w, h, x0,y0, 0, 20, 128);
 
     stbi_write_png_compression_level = 9;
     char filename[1024];
     stbiw_convert_wchar_to_utf8(filename, 1024, wfilename);
     switch (filetype) {
     case 0:
-        stbi_write_png(filename, x1 - x0, y1 - y0, 1, vec.data(), x1 - x0);
+        stbi_write_png(filename, w, h, 1, vec.data(), w);
         break;
     case 1:
-        stbi_write_bmp(filename, x1 - x0, y1 - y0, 1, vec.data());
+        stbi_write_bmp(filename, w, h, 1, vec.data());
         break;
     case 2:
-        stbi_write_tga(filename, x1 - x0, y1 - y0, 1, vec.data());
+        stbi_write_tga(filename, w, h, 1, vec.data());
         break;
     case 3:
-        stbi_write_jpg(filename, x1 - x0, y1 - y0, 1, vec.data(), 90);
+        stbi_write_jpg(filename, w, h, 1, vec.data(), 90);
         break;
     default:
         break;

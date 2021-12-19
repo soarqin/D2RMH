@@ -36,28 +36,68 @@ public:
     void decode(std::string_view str);
 
     template<typename T>
-    inline void extractCellData(std::vector<T> &output, T nonwalkableVal, T walkableVal) {
+    inline bool extractCellData(T *output, int width, int height, int originX, int originY, T nonwalkableVal, T walkableVal, T edgeVal = T()) const {
         auto w = std::max(crop.x1 - crop.x0, 0);
         auto h = std::max(crop.y1 - crop.y0, 0);
-        auto sz = w * h;
+        if (originX + w > width || originY + h > height) {
+            return false;
+        }
         int x = 0, y = 0;
-        int index = 0;
+        int index = originY * width + originX;
         bool walkable = false;
-        output.resize(sz);
-        for (auto v: mapData) {
+        bool hasEdge = edgeVal != T();
+        for (int v: mapData) {
             if (v < 0) {
                 if (++y >= h) { break; }
                 x = 0;
-                index = y * w;
+                index = (originY + y) * width + originX;
                 walkable = false;
                 continue;
             }
-            int cnt = std::min(int(v), w - x);
-            std::fill_n(output.begin() + index, cnt, walkable ? walkableVal : nonwalkableVal);
-            index += cnt;
+            v = std::min(int(v), w - x);
+            if (!walkable) {
+                std::fill_n(output + index, v, nonwalkableVal);
+                if (hasEdge && y > 0) {
+                    T *ptr = output + index - width;
+                    for (int z = v; z; z--, ptr++) {
+                        if (*ptr == walkableVal) {
+                            *ptr = edgeVal;
+                        }
+                    }
+                }
+                index += v;
+            } else {
+                if (hasEdge && y + 1 == crop.y1 && crop.y1 < height) {
+                    std::fill_n(output + index, v, edgeVal);
+                    index += v;
+                } else {
+                    int z = v;
+                    if (hasEdge) {
+                        *(output + index) = x > 0 ? edgeVal : walkableVal;
+                        index++;
+                        z -= 2;
+                    }
+                    if (z >= 0) {
+                        if (hasEdge && y > 0) {
+                            for (; z; z--) {
+                                *(output + index) = *(output + index - width) == nonwalkableVal ? edgeVal : walkableVal;
+                                index++;
+                            }
+                        } else {
+                            std::fill_n(output + index, z, walkableVal);
+                            index += z;
+                        }
+                        if (hasEdge) {
+                            *(output + index) = x + v < w ? edgeVal : walkableVal;
+                            index++;
+                        }
+                    }
+                }
+            }
             x += v;
             walkable = !walkable;
         }
+        return true;
     }
 
     bool built = false;
