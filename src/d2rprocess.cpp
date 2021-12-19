@@ -514,6 +514,7 @@ void D2RProcess::updateData() {
         player.levelChanged = false;
         player.seed = act.seed;
         if (lastDifficulty != player.difficulty || lastSeed != act.seed) {
+            readGameInfo();
             player.levelChanged = true;
             currProcess->knownItems.clear();
         }
@@ -680,6 +681,16 @@ void D2RProcess::updateOffset() {
             int32_t rel;
             if (READ(currProcess->baseAddr + off - 3, rel)) {
                 currProcess->rosterDataAddr = currProcess->baseAddr + off + 1 + rel;
+            }
+        }
+
+        const uint8_t search4[] = {0xE8, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8D, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x44, 0x88, 0x2D, 0x00, 0x00, 0x00, 0x00};
+        const uint8_t mask4[] = {0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
+        off = searchMem(mem, size_t(currProcess->baseSize), search4, mask4, sizeof(search4));
+        if (off != size_t(-1)) {
+            int32_t rel;
+            if (READ(currProcess->baseAddr + off + 8, rel)) {
+                currProcess->gameInfoAddr = currProcess->baseAddr + off - 244 + rel;
             }
         }
     }
@@ -981,6 +992,23 @@ void D2RProcess::readUnitItem(const UnitAny &unit) {
     }
 }
 
+void D2RProcess::readGameInfo() {
+    if (!currProcess_) { return; }
+    auto *currProcess = currProcess_;
+    GameInfo gameInfo;
+    if (READ(currProcess->gameInfoAddr, gameInfo)) {
+        currProcess->gameName.assign(gameInfo.gameNameBuffer, gameInfo.gameNameBuffer + gameInfo.gameName.size);
+        currProcess->gamePass.assign(gameInfo.gamePassBuffer, gameInfo.gamePassBuffer + gameInfo.gamePass.size);
+        currProcess->region.assign(gameInfo.regionBuffer, gameInfo.regionBuffer + gameInfo.region.size);
+        currProcess->gameIP.assign(gameInfo.gameIPBuffer, gameInfo.gameIPBuffer + gameInfo.gameIP.size);
+    } else {
+        currProcess->gameName.clear();
+        currProcess->gamePass.clear();
+        currProcess->region.clear();
+        currProcess->gameIP.clear();
+    }
+}
+
 void D2RProcess::readRosters() {
     if (!currProcess_) { return; }
     auto *currProcess = currProcess_;
@@ -994,7 +1022,7 @@ void D2RProcess::readRosters() {
         p.level = mem.level;
         p.party = mem.partyId;
         memcpy(p.name, mem.name, 16);
-        if (mem.wideName[0]) {
+        if (/* Battle.Net */ mem.wideName[0] || /* Single-player */ (!mem.posX && mem.unk9[2] == uint32_t(-1))) {
             currProcess->focusedPlayer = mem.unitId;
             currProcess->currPlayer = &p;
         } else {

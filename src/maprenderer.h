@@ -54,10 +54,9 @@ class MapRenderer final {
         uint8_t currDifficulty = uint8_t(-1);
         uint32_t currLevelId = 0;
         std::map<uint32_t, std::unique_ptr<d2mapapi::CollisionMap>> maps;
+        std::vector<uint8_t> mapData;
         int x0 = 0, y0 = 0, x1 = 0, y1 = 0, cx = 0, cy = 0;
         const d2mapapi::CollisionMap *currMap = nullptr;
-        std::vector<std::pair<const d2mapapi::CollisionMap*, Texture>> mapAround;
-        uint16_t playerPosX = 0, playerPosY = 0;
         std::vector<std::tuple<float, float, std::wstring, float>> textStrings;
         std::vector<std::tuple<float, float>> lines;
         std::chrono::steady_clock::time_point mapStartTime;
@@ -71,8 +70,6 @@ public:
 
     void forceFlush() {
         forceFlush_ = true;
-        currSession_->playerPosX = 0;
-        currSession_->playerPosY = 0;
     }
 
     PluginTextList &getPluginText(const std::string &key);

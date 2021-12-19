@@ -196,10 +196,22 @@ void loadCfg(const std::string &filename) {
     }
     if (!sCfg.panelPattern.empty()) {
         sCfg.panelPatterns.clear();
-        typename std::wstring::size_type pos = 0, last = 0;
-        while ((pos = sCfg.panelPattern.find(L"{newline}", last)) != std::wstring::npos) {
+        typename std::wstring::size_type last = 0;
+        while (true) {
+            auto pos = sCfg.panelPattern.find(L"{newline}", last);
+            auto pos2 = sCfg.panelPattern.find(L"{n}", last);
+            int sepLen;
+            if (pos > pos2) {
+                pos = pos2;
+                sepLen = 3;
+            } else {
+                sepLen = 9;
+            }
+            if (pos == std::wstring::npos) {
+                break;
+            }
             sCfg.panelPatterns.emplace_back(sCfg.panelPattern.substr(last, pos - last));
-            last = pos + 9;
+            last = pos + sepLen;
         }
         if (last < sCfg.panelPattern.size()) {
             sCfg.panelPatterns.emplace_back(sCfg.panelPattern.substr(last));

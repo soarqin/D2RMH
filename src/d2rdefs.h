@@ -658,6 +658,28 @@ struct PvPInfo {
     uint64_t nextPtr;
 };
 
+struct VectorData {
+    uint64_t ptr;
+    uint32_t size;
+    uint32_t unk0;
+    uint32_t capacity;
+    uint32_t unk1;
+};
+
+struct GameInfo {
+    VectorData session;
+    char unk0[0x18];
+    VectorData gameName;
+    char gameNameBuffer[0x18];
+    VectorData gamePass;
+    char gamePassBuffer[0x18];
+    VectorData region;
+    char regionBuffer[0x18];
+    uint64_t unk1[31];
+    VectorData gameIP;
+    char gameIPBuffer[0x18];
+};
+
 struct RosterUnit {
     char name[16];
     uint64_t unk0;

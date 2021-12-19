@@ -189,73 +189,37 @@ void MapRenderer::update() {
         int height = totalY1 - totalY0;
         auto *pixels = new uint32_t[width * height];
         memset(pixels, 0, sizeof(uint32_t) * width * height);
-        auto &mapTex = currSession_->mapTex;
-        auto totalWidth = currMap->size.width;
-        auto decodeMapFunc = [this, totalX0, totalY0, width, pixels](const d2mapapi::CollisionMap *currMap) {
-            auto offX = currMap->offset.x - totalX0;
-            auto offY = currMap->offset.y - totalY0;
-            auto walkableColor = cfg->walkableColor;
-            if (walkableColor == 0) { walkableColor = 1; }
-            auto edgeColor = cfg->edgeColor;
-            bool hasEdge = edgeColor != 0;
-            auto x0 = currMap->crop.x0, y0 = currMap->crop.y0, y1 = currMap->crop.y1,
-                 mw = currMap->size.width, mh = currMap->size.height;
-            int y = y0;
-            int x = x0;
-            bool isWalkable = false;
-            for (auto v: currMap->mapData) {
-                if (v == -1) {
-                    ++y;
-                    x = x0;
-                    isWalkable = false;
-                    continue;
+        auto walkableColor = cfg->walkableColor;
+        if (walkableColor == 0) { walkableColor = 1; }
+        auto edgeColor = cfg->edgeColor;
+        auto &mapData = currSession_->mapData;
+        mapData.clear();
+        mapData.resize(width * height);
+        auto mapDataToPixels = [](uint32_t *pixels, const uint8_t *data, int pitch, int ox, int oy, int w, int h, const uint32_t *colorTable) {
+            int x = ox, y = oy;
+            int skip = pitch - w;
+            auto *ptr = data + y * pitch + x;
+            auto *out = pixels + y * pitch + x;
+            for (; h; h--) {
+                for (int z = w; z; z--) {
+                    *out++ = colorTable[*ptr++];
                 }
-                if (!isWalkable) {
-                    /* draw bottom edge */
-                    if (hasEdge && y > 0) {
-                        auto *ptr = pixels + offX + x + (offY + y) * width;
-                        for (int z = v; z; z--, ptr++) {
-                            if (*(ptr - width) != 0) {
-                                *(ptr - width) = edgeColor;
-                            }
-                        }
-                    }
-                } else {
-                    auto *ptr = pixels + offX + x + (offY + y) * width;
-                    int z = v;
-                    if (hasEdge && y + 1 == y1 && y1 < mh) {
-                        /* bottom of cropped area, but not whole area */
-                        for (; z; z--) {
-                            *ptr++ = edgeColor;
-                        }
-                    } else {
-                        /* draw left edge */
-                        if (hasEdge) {
-                            *ptr++ = x > 0 ? edgeColor : walkableColor;
-                            z -= 2;
-                        }
-                        /* if only 1 dot block, skip this */
-                        if (z > 0) {
-                            bool drawEdge = hasEdge && y > 0;
-                            for (; z; z--) {
-                                /* check if this is top edge */
-                                *ptr++ = drawEdge && *(ptr - width) == 0 ? edgeColor : walkableColor;
-                            }
-                            /* draw right edge */
-                            if (hasEdge) {
-                                *ptr = x + v < mw ? edgeColor : walkableColor;
-                            }
-                        }
-                    }
-                }
-                isWalkable = !isWalkable;
-                x += v;
+                ptr += skip;
+                out += skip;
             }
         };
-        decodeMapFunc(currMap);
+        int ox = currMap->offset.x - totalX0, oy = currMap->offset.y - totalY0;
+        currMap->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 1, 0, 2);
+        const uint32_t colorTable[3] = {0u, walkableColor, edgeColor};
+        mapDataToPixels(pixels, mapData.data(), width, ox, oy,
+                        currMap->crop.x1 - currMap->crop.x0, currMap->crop.y1 - currMap->crop.y0, colorTable);
         for (auto &p: knownMaps) {
-            decodeMapFunc(p.second);
+            ox = p.second->offset.x - totalX0, oy = p.second->offset.y - totalY0;
+            p.second->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 1, 0, 2);
+            mapDataToPixels(pixels, mapData.data(), width, ox, oy,
+                            p.second->crop.x1 - p.second->crop.x0, p.second->crop.y1 - p.second->crop.y0, colorTable);
         }
+        auto &mapTex = currSession_->mapTex;
         mapTex.setData(width, height, pixels);
         delete[] pixels;
 
@@ -555,8 +519,6 @@ void MapRenderer::updatePlayerPos() {
             dynamicTextStrings_.emplace_back(DynamicTextString { oxf, oyf, plr.name, float(ttf_->stringWidth(plr.name, cfg->fontSize)) * .5f });
         }
         if (&plr == currPlayer) {
-            currSession_->playerPosX = posX;
-            currSession_->playerPosY = posY;
             framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf + 2, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 4, oxf + 2, oyf - 2, cfg->playerOuterColor);
@@ -751,7 +713,14 @@ void MapRenderer::updatePanelText() {
                     auto currUnixTime = time(nullptr);
                     struct tm tm = {};
                     localtime_s(&tm, &currUnixTime);
-                    wsprintfW(n, L"%d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                    wcsftime(n, 16, L"%H:%M:%S", &tm);
+                    target += n;
+                } else if (sv == L"timea") {
+                    wchar_t n[16];
+                    auto currUnixTime = time(nullptr);
+                    struct tm tm = {};
+                    localtime_s(&tm, &currUnixTime);
+                    wcsftime(n, 16, L"%I:%M:%S %p", &tm);
                     target += n;
                 } else if (sv == L"difficulty") {
                     const auto *cpl = d2rProcess_.currPlayer();
@@ -775,6 +744,14 @@ void MapRenderer::updatePanelText() {
                             target += (*gamedata->levels[cpl->levelId].second)[lng_];
                         }
                     }
+                } else if (sv == L"gamename") {
+                    target += d2rProcess_.gameName();
+                } else if (sv == L"gamepass") {
+                    target += d2rProcess_.gamePass();
+                } else if (sv == L"region") {
+                    target += d2rProcess_.region();
+                } else if (sv == L"serverip") {
+                    target += d2rProcess_.gameIP();
                 }
             } else {
                 target += pat[pos];
@@ -783,6 +760,7 @@ void MapRenderer::updatePanelText() {
         }
     }
 }
+
 void MapRenderer::loadFromCfg() {
     ttf_ = std::make_unique<TTF>(ttfgl_);
     ttf_->add(cfg->fontFilePath);

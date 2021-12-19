@@ -74,11 +74,14 @@ public:
         uint64_t uiBaseAddr = 0;
         uint64_t isExpansionAddr = 0;
         uint64_t rosterDataAddr = 0;
+        uint64_t gameInfoAddr = 0;
 
         uint8_t mapEnabled = 0;
         uint32_t panelEnabled = 0;
 
         uint32_t focusedPlayer = 0;
+
+        std::wstring gameName, gamePass, region, gameIP;
 
         uint32_t realTombLevelId = 0;
         uint32_t superUniqueTombLevelId = 0;
@@ -114,6 +117,11 @@ public:
     [[nodiscard]] inline const std::unordered_map<uint32_t, MapObject> &objects() const { return currProcess_->mapObjects; }
     [[nodiscard]] inline const std::vector<MapItem> &items() const { return currProcess_->mapItems; }
 
+    [[nodiscard]] inline const std::wstring &gameName() const { return currProcess_->gameName; }
+    [[nodiscard]] inline const std::wstring &gamePass() const { return currProcess_->gamePass; }
+    [[nodiscard]] inline const std::wstring &region() const { return currProcess_->region; }
+    [[nodiscard]] inline const std::wstring &gameIP() const { return currProcess_->gameIP; }
+
     void reloadConfig() { loadFromCfg(); currProcess_ = nullptr; }
 
     /* functions for plugins */
@@ -131,6 +139,7 @@ private:
     void readUnitMonster(const UnitAny &unit);
     void readUnitObject(const UnitAny &unit);
     void readUnitItem(const UnitAny &unit);
+    void readGameInfo();
     void readRosters();
     void loadFromCfg();
 
