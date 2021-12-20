@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+namespace d2r {
+
 enum class StatId {
     /*   0 */ Strength,
     /*   1 */ Energy,
@@ -708,3 +710,5 @@ struct RosterUnit {
 };
 
 #pragma pack(pop)
+
+}

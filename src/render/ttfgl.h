@@ -10,12 +10,14 @@
 
 #include "ttf.h"
 
+namespace render {
+
 class Pipeline;
 class PipelineTexture2D;
 class Renderer;
 class Texture;
 
-class TTFRenderGL final: public TTFRenderImpl {
+class TTFRenderGL final : public TTFRenderImpl {
 public:
     explicit TTFRenderGL(Renderer &renderer);
     explicit TTFRenderGL(Texture &tex);
@@ -34,3 +36,5 @@ private:
     PipelineTexture2D *pipeline_;
     void *lastTex_ = nullptr;
 };
+
+}

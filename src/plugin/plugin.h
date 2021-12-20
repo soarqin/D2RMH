@@ -12,9 +12,16 @@
 #include <vector>
 #include <string>
 
-struct PluginCtx;
-class D2RProcess;
+namespace d2r {
+class ProcessManager;
+}
+namespace ui {
 class MapRenderer;
+}
+
+namespace plugin {
+
+struct PluginCtx;
 
 struct PluginText {
     std::wstring text;
@@ -32,7 +39,7 @@ struct PluginTextList {
 
 class Plugin final {
 public:
-    Plugin(D2RProcess *process, MapRenderer *renderer);
+    Plugin(d2r::ProcessManager *process, ui::MapRenderer *renderer);
     ~Plugin();
     void load();
     void run();
@@ -43,6 +50,8 @@ private:
 
 private:
     PluginCtx *ctx_;
-    D2RProcess *d2rProcess_;
-    MapRenderer *mapRenderer_;
+    d2r::ProcessManager *d2rProcess_;
+    ui::MapRenderer *mapRenderer_;
 };
+
+}

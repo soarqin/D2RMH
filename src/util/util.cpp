@@ -11,6 +11,8 @@
 #include <windows.h>
 #include <map>
 
+namespace util {
+
 std::wstring utf8toucs4(const std::string &s) {
     std::wstring ws;
     wchar_t wc;
@@ -287,4 +289,6 @@ uint32_t mapStringToVKey(const std::string &name, uint32_t &mods) {
         mods |= ite2->second;
     }
     return ite->second;
+}
+
 }

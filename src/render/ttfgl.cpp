@@ -10,6 +10,8 @@
 
 #include "renderer.h"
 
+namespace render {
+
 TTFRenderGL::TTFRenderGL(Renderer &renderer): pipeline_(new PipelineTexture2D(renderer)) {
 }
 TTFRenderGL::TTFRenderGL(Texture &tex): pipeline_(new PipelineTexture2D(tex)) {
@@ -60,4 +62,6 @@ void TTFRenderGL::renderEnd() {
         pipeline_->setTexture(*texture);
         pipeline_->render();
     }
+}
+
 }

@@ -23,12 +23,14 @@
 
 #include <fstream>
 
+namespace render {
+
 enum {
     RectPackWidthDefault = 1024,
 };
 
 struct RectPackData {
-    explicit RectPackData(int nodeCount): nodes(new stbrp_node[nodeCount]) {
+    explicit RectPackData(int nodeCount) : nodes(new stbrp_node[nodeCount]) {
     }
     ~RectPackData() {
         delete[] nodes;
@@ -39,7 +41,8 @@ struct RectPackData {
 
 class RectPacker final {
 public:
-    explicit RectPacker(int width = RectPackWidthDefault, int height = RectPackWidthDefault): width_(width), height_(height) {}
+    explicit RectPacker(int width = RectPackWidthDefault, int height = RectPackWidthDefault)
+        : width_(width), height_(height) {}
     ~RectPacker() {
         for (auto *rpd: rectpackData_) {
             delete rpd;
@@ -84,10 +87,11 @@ private:
 
 private:
     int width_, height_;
-    std::vector<RectPackData*> rectpackData_;
+    std::vector<RectPackData *> rectpackData_;
 };
 
-TTF::TTF(TTFRenderImpl &renderImpl): renderImpl_(renderImpl), rectpacker_(new RectPacker(RectPackWidthDefault, RectPackWidthDefault)) {
+TTF::TTF(TTFRenderImpl &renderImpl)
+    : renderImpl_(renderImpl), rectpacker_(new RectPacker(RectPackWidthDefault, RectPackWidthDefault)) {
 #ifdef USE_FREETYPE
     FT_Init_FreeType(&ftLib_);
 #endif
@@ -139,7 +143,7 @@ bool TTF::add(const std::string &filename, int index) {
     auto size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     fi.ttf_buffer.resize(size_t(size));
-    ifs.read((char*)fi.ttf_buffer.data(), size);
+    ifs.read((char *)fi.ttf_buffer.data(), size);
     ifs.close();
     auto *info = new stbtt_fontinfo;
     stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], index));
@@ -204,9 +208,12 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
         auto err = FT_Load_Glyph(f.face, index, FT_LOAD_DEFAULT);
         if (!err) { fi = &f; break; }
 #else
-        info = static_cast<stbtt_fontinfo*>(f.font);
+        info = static_cast<stbtt_fontinfo *>(f.font);
         index = stbtt_FindGlyphIndex(info, ch);
-        if (index != 0) { fi = &f; break; }
+        if (index != 0) {
+            fi = &f;
+            break;
+        }
 #endif
     }
     uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
@@ -286,6 +293,8 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
             *ptr2++ = (uint32_t(*ptr++) << 24) | 0xFFFFFFu;
         }
     }
-    renderImpl_.updateTexture(tex, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t*)dst2);
+    renderImpl_.updateTexture(tex, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t *)dst2);
     return fd;
+}
+
 }

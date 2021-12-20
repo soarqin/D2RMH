@@ -14,7 +14,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include "window.h"
 
-#include "util.h"
+#include "util/util.h"
 
 #include <windows.h>
 #include <versionhelpers.h>
@@ -28,6 +28,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #define WM_TRAY_CALLBACK_MESSAGE (WM_USER + 1)
+
+namespace ui {
 
 struct MenuItem {
     UINT id = 0;
@@ -171,7 +173,6 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
     INITCOMMONCONTROLSEX iccex = { sizeof(INITCOMMONCONTROLSEX) };
     InitCommonControlsEx(&iccex);
-    InitCommonControls();
     auto inst = HINST_THISCOMPONENT;
     auto icon = LoadIconW(inst, MAKEINTRESOURCEW(1));
 
@@ -437,7 +438,7 @@ void Window::enableHotkeys(bool enable) {
 void Window::registerHotkey(const std::string &name, const std::function<void()> &cb) {
     if (!cb) { return; }
     UINT mods;
-    UINT vkey = mapStringToVKey(name, mods);
+    UINT vkey = util::mapStringToVKey(name, mods);
     if (!vkey) { return; }
     for (int nid = 1; nid < 0xC000; ++nid) {
         if (ctx_->hotkeys.find(nid) != ctx_->hotkeys.end()) { continue; }
@@ -466,4 +467,6 @@ void Window::setSizeCallback(const std::function<void(int, int)> &cb) {
 
 void *Window::hwnd() {
     return (void*)ctx_->hwnd;
+}
+
 }

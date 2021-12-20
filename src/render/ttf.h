@@ -13,6 +13,8 @@
 #include <string>
 #include <cstdint>
 
+namespace render {
+
 class RectPacker;
 
 class TTFRenderImpl {
@@ -124,3 +126,5 @@ private:
     FT_Library ftLib_ = nullptr;
 #endif
 };
+
+}

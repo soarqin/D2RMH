@@ -11,17 +11,22 @@
 #include <vector>
 #include <cstdint>
 
+namespace ui {
 class Window;
+}
+
+namespace render {
+
 struct RendererCtx;
 
 class Pipeline;
 
 class Renderer final {
 public:
-    explicit Renderer(Window*);
+    explicit Renderer(ui::Window*);
     ~Renderer();
 
-    [[nodiscard]] Window *owner();
+    [[nodiscard]] ui::Window *owner();
 
     static void setSwapInterval(int interval);
     static void setViewport(int x, int y, int w, int h);
@@ -179,3 +184,5 @@ protected:
 private:
     int uniformMVP_ = -1;
 };
+
+}

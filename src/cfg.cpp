@@ -8,7 +8,8 @@
 
 #include "cfg.h"
 
-#include "util.h"
+#include "util/util.h"
+
 #include "ini.h"
 
 #include <fstream>
@@ -23,7 +24,7 @@ static Cfg sCfg;
 const Cfg *cfg = &sCfg;
 
 #define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
-#define LOADVALW(n, m) else if (!strcmp(name, #n)) { sCfg.m = utf8toucs4(value); }
+#define LOADVALW(n, m) else if (!strcmp(name, #n)) { sCfg.m = util::utf8toucs4(value); }
 #define LOADVALN(n, m) else if (!strcmp(name, #n)) { sCfg.m = decltype(sCfg.m)(strtol(value, nullptr, 0)); }
 #define LOADVALF(n, m) else if (!strcmp(name, #n)) { sCfg.m = strtof(value, nullptr); }
 #define LOADVALC(n, m) else if (!strcmp(name, #n)) { sCfg.m = calcColor(value); }
@@ -159,9 +160,9 @@ void loadCfg(const std::string &filename) {
             if (index >= sCfg.sounds.size()) { sCfg.sounds.resize(index + 1); }
             auto vlen = strlen(value);
             if (!strcasecmp(value + vlen - 4, ".wav")) {
-                sCfg.sounds[index] = {utf8toucs4(value), false};
+                sCfg.sounds[index] = {util::utf8toucs4(value), false};
             } else {
-                sCfg.sounds[index] = {utf8toucs4(value), true};
+                sCfg.sounds[index] = {util::utf8toucs4(value), true};
             }
             break;
         }
@@ -173,7 +174,7 @@ void loadCfg(const std::string &filename) {
     sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
     if (sCfg.showNormalMonsters) { sCfg.showMonsters = 2; }
     if (!sCfg.mapArea.empty()) {
-        auto vec = splitString(sCfg.mapArea, ',');
+        auto vec = util::splitString(sCfg.mapArea, ',');
         if (vec.size() > 1) {
             sCfg.mapAreaW = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f);
             sCfg.mapAreaH = std::clamp(strtof(vec[1].c_str(), nullptr), 0.f, 1.f);
@@ -182,7 +183,7 @@ void loadCfg(const std::string &filename) {
         }
     }
     if (!sCfg.msgPosition.empty()) {
-        auto vec = splitString(sCfg.msgPosition, ',');
+        auto vec = util::splitString(sCfg.msgPosition, ',');
         auto sz = vec.size();
         if (sz > 0) {
             sCfg.msgPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;
@@ -218,7 +219,7 @@ void loadCfg(const std::string &filename) {
         }
     }
     if (!sCfg.panelPosition.empty()) {
-        auto vec = splitString(sCfg.panelPosition, ',');
+        auto vec = util::splitString(sCfg.panelPosition, ',');
         auto sz = vec.size();
         if (sz > 0) {
             sCfg.panelPositionX = std::clamp(strtof(vec[0].c_str(), nullptr), 0.f, 1.f) - .5f;

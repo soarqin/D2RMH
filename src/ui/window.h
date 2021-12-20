@@ -11,10 +11,16 @@
 #include <functional>
 #include <string>
 
+namespace render {
+class Renderer;
+}
+
+namespace ui {
+
 struct WindowCtx;
 
 class Window final {
-    friend class Renderer;
+    friend class ::render::Renderer;
 public:
     enum {
         TRAYMENU_DISABLED = 1,
@@ -25,7 +31,11 @@ public:
     Window(int x, int y, int width, int height);
     ~Window();
 
-    void enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip = nullptr, const wchar_t *info = nullptr, const wchar_t *infoTitle = nullptr);
+    void enableTrayMenu(bool enable,
+                        const wchar_t *icon,
+                        const wchar_t *tip = nullptr,
+                        const wchar_t *info = nullptr,
+                        const wchar_t *infoTitle = nullptr);
     void addAboutMenu();
     int addTrayMenuItem(const wchar_t *name, int parent, unsigned flags, const std::function<void()> &cb);
     void destroyTrayMenu();
@@ -53,3 +63,5 @@ private:
 private:
     WindowCtx *ctx_;
 };
+
+}

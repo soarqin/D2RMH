@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+namespace util {
+
 #if defined(_M_IX86)
 
 #define IS_TRUE(clause, msg) if (!(clause)) { throw std::runtime_error(msg); }
@@ -35,31 +37,31 @@ uint32_t readMemory64(HANDLE handle, uint64_t address, uint32_t length, void *da
     return length;
 }
 
-void readPBI(HANDLE handle, sys::PROCESS_BASIC_INFORMATION64 &pbi) {
+void readPBI(HANDLE handle, PROCESS_BASIC_INFORMATION64 &pbi) {
     IS_TRUE(handle, "No process handle obtained");
 
-    NTSTATUS status = NtWow64QueryInformationProcess64(handle, sys::ProcessBasicInformation, &pbi, sizeof(pbi), nullptr);
+    NTSTATUS status = NtWow64QueryInformationProcess64(handle, ProcessBasicInformation, &pbi, sizeof(pbi), nullptr);
 
     IS_TRUE(NT_SUCCESS(status), "NtQueryInformationProcess failed");
 }
 
-uint32_t readPEBData(HANDLE handle, sys::PEB64 *peb) {
-    sys::PROCESS_BASIC_INFORMATION64 pbi = {0};
+uint32_t readPEBData(HANDLE handle, PEB64 *peb) {
+    PROCESS_BASIC_INFORMATION64 pbi = {0};
     readPBI(handle, pbi);
 
-    return readMemory64(handle, pbi.PebBaseAddress, sizeof(sys::PEB64), peb);
+    return readMemory64(handle, pbi.PebBaseAddress, sizeof(PEB64), peb);
 }
 
 bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb) {
-    sys::PEB64 peb;
+    PEB64 peb;
     readPEBData(handle, &peb);
 
     // ------------------------------------------------------------------------
     // Read memory from pointer to loader data structures.
     // ------------------------------------------------------------------------
-    std::vector<uint8_t> read_peb_ldr_data(sizeof(sys::PEB_LDR_DATA64));
-    readMemory64(handle, (uint64_t)peb.LoaderData, sizeof(sys::PEB_LDR_DATA64), read_peb_ldr_data.data());
-    auto *peb_ldr_data = (sys::PEB_LDR_DATA64 *)read_peb_ldr_data.data();
+    std::vector<uint8_t> read_peb_ldr_data(sizeof(PEB_LDR_DATA64));
+    readMemory64(handle, (uint64_t)peb.LoaderData, sizeof(PEB_LDR_DATA64), read_peb_ldr_data.data());
+    auto *peb_ldr_data = (PEB_LDR_DATA64 *)read_peb_ldr_data.data();
 
     ULONGLONG address = peb_ldr_data->InLoadOrderModuleList.Flink;
 
@@ -67,10 +69,10 @@ bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, cons
     // Traversing loader data structures.
     // ------------------------------------------------------------------------
     for (;;) {
-        std::vector<uint8_t> read_ldr_table_entry(sizeof(sys::LDR_DATA_TABLE_ENTRY64));
-        readMemory64(handle, address, sizeof(sys::LDR_DATA_TABLE_ENTRY64), read_ldr_table_entry.data());
+        std::vector<uint8_t> read_ldr_table_entry(sizeof(LDR_DATA_TABLE_ENTRY64));
+        readMemory64(handle, address, sizeof(LDR_DATA_TABLE_ENTRY64), read_ldr_table_entry.data());
 
-        auto *ldr_table_entry = (sys::LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
+        auto *ldr_table_entry = (LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
         if (!ldr_table_entry->BaseAddress) {
             break;
         }
@@ -85,7 +87,7 @@ bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, cons
             break;
         }
 
-        ldr_table_entry = (sys::LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
+        ldr_table_entry = (LDR_DATA_TABLE_ENTRY64 *)read_ldr_table_entry.data();
         address = (uint64_t)ldr_table_entry->InLoadOrderModuleList.Flink;
     }
 
@@ -128,3 +130,5 @@ bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, cons
 #   error "This application must be built as an x86 executable"
 
 #endif
+
+}

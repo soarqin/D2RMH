@@ -14,6 +14,13 @@
 #include <unordered_map>
 #include <string>
 
+namespace d2r {
+struct UnitAny;
+struct ItemData;
+}
+
+namespace data {
+
 enum EObjType {
     TypeNone,
     TypeWayPoint,
@@ -40,10 +47,9 @@ struct Data {
     std::vector<std::pair<std::string, const LngString*>> mercNames = {};
 };
 
-struct UnitAny;
-struct ItemData;
-
 extern void loadData();
-extern uint16_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets);
+extern uint16_t filterItem(const d2r::UnitAny *unit, const d2r::ItemData *item, uint32_t sockets);
 
 extern const Data *gamedata;
+
+}

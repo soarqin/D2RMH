@@ -16,7 +16,7 @@
 
 // Namespace is present Not to collide with "winbase.h"
 // definition of PROCESS_INFORMATION_CLASS and others.
-namespace sys {
+namespace util {
 
 typedef enum _PROCESS_INFORMATION_CLASS {
     ProcessBasicInformation,
@@ -102,7 +102,7 @@ typedef struct _LDR_DATA_TABLE_ENTRY64 {
     ULONGLONG TimeDateStamp;
 } LDR_DATA_TABLE_ENTRY64, *PLDR_DATA_TABLE_ENTRY64;
 
-}  // namespace sys
+}
 
 #endif
 

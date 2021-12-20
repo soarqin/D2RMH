@@ -12,6 +12,8 @@
 #include <vector>
 #include <chrono>
 
+namespace util {
+
 /* String functions */
 std::wstring utf8toucs4(const std::string &s);
 std::vector<std::string> splitString(const std::string &str, char c);
@@ -22,3 +24,5 @@ std::chrono::steady_clock::time_point getCurrTime();
 
 /* Hotkey functions */
 uint32_t mapStringToVKey(const std::string &name, uint32_t &mods);
+
+}

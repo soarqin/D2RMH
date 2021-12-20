@@ -8,22 +8,25 @@
 
 #include "renderer.h"
 
-#include "window.h"
-#include "util.h"
-
 #include "HandmadeMath.h"
+#include "ui/window.h"
+
+#include "util/util.h"
+
 #include <glad/glad_wgl.h>
 #include <windows.h>
 #include <chrono>
 #include <thread>
 #include <stdexcept>
 
-typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTPROC) (HDC hDc);
-typedef BOOL (WINAPI * PFNWGLDELETECONTEXTPROC) (HGLRC oldContext);
-typedef BOOL (WINAPI * PFNWGLMAKECURRENTPROC) (HDC hDc, HGLRC newContext);
+namespace render {
+
+typedef HGLRC (WINAPI *PFNWGLCREATECONTEXTPROC)(HDC hDc);
+typedef BOOL (WINAPI *PFNWGLDELETECONTEXTPROC)(HGLRC oldContext);
+typedef BOOL (WINAPI *PFNWGLMAKECURRENTPROC)(HDC hDc, HGLRC newContext);
 
 struct RendererCtx {
-    Window *owner = nullptr;
+    ui::Window *owner = nullptr;
 
     /* WGL functions */
     HMODULE lib = nullptr;
@@ -46,7 +49,7 @@ struct RendererCtx {
     float clearColor[4] = {.0, .0, .0, .0};
 };
 
-Renderer::Renderer(Window *wnd): ctx_(new RendererCtx) {
+Renderer::Renderer(ui::Window *wnd) : ctx_(new RendererCtx) {
     ctx_->owner = wnd;
     ctx_->lib = LoadLibraryW(L"opengl32.dll");
     if (!ctx_->lib) {
@@ -56,7 +59,8 @@ Renderer::Renderer(Window *wnd): ctx_(new RendererCtx) {
     ctx_->wglDeleteContext = (PFNWGLDELETECONTEXTPROC)GetProcAddress(ctx_->lib, "wglDeleteContext");
     ctx_->wglMakeCurrent = (PFNWGLMAKECURRENTPROC)GetProcAddress(ctx_->lib, "wglMakeCurrent");
     PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SUPPORT_COMPOSITION,
+        sizeof(PIXELFORMATDESCRIPTOR), 1,
+        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SUPPORT_COMPOSITION,
         PFD_TYPE_RGBA, 32, 8, 0, 8, 0, 8, 0,
         8, 0, 0, 0, 0, 0, 0,
         0, 0, 0, PFD_MAIN_PLANE,
@@ -85,7 +89,7 @@ Renderer::~Renderer() {
     delete ctx_;
 }
 
-Window *Renderer::owner() {
+ui::Window *Renderer::owner() {
     return ctx_->owner;
 }
 
@@ -113,17 +117,17 @@ void Renderer::setClearColor(float r, float g, float b, float a) {
 void Renderer::prepare() {
     if (ctx_->fpsLimit) {
         do {
-            auto now = getCurrTime();
+            auto now = util::getCurrTime();
             if (ctx_->nextRenderTime > now) {
                 std::this_thread::sleep_for(ctx_->nextRenderTime - now);
-                updateTime();
+                util::updateTime();
                 continue;
             }
             ctx_->nextRenderTime += ctx_->renderInterval;
             if (ctx_->nextRenderTime < now) { ctx_->nextRenderTime = now + ctx_->renderInterval; }
             break;
-        } while(true);
-        updateTime();
+        } while (true);
+        util::updateTime();
     }
 }
 void Renderer::begin() {
@@ -143,14 +147,12 @@ void Renderer::getDimension(int &width, int &height) const {
     height = ctx_->height;
 }
 
-Shader::Shader(Shader::Type type): tp(type) {
+Shader::Shader(Shader::Type type) : tp(type) {
     uint32_t stp = 0;
     switch (type) {
-    case VertexShader:
-        stp = GL_VERTEX_SHADER;
+    case VertexShader:stp = GL_VERTEX_SHADER;
         break;
-    case FragmentShader:
-        stp = GL_FRAGMENT_SHADER;
+    case FragmentShader:stp = GL_FRAGMENT_SHADER;
         break;
     }
     uid = glCreateShader(stp);
@@ -337,12 +339,14 @@ struct PipelineCtx {
     bool mvpDirty = false;
 };
 
-Pipeline::Pipeline(const Texture &texture, ShaderProgram *prog, int stri, const VertexAttribPointer *vap): ctx_(new PipelineCtx) {
+Pipeline::Pipeline(const Texture &texture, ShaderProgram *prog, int stri, const VertexAttribPointer *vap)
+    : ctx_(new PipelineCtx) {
     init(prog, stri, vap);
     ctx_->renderToTarget = true;
     ctx_->host = &texture;
 }
-Pipeline::Pipeline(Renderer &renderer, ShaderProgram *prog, int stri, const VertexAttribPointer *vap): ctx_(new PipelineCtx) {
+Pipeline::Pipeline(Renderer &renderer, ShaderProgram *prog, int stri, const VertexAttribPointer *vap)
+    : ctx_(new PipelineCtx) {
     init(prog, stri, vap);
     ctx_->renderToTarget = false;
     ctx_->host = &renderer;
@@ -395,7 +399,11 @@ void Pipeline::render() {
         if (ctx_->renderToTarget && ctx_->uidFB == 0) {
             glGenFramebuffers(1, &ctx_->uidFB);
             glBindFramebuffer(GL_FRAMEBUFFER, ctx_->uidFB);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, (uint32_t)*(Texture*)ctx_->host, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D,
+                                   (uint32_t)*(Texture *)ctx_->host,
+                                   0);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
@@ -403,7 +411,10 @@ void Pipeline::render() {
         glBindBuffer(GL_ARRAY_BUFFER, ctx_->uidVBO);
         glBufferData(GL_ARRAY_BUFFER, ctx_->vertices.size(), &ctx_->vertices[0], GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx_->uidEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * ctx_->indices.size(), &ctx_->indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     sizeof(uint16_t) * ctx_->indices.size(),
+                     &ctx_->indices[0],
+                     GL_STATIC_DRAW);
         int count = ctx_->vertexAttrPtrLayouts.size();
         for (int i = 0; i < count; ++i) {
             auto &vapp = ctx_->vertexAttrPtrLayouts[i];
@@ -430,7 +441,9 @@ void Pipeline::render() {
 }
 void Pipeline::push(int vertexCountIn, const void *verticesIn, int indexCountIn, const uint16_t *indicesIn) {
     auto delta = uint16_t(ctx_->vertices.size() / ctx_->stride);
-    ctx_->vertices.insert(ctx_->vertices.end(), (const uint8_t*)verticesIn, (const uint8_t*)verticesIn + vertexCountIn * ctx_->stride);
+    ctx_->vertices.insert(ctx_->vertices.end(),
+                          (const uint8_t *)verticesIn,
+                          (const uint8_t *)verticesIn + vertexCountIn * ctx_->stride);
     ctx_->indices.reserve(ctx_->indices.size() + indexCountIn);
     for (int i = 0; i < indexCountIn; ++i) {
         ctx_->indices.push_back(indicesIn[i] + delta);
@@ -453,67 +466,66 @@ void Pipeline::init(ShaderProgram *prog, int stri, const VertexAttribPointer *va
     for (; vap->fmt != VERTEXFORMAT_NONE; ++vap) {
         VertexAttribPointerLayout vapp;
         switch (vap->fmt) {
-        case VERTEXFORMAT_FLOAT:
-            vapp = { 1, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_FLOAT:vapp = {1, GL_FLOAT, GL_FALSE,
+                                        (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_FLOAT2:
-            vapp = { 2, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_FLOAT2:vapp = {2, GL_FLOAT, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 8;
             break;
-        case VERTEXFORMAT_FLOAT3:
-            vapp = { 3, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_FLOAT3:vapp = {3, GL_FLOAT, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 12;
             break;
-        case VERTEXFORMAT_FLOAT4:
-            vapp = { 4, GL_FLOAT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_FLOAT4:vapp = {4, GL_FLOAT, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 16;
             break;
-        case VERTEXFORMAT_BYTE4:
-            vapp = { 4, GL_BYTE, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_BYTE4:vapp = {4, GL_BYTE, GL_FALSE,
+                                        (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_BYTE4N:
-            vapp = { 4, GL_BYTE, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_BYTE4N:vapp = {4, GL_BYTE, GL_TRUE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_UBYTE4:
-            vapp = { 4, GL_UNSIGNED_BYTE, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_UBYTE4:vapp = {4, GL_UNSIGNED_BYTE, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_UBYTE4N:
-            vapp = { 4, GL_UNSIGNED_BYTE, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_UBYTE4N:vapp = {4, GL_UNSIGNED_BYTE, GL_TRUE,
+                                          (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_SHORT2:
-            vapp = { 2, GL_SHORT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_SHORT2:vapp = {2, GL_SHORT, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_SHORT2N:
-            vapp = { 2, GL_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_SHORT2N:vapp = {2, GL_SHORT, GL_TRUE,
+                                          (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_USHORT2N:
-            vapp = { 2, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_USHORT2N:vapp = {2, GL_UNSIGNED_SHORT, GL_TRUE,
+                                           (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 4;
             break;
-        case VERTEXFORMAT_SHORT4:
-            vapp = { 4, GL_SHORT, GL_FALSE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_SHORT4:vapp = {4, GL_SHORT, GL_FALSE,
+                                         (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 8;
             break;
-        case VERTEXFORMAT_SHORT4N:
-            vapp = { 4, GL_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_SHORT4N:vapp = {4, GL_SHORT, GL_TRUE,
+                                          (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 8;
             break;
-        case VERTEXFORMAT_USHORT4N:
-            vapp = { 4, GL_UNSIGNED_SHORT, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_USHORT4N:vapp = {4, GL_UNSIGNED_SHORT, GL_TRUE,
+                                           (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             total += 8;
             break;
-        case VERTEXFORMAT_UINT10_N2:
-            vapp = { 4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_TRUE, (const void*)(uintptr_t)(vap->offset == 0 ? total : vap->offset) };
+        case VERTEXFORMAT_UINT10_N2:vapp = {4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_TRUE,
+                                            (const void *)(uintptr_t)(vap->offset == 0 ? total : vap->offset)};
             break;
-        default:
-            continue;
+        default:continue;
         }
         ctx_->vertexAttrPtrLayouts.emplace_back(vapp);
     }
@@ -544,10 +556,10 @@ static constexpr VertexAttribPointer texture2DVAP[] = {
     {VERTEXFORMAT_NONE},
 };
 
-PipelineTexture2D::PipelineTexture2D(Renderer &renderer): Pipeline(renderer, nullptr, 0, texture2DVAP) {
+PipelineTexture2D::PipelineTexture2D(Renderer &renderer) : Pipeline(renderer, nullptr, 0, texture2DVAP) {
     init();
 }
-PipelineTexture2D::PipelineTexture2D(const Texture &tex): Pipeline(tex, nullptr, 0, texture2DVAP) {
+PipelineTexture2D::PipelineTexture2D(const Texture &tex) : Pipeline(tex, nullptr, 0, texture2DVAP) {
     init();
 }
 void PipelineTexture2D::setTexture(const Texture &tex) {
@@ -558,7 +570,15 @@ void PipelineTexture2D::pushQuad(float x0, float y0, float x1, float y1, uint32_
     float v1 = float(tex_->heightReal()) / float(tex_->height());
     pushQuad(x0, y0, x1, y1, 0, 0, u1, v1, color);
 }
-void PipelineTexture2D::pushQuad(float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, uint32_t color) {
+void PipelineTexture2D::pushQuad(float x0,
+                                 float y0,
+                                 float x1,
+                                 float y1,
+                                 float u0,
+                                 float v0,
+                                 float u1,
+                                 float v1,
+                                 uint32_t color) {
     Texture2DVertexData v[] = {
         {x0, y0, u0, v0, color},
         {x0, y1, u0, v1, color},
@@ -617,10 +637,10 @@ static constexpr VertexAttribPointer squad2DVAP[] = {
     {VERTEXFORMAT_NONE},
 };
 
-PipelineSquad2D::PipelineSquad2D(Renderer &renderer): Pipeline(renderer, nullptr, 0, squad2DVAP) {
+PipelineSquad2D::PipelineSquad2D(Renderer &renderer) : Pipeline(renderer, nullptr, 0, squad2DVAP) {
     init();
 }
-PipelineSquad2D::PipelineSquad2D(const Texture &tex): Pipeline(tex, nullptr, 0, squad2DVAP) {
+PipelineSquad2D::PipelineSquad2D(const Texture &tex) : Pipeline(tex, nullptr, 0, squad2DVAP) {
     init();
 }
 void PipelineSquad2D::pushQuad(float x0, float y0, float x1, float y1, uint32_t color) {
@@ -688,4 +708,6 @@ void PipelineSquad2D::init() {
         )");
     }
     uniformMVP_ = ctx_->program->uniformIndex("mvp");
+}
+
 }

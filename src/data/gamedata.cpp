@@ -6,15 +6,17 @@
  * https://opensource.org/licenses/MIT.
  */
 
-#include "data.h"
+#include "gamedata.h"
 
-#include "d2rdefs.h"
+#include "d2r/d2rdefs.h"
 #include "ini.h"
-#include "util.h"
+#include "util/util.h"
 
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
+
+namespace data {
 
 static Data sgamedata;
 const Data *gamedata = &sgamedata;
@@ -38,11 +40,13 @@ static inline uint32_t strToUInt(const std::string &str, bool searchItemCode) {
     return id;
 }
 
-static inline std::vector<std::pair<uint32_t, uint32_t>> calcRanges(const std::string &str, bool searchItemCode, uint32_t maxValue) {
+static inline std::vector<std::pair<uint32_t, uint32_t>> calcRanges(const std::string &str,
+                                                                    bool searchItemCode,
+                                                                    uint32_t maxValue) {
     std::vector<std::pair<uint32_t, uint32_t>> result;
-    auto vec = splitString(str, ',');
+    auto vec = util::splitString(str, ',');
     for (const auto &v: vec) {
-        auto vec2 = splitString(v, '-');
+        auto vec2 = util::splitString(v, '-');
         if (vec2.empty()) {
             continue;
         }
@@ -86,9 +90,12 @@ static void loadItemFilter(const char *key, const char *value) {
         ranges[index] = calcRanges(std::string(key, pos), index == 0, maxValues[index]);
         if (!key[pos]) { break; }
         switch (key[pos]) {
-        case '+': index = 1; break;
-        case '#': index = 2; break;
-        case '*': index = 3; break;
+        case '+': index = 1;
+            break;
+        case '#': index = 2;
+            break;
+        case '*': index = 3;
+            break;
         default: break;
         }
         key += pos + 1;
@@ -119,9 +126,9 @@ static void loadItemFilter(const char *key, const char *value) {
 
 void loadData() {
     int section = -1;
-    ini_parse("D2RMH_data.ini", [](void* user, const char* section,
-                                   const char* name, const char* value)->int {
-        auto *isec = (int*)user;
+    ini_parse("D2RMH_data.ini", [](void *user, const char *section,
+                                   const char *name, const char *value) -> int {
+        auto *isec = (int *)user;
         if (!name) {
             if (!strcmp(section, "guides")) { *isec = 0; }
             else if (!strcmp(section, "levels")) { *isec = 1; }
@@ -155,11 +162,12 @@ void loadData() {
             if (id >= sgamedata.levels.size()) {
                 sgamedata.levels.resize(id + 1);
             }
-            sgamedata.levels[id] = { value, nullptr };
+            sgamedata.levels[id] = {value, nullptr};
             break;
         }
-        case 2: case 3: {
-            auto sl = splitString(value, '|');
+        case 2:
+        case 3: {
+            auto sl = util::splitString(value, '|');
             if (sl.size() < 2) { break; }
             EObjType t = TypeNone;
             if (sl[0] == "Waypoint") { t = TypeWayPoint; }
@@ -173,7 +181,7 @@ void loadData() {
                 float x = 0, y = 0;
                 bool isDoor = t == TypeDoor;
                 if (isDoor || sl.size() > 2) {
-                    auto sl2 = splitString(sl[isDoor ? 1 : 2], ',');
+                    auto sl2 = util::splitString(sl[isDoor ? 1 : 2], ',');
                     if (sl2.size() > 1) {
                         x = std::strtof(sl2[0].c_str(), nullptr);
                         y = std::strtof(sl2[1].c_str(), nullptr);
@@ -192,9 +200,9 @@ void loadData() {
             }
             const char *pos = strchr(value, '|');
             if (pos) {
-                sgamedata.monsters[id] = { std::string(value, pos), uint8_t(strtoul(pos + 1, nullptr, 0)), nullptr };
+                sgamedata.monsters[id] = {std::string(value, pos), uint8_t(strtoul(pos + 1, nullptr, 0)), nullptr};
             } else {
-                sgamedata.monsters[id] = { value, false, nullptr };
+                sgamedata.monsters[id] = {value, false, nullptr};
             }
             break;
         }
@@ -203,7 +211,7 @@ void loadData() {
             if (id >= sgamedata.shrines.size()) {
                 sgamedata.shrines.resize(id + 1);
             }
-            sgamedata.shrines[id] = { value, nullptr };
+            sgamedata.shrines[id] = {value, nullptr};
             break;
         }
         case 6: {
@@ -211,7 +219,7 @@ void loadData() {
             if (id >= sgamedata.superUniques.size()) {
                 sgamedata.superUniques.resize(id + 1);
             }
-            sgamedata.superUniques[id] = { value, nullptr };
+            sgamedata.superUniques[id] = {value, nullptr};
             break;
         }
         case 7: {
@@ -221,7 +229,7 @@ void loadData() {
             }
             const char *pos = strchr(value, '|');
             if (pos) {
-                sgamedata.items[id] = { pos + 1, nullptr };
+                sgamedata.items[id] = {pos + 1, nullptr};
                 sgamedata.itemIdByCode[std::string(value, pos)] = id;
             }
             break;
@@ -242,18 +250,17 @@ void loadData() {
             auto ssize = pos - name;
             memcpy(realname, name, ssize);
             realname[ssize] = 0;
-            sgamedata.strings[realname][index] = utf8toucs4(value);
+            sgamedata.strings[realname][index] = util::utf8toucs4(value);
             break;
         }
-        default:
-            break;
+        default:break;
         }
         return 1;
     }, &section);
     section = -1;
-    ini_parse("D2RMH_item.ini", [](void* user, const char* section,
-                                   const char* name, const char* value)->int {
-        auto *isec = (int*)user;
+    ini_parse("D2RMH_item.ini", [](void *user, const char *section,
+                                   const char *name, const char *value) -> int {
+        auto *isec = (int *)user;
         if (!name) {
             if (!strcmp(section, "items")) { *isec = 0; }
             else { *isec = -1; }
@@ -264,8 +271,7 @@ void loadData() {
             loadItemFilter(name, value);
             break;
         }
-        default:
-            break;
+        default:break;
         }
         return 1;
     }, &section);
@@ -300,7 +306,7 @@ void loadData() {
     }
 }
 
-uint16_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets) {
+uint16_t filterItem(const d2r::UnitAny *unit, const d2r::ItemData *item, uint32_t sockets) {
     if (sockets > 6) { return 0; }
     auto id = unit->txtFileNo;
     if (id >= 1000) { return 0; }
@@ -308,4 +314,6 @@ uint16_t filterItem(const UnitAny *unit, const ItemData *item, uint32_t sockets)
     if (quality >= 8) { return 0; }
     auto ethereal = (item->itemFlags & 0x00400000) ? 1 : 0;
     return itemFilters[id][quality][ethereal][sockets];
+}
+
 }

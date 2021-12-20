@@ -8,13 +8,12 @@
 
 #pragma once
 
-#include "renderer.h"
-#include "ttfgl.h"
-#include "d2rprocess.h"
-#include "data.h"
-#include "plugin.h"
-
-#include "HandmadeMath.h"
+#include "render/renderer.h"
+#include "render/ttfgl.h"
+#include "render/HandmadeMath.h"
+#include "d2r/processmanager.h"
+#include "data/gamedata.h"
+#include "plugin/plugin.h"
 
 #include "collisionmap.h"
 #include "pipehost.h"
@@ -29,6 +28,8 @@
 #include <tuple>
 #include <string>
 #include <chrono>
+
+namespace ui {
 
 enum LNG {
     LNG_enUS,
@@ -48,8 +49,9 @@ enum LNG {
 };
 
 class MapRenderer final {
-    struct SessionInfo {
-        Texture mapTex;
+    struct MapRenderSession {
+        void *hwnd = nullptr;
+        render::Texture mapTex;
         uint32_t currSeed = uint32_t(-1);
         uint8_t currDifficulty = uint8_t(-1);
         uint32_t currLevelId = 0;
@@ -62,8 +64,8 @@ class MapRenderer final {
         std::chrono::steady_clock::time_point mapStartTime;
     };
 public:
-    MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &);
-    inline Renderer &getRenderer() { return renderer_; }
+    MapRenderer(render::Renderer &renderer, d2mapapi::PipedChildProcess &);
+    inline render::Renderer &getRenderer() { return renderer_; }
     void update();
     void render();
     void reloadConfig();
@@ -72,7 +74,7 @@ public:
         forceFlush_ = true;
     }
 
-    PluginTextList &getPluginText(const std::string &key);
+    plugin::PluginTextList &getPluginText(const std::string &key);
     void removePluginText(const std::string &key);
 
 private:
@@ -85,14 +87,14 @@ private:
     d2mapapi::CollisionMap *getMap(uint32_t levelId);
 
 private:
-    Renderer &renderer_;
-    PipelineTexture2D mapPipeline_;
-    PipelineSquad2D framePipeline_;
-    PipelineSquad2D dynamicPipeline_;
-    PipelineSquad2D messagePipeline_;
-    D2RProcess d2rProcess_;
-    TTFRenderGL ttfgl_;
-    std::unique_ptr<TTF> ttf_;
+    render::Renderer &renderer_;
+    render::PipelineTexture2D mapPipeline_;
+    render::PipelineSquad2D framePipeline_;
+    render::PipelineSquad2D dynamicPipeline_;
+    render::PipelineSquad2D messagePipeline_;
+    d2r::ProcessManager d2rProcess_;
+    render::TTFRenderGL ttfgl_;
+    std::unique_ptr<render::TTF> ttf_;
     hmm_mat4 transform_ = {};
     int mapViewport_[4] = {};
     int msgViewport_[4] = {};
@@ -101,9 +103,8 @@ private:
     RECT d2rRect = {};
     LNG lng_ = LNG_enUS;
 
-    std::map<void*, std::unique_ptr<SessionInfo>> sessions_;
-    void *currHWND_ = nullptr;
-    SessionInfo *currSession_ = nullptr;
+    std::map<void*, std::unique_ptr<MapRenderSession>> sessions_;
+    MapRenderSession *currSession_ = nullptr;
 
     struct DynamicTextString {
         float x, y;
@@ -113,7 +114,7 @@ private:
     std::vector<DynamicTextString> dynamicTextStrings_;
     std::vector<std::tuple<std::wstring_view, float, float, int, uint8_t>> textToDraw_, msgToDraw_;
 
-    uint32_t objColors_[TypeMax] = {};
+    uint32_t objColors_[data::TypeMax] = {};
 
     std::chrono::steady_clock::time_point nextPanelUpdateTime_;
     std::vector<std::wstring> panelText_;
@@ -121,6 +122,8 @@ private:
     d2mapapi::PipedChildProcess &childProcess_;
 
     bool forceFlush_ = false;
-    Plugin plugin_;
-    std::map<std::string, PluginTextList> pluginTextMap_;
+    plugin::Plugin plugin_;
+    std::map<std::string, plugin::PluginTextList> pluginTextMap_;
 };
+
+}

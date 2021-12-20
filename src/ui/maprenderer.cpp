@@ -9,8 +9,10 @@
 #include "maprenderer.h"
 
 #include "window.h"
-#include "util.h"
+#include "util/util.h"
 #include "cfg.h"
+
+namespace ui {
 
 static LNG lngFromString(const std::string &language) {
 #define CHECK_LNG(n) if (language == #n) { return LNG_##n; }
@@ -31,7 +33,7 @@ static LNG lngFromString(const std::string &language) {
 #undef CHECK_LNG
 }
 
-MapRenderer::MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &childProcess) :
+MapRenderer::MapRenderer(render::Renderer &renderer, d2mapapi::PipedChildProcess &childProcess) :
     renderer_(renderer),
     mapPipeline_(renderer),
     framePipeline_(renderer),
@@ -47,8 +49,7 @@ MapRenderer::MapRenderer(Renderer &renderer, d2mapapi::PipedChildProcess &childP
     d2rProcess_.setProcessCloseCallback([this](void *hwnd) {
         auto ite = sessions_.find(hwnd);
         if (ite == sessions_.end()) { return; }
-        if (currHWND_ == ite->first) {
-            currHWND_ = nullptr;
+        if (currSession_ == ite->second.get()) {
             currSession_ = nullptr;
         }
         sessions_.erase(ite);
@@ -75,35 +76,32 @@ void MapRenderer::update() {
         enabled_ = false;
     } else {
         switch (cfg->show) {
-        case 0:
-            enabled_ = !d2rProcess_.mapEnabled();
+        case 0:enabled_ = !d2rProcess_.mapEnabled();
             break;
-        case 1:
-            enabled_ = d2rProcess_.mapEnabled();
+        case 1:enabled_ = d2rProcess_.mapEnabled();
             break;
-        default:
-            enabled_ = true;
+        default:enabled_ = true;
             break;
         }
     }
     auto *hwnd = d2rProcess_.hwnd();
     bool changed = false;
     bool switched = false;
-    if (currHWND_ != hwnd) {
-        auto &session = sessions_[d2rProcess_.hwnd()];
+    if (!currSession_ || currSession_->hwnd != hwnd) {
+        auto &session = sessions_[hwnd];
         if (!session) {
-            session = std::make_unique<SessionInfo>();
+            session = std::make_unique<MapRenderSession>();
+            session->hwnd = hwnd;
             changed = true;
         }
-        currHWND_ = hwnd;
         currSession_ = session.get();
-        nextPanelUpdateTime_ = getCurrTime();
+        nextPanelUpdateTime_ = util::getCurrTime();
         switched = true;
     }
     if (currSession_->currSeed != currPlayer->seed) {
         plugin_.onEnterGame();
         currSession_->currSeed = currPlayer->seed;
-        currSession_->mapStartTime = getCurrTime();
+        currSession_->mapStartTime = util::getCurrTime();
         changed = true;
     }
     if (changed || currSession_->currDifficulty != currPlayer->difficulty) {
@@ -133,7 +131,7 @@ void MapRenderer::update() {
             return;
         }
         auto originX = currMap->offset.x, originY = currMap->offset.y;
-        std::map<uint32_t, const d2mapapi::CollisionMap*> knownMaps;
+        std::map<uint32_t, const d2mapapi::CollisionMap *> knownMaps;
         int x0 = currMap->crop.x0, y0 = currMap->crop.y0,
             x1 = currMap->crop.x1, y1 = currMap->crop.y1;
         int totalX0 = originX + x0, totalY0 = originY + y0, totalX1 = originX + x1, totalY1 = originY + y1;
@@ -146,9 +144,9 @@ void MapRenderer::update() {
             auto my0 = std::max(0, cy - bounds);
             auto mx1 = cx + bounds;
             auto my1 = cy + bounds;
-            std::vector<std::pair<const d2mapapi::CollisionMap*, int>> mapsToProcess = {{currMap, 0}};
+            std::vector<std::pair<const d2mapapi::CollisionMap *, int>> mapsToProcess = {{currMap, 0}};
             while (!mapsToProcess.empty()) {
-                const auto [map, step] = mapsToProcess.back();
+                const auto[map, step] = mapsToProcess.back();
                 mapsToProcess.pop_back();
                 knownMaps[map->id] = map;
                 if (step >= steps) { continue; }
@@ -195,7 +193,14 @@ void MapRenderer::update() {
         auto &mapData = currSession_->mapData;
         mapData.clear();
         mapData.resize(width * height);
-        auto mapDataToPixels = [](uint32_t *pixels, const uint8_t *data, int pitch, int ox, int oy, int w, int h, const uint32_t *colorTable) {
+        auto mapDataToPixels = [](uint32_t *pixels,
+                                  const uint8_t *data,
+                                  int pitch,
+                                  int ox,
+                                  int oy,
+                                  int w,
+                                  int h,
+                                  const uint32_t *colorTable) {
             int x = ox, y = oy;
             int skip = pitch - w;
             auto *ptr = data + y * pitch + x;
@@ -209,13 +214,13 @@ void MapRenderer::update() {
             }
         };
         int ox = currMap->offset.x - totalX0, oy = currMap->offset.y - totalY0;
-        currMap->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 1, 0, 2);
+        currMap->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 0, 1, 2);
         const uint32_t colorTable[3] = {0u, walkableColor, edgeColor};
         mapDataToPixels(pixels, mapData.data(), width, ox, oy,
                         currMap->crop.x1 - currMap->crop.x0, currMap->crop.y1 - currMap->crop.y0, colorTable);
         for (auto &p: knownMaps) {
             ox = p.second->offset.x - totalX0, oy = p.second->offset.y - totalY0;
-            p.second->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 1, 0, 2);
+            p.second->extractCellData<uint8_t>(mapData.data(), width, height, ox, oy, 0, 1, 2);
             mapDataToPixels(pixels, mapData.data(), width, ox, oy,
                             p.second->crop.x1 - p.second->crop.x0, p.second->crop.y1 - p.second->crop.y0, colorTable);
         }
@@ -225,25 +230,25 @@ void MapRenderer::update() {
 
         const std::set<int> *guides;
         {
-            auto gdite = gamedata->guides.find(currSession_->currLevelId);
-            if (gdite != gamedata->guides.end()) {
+            auto gdite = data::gamedata->guides.find(currSession_->currLevelId);
+            if (gdite != data::gamedata->guides.end()) {
                 guides = &gdite->second;
             } else {
                 guides = nullptr;
             }
         }
 
-        PipelineSquad2D squadPip(mapTex);
+        render::PipelineSquad2D squadPip(mapTex);
         squadPip.setOrtho(0, float(mapTex.width()), 0, float(mapTex.height()));
         auto widthf = float(x1 - x0) * .5f, heightf = float(y1 - y0) * .5f;
         auto realTombLevelId = d2rProcess_.realTombLevelId();
         auto superUniqueTombLevelId = d2rProcess_.superUniqueTombLevelId();
         for (auto &p: currMap->exits) {
-            if (p.first >= gamedata->levels.size()) { continue; }
+            if (p.first >= data::gamedata->levels.size()) { continue; }
             for (auto &e: p.second.offsets) {
                 auto px = float(e.x - totalX0);
                 auto py = float(e.y - totalY0);
-                const auto *lngarr = gamedata->levels[p.first].second;
+                const auto *lngarr = data::gamedata->levels[p.first].second;
                 std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
                 auto rx = float(e.x - currSession_->cx), ry = float(e.y - currSession_->cy);
                 /* Check for TalTombs */
@@ -254,7 +259,7 @@ void MapRenderer::update() {
                 if (p.first == superUniqueTombLevelId) {
                     name += L" <== SuperUnique";
                 }
-                squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[TypePortal]);
+                squadPip.pushQuad(px - 4, py - 4, px + 4, py + 4, objColors_[data::TypePortal]);
                 currSession_->textStrings
                     .emplace_back(rx, ry, name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
                 if (guides && (*guides).find(p.first) != (*guides).end()) {
@@ -265,38 +270,41 @@ void MapRenderer::update() {
         const std::map<uint32_t, std::vector<d2mapapi::Point>> *objs[2] = {&currMap->objects, &currMap->npcs};
         for (int i = 0; i < 2; ++i) {
             for (const auto &[id, vec]: *objs[i]) {
-                auto ite = gamedata->objects[i].find(id);
-                if (ite == gamedata->objects[i].end()) { continue; }
+                auto ite = data::gamedata->objects[i].find(id);
+                if (ite == data::gamedata->objects[i].end()) { continue; }
                 for (auto &pt: vec) {
                     auto ptx = float(pt.x - totalX0);
                     auto pty = float(pt.y - totalY0);
                     auto tp = std::get<0>(ite->second);
                     switch (tp) {
-                    case TypeDoor: {
+                    case data::TypeDoor: {
                         float w = std::get<3>(ite->second) * .5f, h = std::get<4>(ite->second) * .5f;
                         squadPip.pushQuad(ptx - w, pty - h, ptx + w, pty + h, objColors_[tp]);
                         break;
                     }
-                    case TypeWayPoint:
-                    case TypeQuest:
-                    case TypePortal:
-                    case TypeChest:
-                    case TypeShrine:
-                    case TypeWell: {
+                    case data::TypeWayPoint:
+                    case data::TypeQuest:
+                    case data::TypePortal:
+                    case data::TypeChest:
+                    case data::TypeShrine:
+                    case data::TypeWell: {
                         float w = std::get<3>(ite->second) * .5f, h = std::get<4>(ite->second) * .5f;
                         squadPip.pushQuad(ptx - w, pty - h, ptx + w, pty + h, objColors_[tp]);
-                        if (tp != TypeShrine && tp != TypeWell) {
+                        if (tp != data::TypeShrine && tp != data::TypeWell) {
                             const auto *lngarr = std::get<2>(ite->second);
                             std::wstring name = lngarr ? (*lngarr)[lng_] : L"";
-                            currSession_->textStrings.emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy), name, float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
+                            currSession_->textStrings.emplace_back(float(pt.x - currSession_->cx),
+                                                                   float(pt.y - currSession_->cy),
+                                                                   name,
+                                                                   float(ttf_->stringWidth(name, cfg->fontSize)) * .5f);
                         }
                         if (guides && (*guides).find(id | (0x10000 * (i + 1))) != (*guides).end()) {
-                            currSession_->lines.emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy));
+                            currSession_->lines
+                                .emplace_back(float(pt.x - currSession_->cx), float(pt.y - currSession_->cy));
                         }
                         break;
                     }
-                    default:
-                        break;
+                    default:break;
                     }
                 }
             }
@@ -347,14 +355,14 @@ void MapRenderer::render() {
         auto coord = transform_ * HMM_Vec4(s.x - 4.f, s.y - 4.f, 0, 1);
         ttf_->render(std::string_view(s.text), coord.X - s.offX, coord.Y - fontSize, false, fontSize);
     }
-    for (auto [sv, x, y, fsize, color]: textToDraw_) {
+    for (auto[sv, x, y, fsize, color]: textToDraw_) {
         ttf_->render(sv, x, y, false, fsize, color);
     }
     widthf = float(msgViewport_[2]) * .5f;
     heightf = float(msgViewport_[3]) * .5f;
     ttfPipeline->setViewport(msgViewport_[0], msgViewport_[1], msgViewport_[2], msgViewport_[3]);
     ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
-    for (auto [sv, x, y, fsize, color]: msgToDraw_) {
+    for (auto[sv, x, y, fsize, color]: msgToDraw_) {
         ttf_->render(sv, x, y, false, fsize, color);
     }
     textToDraw_.clear();
@@ -371,14 +379,11 @@ void MapRenderer::render() {
             for (const auto &s: panelText_) {
                 float nx;
                 switch (align) {
-                case 1:
-                    nx = cx - float(ttf_->stringWidth(s, fontSize2)) * .5f;
+                case 1:nx = cx - float(ttf_->stringWidth(s, fontSize2)) * .5f;
                     break;
-                case 2:
-                    nx = cx - float(ttf_->stringWidth(s, fontSize2));
+                case 2:nx = cx - float(ttf_->stringWidth(s, fontSize2));
                     break;
-                default:
-                    nx = cx;
+                default:nx = cx;
                     break;
                 }
                 ttf_->render(s, nx, cy, false, fontSize2, 0);
@@ -391,25 +396,25 @@ void MapRenderer::render() {
             auto align = ptext.align;
             auto valign = ptext.valign;
             auto fontSize2 = cfg->msgFontSize;
-            auto now = getCurrTime();
+            auto now = util::getCurrTime();
             for (auto ite = ptext.textList.begin(); ite != ptext.textList.end();) {
-                if (now >= ite->timeout) { ptext.textList.erase(ite); continue; }
+                if (now >= ite->timeout) {
+                    ptext.textList.erase(ite);
+                    continue;
+                }
                 const auto &s = ite->text;
                 auto fsize = ite->fontSize;
                 if (!fsize) fsize = fontSize2;
                 float nx;
                 float sw;
                 switch (align) {
-                case 1:
-                    sw = float(ttf_->stringWidth(s, fsize));
+                case 1:sw = float(ttf_->stringWidth(s, fsize));
                     nx = cx - sw * .5f;
                     break;
-                case 2:
-                    sw = float(ttf_->stringWidth(s, fsize));
+                case 2:sw = float(ttf_->stringWidth(s, fsize));
                     nx = cx - sw;
                     break;
-                default:
-                    nx = cx;
+                default:nx = cx;
                     break;
                 }
                 if (valign) {
@@ -425,7 +430,7 @@ void MapRenderer::render() {
     }
 }
 
-PluginTextList &MapRenderer::getPluginText(const std::string &key) {
+plugin::PluginTextList &MapRenderer::getPluginText(const std::string &key) {
     return pluginTextMap_[key];
 }
 
@@ -458,20 +463,17 @@ void MapRenderer::updateWindowPos() {
     auto widthf = float(w) * 0.5f, heightf = float(h) * 0.5f;
 
     switch (cfg->position) {
-    case 0:
-        mapViewport_[0] = 0;
+    case 0:mapViewport_[0] = 0;
         mapViewport_[1] = height - h;
         mapViewport_[2] = w;
         mapViewport_[3] = h;
         break;
-    case 1:
-        mapViewport_[0] = width - w;
+    case 1:mapViewport_[0] = width - w;
         mapViewport_[1] = height - h;
         mapViewport_[2] = w;
         mapViewport_[3] = h;
         break;
-    default:
-        mapViewport_[0] = (width - w) / 2;
+    default:mapViewport_[0] = (width - w) / 2;
         mapViewport_[1] = (height - h) / 2;
         mapViewport_[2] = w;
         mapViewport_[3] = h;
@@ -503,7 +505,6 @@ void MapRenderer::reloadConfig() {
 }
 
 void MapRenderer::updatePlayerPos() {
-    auto *currMap = currSession_->currMap;
     auto cx = currSession_->cx, cy = currSession_->cy;
     const auto *currPlayer = d2rProcess_.currPlayer();
     bool showPlayerNames = cfg->showPlayerNames;
@@ -516,7 +517,9 @@ void MapRenderer::updatePlayerPos() {
         auto oxf = float(posX - cx);
         auto oyf = float(posY - cy);
         if (showPlayerNames && plr.name[0]) {
-            dynamicTextStrings_.emplace_back(DynamicTextString { oxf, oyf, plr.name, float(ttf_->stringWidth(plr.name, cfg->fontSize)) * .5f });
+            dynamicTextStrings_.emplace_back(DynamicTextString{oxf, oyf, plr.name,
+                                                               float(ttf_->stringWidth(plr.name, cfg->fontSize))
+                                                                   * .5f});
         }
         if (&plr == currPlayer) {
             framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, cfg->playerOuterColor);
@@ -525,7 +528,7 @@ void MapRenderer::updatePlayerPos() {
             framePipeline_.pushQuad(oxf - 2, oyf + 2, oxf + 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
             auto c = cfg->lineColor;
-            for (auto [x, y]: currSession_->lines) {
+            for (auto[x, y]: currSession_->lines) {
                 if (cfg->fullLine) {
                     auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
                     auto len = HMM_Length(line);
@@ -534,7 +537,8 @@ void MapRenderer::updatePlayerPos() {
                     auto ex = x - line.X / len * 8.f;
                     auto ey = y - line.Y / len * 8.f;
                     if (len < 17.f) {
-                        ex = sx; ey = sy;
+                        ex = sx;
+                        ey = sy;
                     }
                     framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
                 } else {
@@ -563,7 +567,8 @@ void MapRenderer::updatePlayerPos() {
                     if (ex != sx) {
                         ex += line.X / len * gap;
                         ey += line.Y / len * gap;
-                        framePipeline_.pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
+                        framePipeline_
+                            .pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
                     }
                 }
             }
@@ -600,20 +605,37 @@ void MapRenderer::drawObjects() {
         for (const auto &mon: mons) {
             auto x = float(mon.x - ctx);
             auto y = float(mon.y - cty);
-            dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, objColors_[mon.isNpc ? TypeNpc : mon.isUnique ? TypeUniqueMonster : TypeMonster]);
+            dynamicPipeline_.pushQuad(x - 1.5f,
+                                      y - 1.5f,
+                                      x + 1.5f,
+                                      y + 1.5f,
+                                      objColors_[mon.isNpc ? data::TypeNpc : mon.isUnique ? data::TypeUniqueMonster
+                                                                                          : data::TypeMonster]);
             if (mon.name) {
                 auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
                 std::wstring_view sv = (*mon.name)[lng_];
-                textToDraw_.emplace_back(sv, coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
+                textToDraw_.emplace_back(sv,
+                                         coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f,
+                                         coord.Y - fontSize,
+                                         fontSize,
+                                         0);
                 if (mon.enchants[0]) {
                     std::wstring_view svenc = mon.enchants;
-                    textToDraw_.emplace_back(svenc, coord.X - float(ttf_->stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize * 2.f, fontSize, 0);
+                    textToDraw_.emplace_back(svenc,
+                                             coord.X - float(ttf_->stringWidth(svenc, fontSize)) * .5f,
+                                             coord.Y - fontSize * 2.f,
+                                             fontSize,
+                                             0);
                 }
             } else {
                 if (mon.enchants[0]) {
                     auto coord = transform_ * HMM_Vec4(x - 1.f, y - 1.f, 0, 1);
                     std::wstring_view svenc = mon.enchants;
-                    textToDraw_.emplace_back(svenc, coord.X - float(ttf_->stringWidth(svenc, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
+                    textToDraw_.emplace_back(svenc,
+                                             coord.X - float(ttf_->stringWidth(svenc, fontSize)) * .5f,
+                                             coord.Y - fontSize,
+                                             fontSize,
+                                             0);
                 }
             }
         }
@@ -627,13 +649,17 @@ void MapRenderer::drawObjects() {
                 auto coord = transform_ * HMM_Vec4(x - dw, y - dh, 0, 1);
                 std::wstring_view sv = (*obj.name)[lng_];
                 /* if type is Portal, the portal target level is stored in field `flag` */
-                if (obj.type == TypePortal && obj.flag < gamedata->levels.size()) {
-                    const auto *lngarr = gamedata->levels[obj.flag].second;
+                if (obj.type == data::TypePortal && obj.flag < data::gamedata->levels.size()) {
+                    const auto *lngarr = data::gamedata->levels[obj.flag].second;
                     if (lngarr) {
                         sv = (*lngarr)[lng_];
                     }
                 }
-                textToDraw_.emplace_back(sv, coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, 0);
+                textToDraw_.emplace_back(sv,
+                                         coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f,
+                                         coord.Y - fontSize,
+                                         fontSize,
+                                         0);
             }
         }
         if (!items.empty()) {
@@ -651,24 +677,26 @@ void MapRenderer::drawObjects() {
                     dynamicPipeline_.pushQuad(x - 1.5f, y - 1.5f, x + 1.5f, y + 1.5f, 0xFFFFFFFF);
                     if (item.name) {
                         auto coord = transform_ * HMM_Vec4(x - 4.f, y - 4.f, 0, 1);
-                        textToDraw_.emplace_back(sv, coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f, coord.Y - fontSize, fontSize, item.color);
+                        textToDraw_.emplace_back(sv,
+                                                 coord.X - float(ttf_->stringWidth(sv, fontSize)) * .5f,
+                                                 coord.Y - fontSize,
+                                                 fontSize,
+                                                 item.color);
                     }
                 }
                 if (item.flag & 2) {
                     auto txtw = float(ttf_->stringWidth(sv, fontSize2));
                     float nx;
                     switch (align) {
-                    case 1:
-                        nx = cx - txtw * .5f;
+                    case 1:nx = cx - txtw * .5f;
                         break;
-                    case 2:
-                        nx = cx - txtw;
+                    case 2:nx = cx - txtw;
                         break;
-                    default:
-                        nx = cx;
+                    default:nx = cx;
                         break;
                     }
-                    messagePipeline_.pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
+                    messagePipeline_
+                        .pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
                     msgToDraw_.emplace_back(sv, nx, cy, fontSize2, item.color);
                     cy = cy + fontSize2 + 2;
                 }
@@ -678,7 +706,7 @@ void MapRenderer::drawObjects() {
 }
 
 void MapRenderer::updatePanelText() {
-    auto now = getCurrTime();
+    auto now = util::getCurrTime();
     if (now < nextPanelUpdateTime_) {
         return;
     }
@@ -701,7 +729,9 @@ void MapRenderer::updatePanelText() {
                 std::wstring_view sv(pat.data() + start, pos - start);
                 if (sv == L"duration") {
                     wchar_t n[16];
-                    auto dur = uint32_t(std::chrono::duration_cast<std::chrono::seconds>(now - currSession_->mapStartTime).count());
+                    auto dur =
+                        uint32_t(std::chrono::duration_cast<std::chrono::seconds>(now - currSession_->mapStartTime)
+                                     .count());
                     if (dur < 3600) {
                         wsprintfW(n, L"%02u:%02u", dur / 60, dur % 60);
                     } else {
@@ -725,9 +755,10 @@ void MapRenderer::updatePanelText() {
                 } else if (sv == L"difficulty") {
                     const auto *cpl = d2rProcess_.currPlayer();
                     if (cpl) {
-                        static const char *diffKey[] = {"strCreateGameNormalText", "strCreateGameNightmareText", "strCreateGameHellText"};
-                        auto ite = gamedata->strings.find(diffKey[std::min(uint8_t(2), cpl->difficulty)]);
-                        if (ite != gamedata->strings.end()) {
+                        static const char *diffKey[] =
+                            {"strCreateGameNormalText", "strCreateGameNightmareText", "strCreateGameHellText"};
+                        auto ite = data::gamedata->strings.find(diffKey[std::min(uint8_t(2), cpl->difficulty)]);
+                        if (ite != data::gamedata->strings.end()) {
                             target += ite->second[lng_];
                         }
                     }
@@ -740,8 +771,8 @@ void MapRenderer::updatePanelText() {
                 } else if (sv == L"mapname") {
                     const auto *cpl = d2rProcess_.currPlayer();
                     if (cpl) {
-                        if (cpl->levelId < gamedata->levels.size()) {
-                            target += (*gamedata->levels[cpl->levelId].second)[lng_];
+                        if (cpl->levelId < data::gamedata->levels.size()) {
+                            target += (*data::gamedata->levels[cpl->levelId].second)[lng_];
                         }
                     }
                 } else if (sv == L"gamename") {
@@ -762,19 +793,19 @@ void MapRenderer::updatePanelText() {
 }
 
 void MapRenderer::loadFromCfg() {
-    ttf_ = std::make_unique<TTF>(ttfgl_);
+    ttf_ = std::make_unique<render::TTF>(ttfgl_);
     ttf_->add(cfg->fontFilePath);
     lng_ = lngFromString(cfg->language);
-    objColors_[TypeWayPoint] = cfg->waypointColor;
-    objColors_[TypePortal] = cfg->portalColor;
-    objColors_[TypeChest] = cfg->chestColor;
-    objColors_[TypeQuest] = cfg->questColor;
-    objColors_[TypeShrine] = cfg->shrineColor;
-    objColors_[TypeWell] = cfg->wellColor;
-    objColors_[TypeMonster] = cfg->monsterColor;
-    objColors_[TypeUniqueMonster] = cfg->uniqueMonsterColor;
-    objColors_[TypeNpc] = cfg->npcColor;
-    objColors_[TypeDoor] = cfg->doorColor;
+    objColors_[data::TypeWayPoint] = cfg->waypointColor;
+    objColors_[data::TypePortal] = cfg->portalColor;
+    objColors_[data::TypeChest] = cfg->chestColor;
+    objColors_[data::TypeQuest] = cfg->questColor;
+    objColors_[data::TypeShrine] = cfg->shrineColor;
+    objColors_[data::TypeWell] = cfg->wellColor;
+    objColors_[data::TypeMonster] = cfg->monsterColor;
+    objColors_[data::TypeUniqueMonster] = cfg->uniqueMonsterColor;
+    objColors_[data::TypeNpc] = cfg->npcColor;
+    objColors_[data::TypeDoor] = cfg->doorColor;
     auto alpha = (cfg->textColor >> 24);
     ttf_->setColor(cfg->textColor & 0xFF, (cfg->textColor >> 8) & 0xFF, (cfg->textColor >> 16) & 0xFF, alpha);
     ttf_->setAltColor(1, 228, 88, 67, alpha);
@@ -806,4 +837,6 @@ d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {
         currMap = map.get();
     }
     return currMap->built ? currMap : nullptr;
+}
+
 }

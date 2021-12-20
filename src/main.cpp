@@ -8,11 +8,11 @@
 
 #include "cfg.h"
 
-#include "renderer.h"
-#include "window.h"
-#include "maprenderer.h"
-#include "util.h"
-#include "os_structs.h"
+#include "render/renderer.h"
+#include "ui/maprenderer.h"
+#include "ui/window.h"
+#include "util/util.h"
+#include "util/os_structs.h"
 
 #include "d2map.h"
 
@@ -33,17 +33,17 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         MessageBoxA(nullptr, pcp.errMsg().c_str(), nullptr, 0);
         return -1;
     }
-    loadData();
+    data::loadData();
 
-    Window wnd(100, 100, 500, 400);
-    Renderer renderer(&wnd);
+    ui::Window wnd(100, 100, 500, 400);
+    render::Renderer renderer(&wnd);
     if (cfg->fps > 0) {
         renderer.limitFPS(cfg->fps);
     } else {
-        Renderer::setSwapInterval(-cfg->fps);
+        render::Renderer::setSwapInterval(-cfg->fps);
     }
 
-    MapRenderer map(renderer, pcp);
+    ui::MapRenderer map(renderer, pcp);
     wnd.enableTrayMenu(true,
                        (const wchar_t *)1,
                        L"D2RMH " VERSION_STRING_FULL,
@@ -56,13 +56,13 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (cfg->fps > 0) {
             renderer.limitFPS(cfg->fps);
         } else {
-            Renderer::setSwapInterval(-cfg->fps);
+            render::Renderer::setSwapInterval(-cfg->fps);
         }
         map.reloadConfig();
     });
     wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     while (wnd.run()) {
-        updateTime();
+        util::updateTime();
         renderer.prepare();
         map.update();
         renderer.begin();

@@ -15,5 +15,9 @@
 #include <functional>
 #include <cstdint>
 
+namespace util {
+
 extern uint32_t readMemory64(HANDLE handle, uint64_t address, uint32_t length, void *data);
-extern bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t*)> &cb);
+extern bool getModules(HANDLE handle, const std::function<bool(uint64_t, uint64_t, const wchar_t *)> &cb);
+
+}
