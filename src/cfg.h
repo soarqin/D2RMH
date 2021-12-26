@@ -22,6 +22,7 @@ struct Cfg {
     int show = 0;
     uint32_t panelMask = 0x1FF;
     int fullLine = 0;
+    int lineStyle = 0;
     int position = 2;
     std::string mapArea;
     float mapAreaW = .0f;

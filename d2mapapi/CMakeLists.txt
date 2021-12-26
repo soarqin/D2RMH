@@ -21,6 +21,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         crc32.h
         collisionmap.cpp collisionmap.h
         mapdata.cpp mapdata.h
+        pathfinder.cpp pathfinder.h
         d2map.cpp d2map.h
         d2ptrs.h d2structs.h
         offset.cpp offset.cpp
@@ -62,6 +63,7 @@ endif()
 
 add_library(d2mapapi_pipehost STATIC EXCLUDE_FROM_ALL
     collisionmap.cpp collisionmap.h
+    pathfinder.cpp pathfinder.h
     pipehost.cpp pipehost.h)
 target_include_directories(d2mapapi_pipehost PUBLIC . PRIVATE json)
 set_target_properties(d2mapapi_pipehost PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

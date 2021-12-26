@@ -32,7 +32,7 @@ public:
     explicit CollisionMap(std::string_view str);
     virtual ~CollisionMap() = default;
 
-    [[nodiscard]] std::string encode(int indentation = 0) const;
+    [[nodiscard]] std::string encode(bool encPathData = false, int indentation = 0) const;
     void decode(std::string_view str);
 
     template<typename T>
@@ -126,6 +126,9 @@ public:
     std::map<uint32_t, Exit> exits;
     std::map<uint32_t, std::vector<Point>> npcs;
     std::map<uint32_t, std::vector<Point>> objects;
+
+    std::vector<uint8_t> path;
+    std::vector<uint8_t> pathData;
 };
 
 }

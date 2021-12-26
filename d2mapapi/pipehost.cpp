@@ -82,13 +82,13 @@ bool PipedChildProcess::readPipe(void *data, size_t size) {
     return ReadFile(HANDLE(childStdoutRd), data, DWORD(size), &dwRead, nullptr);
 }
 
-std::string PipedChildProcess::queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId) {
+std::string PipedChildProcess::queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId, bool generatePathData) {
     struct Req {
         uint32_t seed;
         uint32_t difficulty;
         uint32_t levelId;
     };
-    Req req = {.seed = seed, .difficulty = difficulty, .levelId = levelId};
+    Req req = {.seed = seed, .difficulty = difficulty, .levelId = levelId | ((generatePathData ? 1u : 0u) << 16)};
     uint32_t size;
     if (!writePipe(&req, sizeof(uint32_t) * 3)) { return ""; }
     if (!readPipe(&size, sizeof(size))) { return ""; }
@@ -98,8 +98,8 @@ std::string PipedChildProcess::queryMapRaw(uint32_t seed, uint8_t difficulty, ui
     return std::move(str);
 }
 
-CollisionMap *PipedChildProcess::queryMap(uint32_t seed, uint8_t difficulty, uint32_t levelId) {
-    auto str = queryMapRaw(seed, difficulty, levelId);
+CollisionMap *PipedChildProcess::queryMap(uint32_t seed, uint8_t difficulty, uint32_t levelId, bool generatePathData) {
+    auto str = queryMapRaw(seed, difficulty, levelId, generatePathData);
     if (str.empty()) { return nullptr; }
     try {
         return new CollisionMap(str);

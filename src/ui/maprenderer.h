@@ -58,9 +58,11 @@ class MapRenderer final {
         std::map<uint32_t, std::unique_ptr<d2mapapi::CollisionMap>> maps;
         std::vector<uint8_t> mapData;
         int x0 = 0, y0 = 0, x1 = 0, y1 = 0, cx = 0, cy = 0;
+        int lastPosX = -1, lastPosY = -1;
         const d2mapapi::CollisionMap *currMap = nullptr;
         std::vector<std::tuple<float, float, std::wstring, float>> textStrings;
         std::vector<std::tuple<float, float>> lines;
+        std::vector<std::vector<std::pair<int, int>>> path;
         std::chrono::steady_clock::time_point mapStartTime;
     };
 public:

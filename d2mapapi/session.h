@@ -13,7 +13,7 @@ public:
 
     bool update(unsigned int seed, unsigned char difficulty);
 
-    const CollisionMap *getMap(unsigned int areaid);
+    const CollisionMap *getMap(unsigned int areaid, bool generatePathData = false);
 
 private:
     void unloadAll();

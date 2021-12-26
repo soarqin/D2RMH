@@ -12,6 +12,8 @@
 #include "util/util.h"
 #include "cfg.h"
 
+#include "pathfinder.h"
+
 namespace ui {
 
 static LNG lngFromString(const std::string &language) {
@@ -329,6 +331,7 @@ void MapRenderer::update() {
         }
     }
 }
+
 void MapRenderer::render() {
     if (!enabled_) { return; }
     auto *ttfPipeline = ttfgl_.pipeline();
@@ -522,53 +525,167 @@ void MapRenderer::updatePlayerPos() {
                                                                    * .5f});
         }
         if (&plr == currPlayer) {
+            if (currSession_->lastPosX != posX / 5 || currSession_->lastPosY != posY / 5) {
+                currSession_->lastPosX = posX / 5;
+                currSession_->lastPosY = posY / 5;
+                currSession_->path.clear();
+                if (!currSession_->lines.empty() && !currSession_->currMap->path.empty()) {
+                    auto *currMap = currSession_->currMap;
+                    auto [x0, y0, x1, y1] = currMap->crop;
+                    int mw = (x1 - x0) / 5;
+                    int mh = (y1 - y0) / 5;
+                    int offX = (currMap->offset.x + x0) / 5;
+                    int offY = (currMap->offset.y + y0) / 5;
+                    for (auto [rx, ry]: currSession_->lines) {
+                        int x = (std::lround(rx) + currSession_->cx) / 5 - offX;
+                        int y = (std::lround(ry) + currSession_->cy) / 5 - offY;
+                        int toX = currSession_->lastPosX - offX;
+                        int toY = currSession_->lastPosY - offY;
+                        auto &path = currMap->path;
+                        if (!path[y * mw + x]) {
+                            int deltaX[4], deltaY[4];
+                            if (x < toX) {
+                                if (y < toY) {
+                                    if (toX - x < toY - y) {
+                                        deltaX[0] = 0;
+                                        deltaY[0] = -1;
+                                        deltaX[1] = -1;
+                                        deltaY[1] = 0;
+                                    } else {
+                                        deltaX[0] = -1;
+                                        deltaY[0] = 0;
+                                        deltaX[1] = 0;
+                                        deltaY[1] = -1;
+                                    }
+                                } else {
+                                    if (toX - x < y - toY) {
+                                        deltaX[0] = 0;
+                                        deltaY[0] = 1;
+                                        deltaX[1] = -1;
+                                        deltaY[1] = 0;
+                                    } else {
+                                        deltaX[0] = -1;
+                                        deltaY[0] = 0;
+                                        deltaX[1] = 0;
+                                        deltaY[1] = 1;
+                                    }
+                                }
+                            } else {
+                                if (y < toY) {
+                                    if (x - toX < toY - y) {
+                                        deltaX[0] = 0;
+                                        deltaY[0] = -1;
+                                        deltaX[1] = 1;
+                                        deltaY[1] = 0;
+                                    } else {
+                                        deltaX[0] = 1;
+                                        deltaY[0] = 0;
+                                        deltaX[1] = 0;
+                                        deltaY[1] = -1;
+                                    }
+                                } else {
+                                    if (x - toX < y - toY) {
+                                        deltaX[0] = 0;
+                                        deltaY[0] = 1;
+                                        deltaX[1] = 1;
+                                        deltaY[1] = 0;
+                                    } else {
+                                        deltaX[0] = 1;
+                                        deltaY[0] = 0;
+                                        deltaX[1] = 0;
+                                        deltaY[1] = 1;
+                                    }
+                                }
+                            }
+                            deltaX[2] = -deltaX[0];
+                            deltaY[2] = -deltaY[0];
+                            deltaX[3] = -deltaX[1];
+                            deltaY[3] = -deltaY[1];
+                            bool found = false;
+                            for (int i = 0; i < 4; ++i) {
+                                auto nx = x + deltaX[i];
+                                auto ny = y + deltaY[i];
+                                if (nx >= 0 && nx < mw && ny >= 0 && ny < mh && path[ny * mw + nx]) {
+                                    x = nx; y = ny;
+                                    found = true;
+                                }
+                            }
+                            if (!found) { continue; }
+                        }
+                        auto res = d2mapapi::pathFindBFS(x, y, toX, toY, path.data(), mw, mh, true);
+                        if (!res.empty()) {
+                            currSession_->path.emplace_back(std::move(res));
+                        }
+                    }
+                }
+            }
             framePipeline_.pushQuad(oxf - 4, oyf - 4, oxf - 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf + 2, oyf - 4, oxf + 4, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 4, oxf + 2, oyf - 2, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf + 2, oxf + 2, oyf + 4, cfg->playerOuterColor);
             framePipeline_.pushQuad(oxf - 2, oyf - 2, oxf + 2, oyf + 2, cfg->playerInnerColor);
             auto c = cfg->lineColor;
-            for (auto[x, y]: currSession_->lines) {
-                if (cfg->fullLine) {
-                    auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
-                    auto len = HMM_Length(line);
-                    auto sx = oxf + line.X / len * 8.f;
-                    auto sy = oyf + line.Y / len * 8.f;
-                    auto ex = x - line.X / len * 8.f;
-                    auto ey = y - line.Y / len * 8.f;
-                    if (len < 17.f) {
-                        ex = sx;
-                        ey = sy;
+            auto lineStyle = cfg->lineStyle;
+            if (lineStyle == 2 && !currSession_->path.empty()) {
+                auto *currMap = currSession_->currMap;
+                auto [x0, y0, x1, y1] = currMap->crop;
+                auto [offX, offY] = currMap->offset;
+                for (auto &path: currSession_->path) {
+                    size_t psz = path.size();
+                    for (size_t i = 1; i < psz; ++i) {
+                        auto[x, y] = path[i - 1];
+                        auto sx = float(x * 5 + x0 + offX - cx);
+                        auto sy = float(y * 5 + y0 + offY - cy);
+                        x = path[i].first;
+                        y = path[i].second;
+                        auto ex = float(x * 5 + x0 + offX - cx);
+                        auto ey = float(y * 5 + y0 + offY - cy);
+                        framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
                     }
-                    framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
-                } else {
-                    const float mlen = 78.f;
-                    const float gap = 12.f;
-                    float sx, sy, ex, ey;
-                    auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
-                    auto len = HMM_Length(line);
-                    sx = oxf + line.X / len * 8.f;
-                    sy = oyf + line.Y / len * 8.f;
-                    if (len > mlen) {
-                        ex = oxf + line.X / len * (mlen - gap);
-                        ey = oyf + line.Y / len * (mlen - gap);
-                    } else if (len > gap) {
-                        ex = x - line.X / len * gap;
-                        ey = y - line.Y / len * gap;
+                }
+            } else {
+                for (auto [x, y]: currSession_->lines) {
+                    if (lineStyle) {
+                        auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
+                        auto len = HMM_Length(line);
+                        auto sx = oxf + line.X / len * 8.f;
+                        auto sy = oyf + line.Y / len * 8.f;
+                        auto ex = x - line.X / len * 8.f;
+                        auto ey = y - line.Y / len * 8.f;
+                        if (len < 17.f) {
+                            ex = sx;
+                            ey = sy;
+                        }
+                        framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
                     } else {
-                        ex = sx;
-                        ey = sy;
-                    }
+                        const float mlen = 78.f;
+                        const float gap = 12.f;
+                        float sx, sy, ex, ey;
+                        auto line = HMM_Vec2(x, y) - HMM_Vec2(oxf, oyf);
+                        auto len = HMM_Length(line);
+                        sx = oxf + line.X / len * 8.f;
+                        sy = oyf + line.Y / len * 8.f;
+                        if (len > mlen) {
+                            ex = oxf + line.X / len * (mlen - gap);
+                            ey = oyf + line.Y / len * (mlen - gap);
+                        } else if (len > gap) {
+                            ex = x - line.X / len * gap;
+                            ey = y - line.Y / len * gap;
+                        } else {
+                            ex = sx;
+                            ey = sy;
+                        }
 
-                    /* Draw the line */
-                    framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
+                        /* Draw the line */
+                        framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
 
-                    /* Draw the dot */
-                    if (ex != sx) {
-                        ex += line.X / len * gap;
-                        ey += line.Y / len * gap;
-                        framePipeline_
-                            .pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
+                        /* Draw the dot */
+                        if (ex != sx) {
+                            ex += line.X / len * gap;
+                            ey += line.Y / len * gap;
+                            framePipeline_
+                                .pushQuad(ex - 3, ey - 3, ex + 1.5f, ey - 1.5f, ex + 3, ey + 3, ex - 1.5f, ey + 1.5f, c);
+                        }
                     }
                 }
             }
@@ -831,7 +948,7 @@ d2mapapi::CollisionMap *MapRenderer::getMap(uint32_t levelId) {
     d2mapapi::CollisionMap *currMap;
     auto &map = currSession_->maps[levelId];
     if (!map) {
-        currMap = childProcess_.queryMap(currSession_->currSeed, currSession_->currDifficulty, levelId);
+        currMap = childProcess_.queryMap(currSession_->currSeed, currSession_->currDifficulty, levelId, cfg->lineStyle == 2);
         map = std::unique_ptr<d2mapapi::CollisionMap>(currMap);
     } else {
         currMap = map.get();

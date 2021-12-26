@@ -215,17 +215,17 @@ void ProcessData::updateData() {
     uint8_t mem[0x28];
     READ(uiBaseAddr, mem);
     mapEnabled = mem[InGameMapOffset];
-    uint32_t panelEnabled = 0;
-    if (mem[InventoryPanelOffset]) { panelEnabled |= 0x01; }
-    if (mem[CharacterPanelOffset]) { panelEnabled |= 0x02; }
-    if (mem[SkillTreePanelOffset]) { panelEnabled |= 0x04; }
-    if (mem[SystemMenuOffset]) { panelEnabled |= 0x08; }
-    if (mem[QuestPanelOffset]) { panelEnabled |= 0x10; }
-    if (mem[PartyPanelOffset]) { panelEnabled |= 0x20; }
-    if (mem[MercenaryOffset]) { panelEnabled |= 0x40; }
-    if (mem[WaypointPanelOffset]) { panelEnabled |= 0x80; }
-    if (mem[SkillFloatSelOffset]) { panelEnabled |= 0x100; }
-    panelEnabled = panelEnabled;
+    uint32_t enableBits = 0;
+    if (mem[InventoryPanelOffset]) { enableBits |= 0x01; }
+    if (mem[CharacterPanelOffset]) { enableBits |= 0x02; }
+    if (mem[SkillTreePanelOffset]) { enableBits |= 0x04; }
+    if (mem[SystemMenuOffset]) { enableBits |= 0x08; }
+    if (mem[QuestPanelOffset]) { enableBits |= 0x10; }
+    if (mem[PartyPanelOffset]) { enableBits |= 0x20; }
+    if (mem[MercenaryOffset]) { enableBits |= 0x40; }
+    if (mem[WaypointPanelOffset]) { enableBits |= 0x80; }
+    if (mem[SkillFloatSelOffset]) { enableBits |= 0x100; }
+    panelEnabled = enableBits;
 
     if (cfg->showMonsters) {
         readUnitHashTable(hashTableBaseAddr + 8 * 0x80, [this](const auto &unit) {

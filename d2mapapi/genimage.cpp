@@ -8,6 +8,7 @@
 
 #include "d2map.h"
 #include "session.h"
+#include "pathfinder.h"
 
 #define STBIW_WINDOWS_UTF8
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -77,7 +78,17 @@ int wmain(int argc, wchar_t *argv[]) {
     auto w = collmap->size.width;
     auto h = collmap->size.height;
     std::vector<uint8_t> vec(w * h);
-    collmap->extractCellData<uint8_t>(vec.data(), w, h, x0,y0, 0, 20, 128);
+    collmap->extractCellData<uint8_t>(vec.data(), w, h, x0,y0, 0, 80, 160);
+    for (auto &e: collmap->exits) {
+        for (auto &o: e.second.offsets) {
+            auto ex = o.x - collmap->offset.x, ey = o.y - collmap->offset.y;
+            for (int j = -2; j < 3; ++j) {
+                for (int i = -2; i < 3; ++i) {
+                    vec[(ey + j) * w + ex + i] = 255;
+                }
+            }
+        }
+    }
 
     stbi_write_png_compression_level = 9;
     char filename[1024];

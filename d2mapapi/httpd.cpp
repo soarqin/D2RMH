@@ -101,7 +101,7 @@ int wmain(int argc, wchar_t *argv[]) {
         }
         const auto *map = session->getMap(levelId);
         if (map) {
-            auto str = map->encode(indentation);
+            auto str = map->encode(false, indentation);
             res.setHeader("Content-Length", std::to_string(str.size()));
             res.end(str);
         } else {

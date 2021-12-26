@@ -22,7 +22,7 @@ constexpr int unit_type_npc = 1;
 constexpr int unit_type_object = 2;
 constexpr int unit_type_tile = 5;
 
-MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
+MapData::MapData(Act *act, unsigned int areaId, bool generatePathData) : CollisionMap(areaId) {
     auto d2Ver = getD2Version();
     Level *pLevel = getLevel(act, areaId);
 
@@ -242,10 +242,6 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
     uint32_t lastNearLevelNo = 0;
     int lastSide = -1, start = -1, end = -1;
     for (auto [nearLevelNo, side, sideStart, sideEnd]: sides) {
-/*
-        fprintf(stderr, "O: %u %d %d %d\n", nearLevelNo, side, sideStart, sideEnd);
-        fflush(stderr);
-*/
         if (lastNearLevelNo != nearLevelNo || lastSide != side) {
             if (start >= 0) {
                 realSides.emplace_back(lastNearLevelNo, lastSide, start, end);
@@ -271,10 +267,6 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
     }
     sides.clear();
     for (auto [nearLevelNo, side, sideStart, sideEnd]: realSides) {
-/*
-        fprintf(stderr, "R: %u %d %d %d\n", nearLevelNo, side, sideStart, sideEnd);
-        fflush(stderr);
-*/
         int sStart = -1;
         switch (side) {
         case 0: {
@@ -378,10 +370,6 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
     }
     for (auto [nearLevelNo, side, sideStart, sideEnd]: sides) {
         if (sideStart + 2 >= sideEnd) { continue; }
-/*
-        fprintf(stderr, "F: %u %d %d %d\n", nearLevelNo, side, sideStart, sideEnd);
-        fflush(stderr);
-*/
         switch (side) {
         case 0:
             exits[nearLevelNo].offsets.emplace_back(Point{offset.x + crop.x0, offset.y + (sideStart + sideEnd) / 2});
@@ -418,6 +406,74 @@ MapData::MapData(Act *act, unsigned int areaId) : CollisionMap(areaId) {
         mapData.emplace_back(count);
         mapData.emplace_back(-1);
     }
+    /* generate path data */
+    if (generatePathData) {
+        genPathData(map.data());
+    } else {
+        pathData.clear();
+    }
+}
+
+void MapData::genPathData(const int16_t *map) {
+    pathData.clear();
+    auto w = (crop.x1 - crop.x0) / 5;
+    auto h = (crop.y1 - crop.y0) / 5;
+    path.resize(w * h, 0);
+    int pathIndex = 0;
+    auto width = size.width;
+    for (int j = crop.y0; j < crop.y1; j += 5) {
+        int index = j * width + crop.x0;
+        for (int i = crop.x0; i < crop.x1; i += 5, index += 5, pathIndex++) {
+            if (i + 5 < crop.x1) {
+                for (int p = 1; p < 4; ++p) {
+                    for (int q = 3; q < 7; ++q) {
+                        if (map[index + p * width + q] & 1) {
+                            goto out;
+                        }
+                    }
+                    path[pathIndex] |= 2;
+                    path[pathIndex + 1] |= 1;
+                    break;
+out:;
+                }
+            }
+            if (j + 5 < crop.y1) {
+                for (int p = 1; p < 4; ++p) {
+                    for (int q = 3; q < 7; ++q) {
+                        if (map[index + q * width + p] & 1) {
+                            goto out2;
+                        }
+                    }
+                    path[pathIndex] |= 8;
+                    path[pathIndex + w] |= 4;
+                    break;
+out2:;
+                }
+            }
+        }
+    }
+    /* run length encoding path data */
+    pathData.clear();
+    uint32_t count = 0;
+    uint8_t lastByte = path[0];
+    for (auto v: path) {
+        if (v != lastByte) {
+            while (count > 255) {
+                pathData.emplace_back(lastByte); pathData.emplace_back(255);
+                count -= 255;
+            }
+            pathData.emplace_back(lastByte); pathData.emplace_back(count);
+            lastByte = v;
+            count = 1;
+        } else {
+            ++count;
+        }
+    }
+    while (count > 255) {
+        pathData.emplace_back(lastByte); pathData.emplace_back(255);
+        count -= 255;
+    }
+    pathData.emplace_back(lastByte); pathData.emplace_back(count);
 }
 
 }

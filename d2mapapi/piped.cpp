@@ -85,10 +85,12 @@ int wmain(int argc, wchar_t *argv[]) {
                 sessions.erase(oldKey);
             }
         }
-        const auto *map = session->getMap(req.levelId);
+        auto levelId = req.levelId & 0xFFFFu;
+        auto option = req.levelId >> 16;
+        const auto *map = session->getMap(levelId, (option & 1u) != 0);
         std::string str;
         if (map) {
-            str = map->encode();
+            str = map->encode((option & 1u) != 0);
         } else {
             str = R"({"error":"[d2mapapi_mod v)" D2MAPAPI_VERSION R"(] Invalid map id!"})";
         }

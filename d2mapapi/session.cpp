@@ -31,25 +31,32 @@ bool Session::update(unsigned int seed, unsigned char difficulty) {
     return true;
 }
 
-const CollisionMap *Session::getMap(unsigned int areaid) {
+const CollisionMap *Session::getMap(unsigned int areaid, bool generatePathData) {
     auto ite = maps_.find(areaid);
-    if (ite == maps_.end()) {
-        auto actId = Helpers::getAct(areaid);
-        if (actId < 0) {
-            return nullptr;
+    if (ite != maps_.end()) {
+        if (generatePathData && ite->second->pathData.empty()) {
+            auto w = ite->second->size.width;
+            auto h = ite->second->size.height;
+            std::vector<int16_t> map(w, h);
+            if (ite->second->extractCellData<int16_t>(map.data(), w, h, 0, 0, 1, 0)) {
+                ite->second->genPathData(map.data());
+            }
         }
-        if (!acts_[actId]) {
-            acts_[actId] = D2COMMON_LoadAct(actId, seed_, 1 /*TRUE*/, nullptr, difficulty_, nullptr,
-                                            ActLevels[actId], D2CLIENT_LoadAct_1, D2CLIENT_LoadAct_2);
-        }
-        auto map = std::make_unique<MapData>(acts_[actId], areaid);
-        if (!map->built) { return nullptr; }
-        auto &output = maps_[areaid];
-        output = std::move(map);
-        return output.get();
+        return ite->second.get();
     }
-
-    return ite->second.get();
+    auto actId = Helpers::getAct(areaid);
+    if (actId < 0) {
+        return nullptr;
+    }
+    if (!acts_[actId]) {
+        acts_[actId] = D2COMMON_LoadAct(actId, seed_, 1 /*TRUE*/, nullptr, difficulty_, nullptr,
+                                        ActLevels[actId], D2CLIENT_LoadAct_1, D2CLIENT_LoadAct_2);
+    }
+    auto map = std::make_unique<MapData>(acts_[actId], areaid, generatePathData);
+    if (!map->built) { return nullptr; }
+    auto &output = maps_[areaid];
+    output = std::move(map);
+    return output.get();
 }
 
 void Session::unloadAll() {

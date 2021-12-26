@@ -25,8 +25,8 @@ public:
 
     [[nodiscard]] inline const std::string &errMsg() const { return errMsg_; }
 
-    std::string queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId);
-    CollisionMap *queryMap(uint32_t seed, uint8_t difficulty, uint32_t levelId);
+    std::string queryMapRaw(uint32_t seed, uint8_t difficulty, uint32_t levelId, bool generatePathData = false);
+    CollisionMap *queryMap(uint32_t seed, uint8_t difficulty, uint32_t levelId, bool generatePathData = false);
 
 private:
     void *childStdinRd = nullptr;

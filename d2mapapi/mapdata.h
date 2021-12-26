@@ -15,7 +15,8 @@ namespace d2mapapi {
 
 class MapData: public CollisionMap {
 public:
-    MapData(Act *act, unsigned int areaId);
+    MapData(Act *act, unsigned int areaId, bool generatePathData = false);
+    void genPathData(const int16_t *map);
 };
 
 }

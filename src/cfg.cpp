@@ -76,6 +76,7 @@ void loadCfg(const std::string &filename) {
             LOADVALN(show, show)
             LOADVALN(panel_mask, panelMask)
             LOADVALN(full_line, fullLine)
+            LOADVALN(line_style, lineStyle)
             LOADVALN(position, position)
             LOADVAL(map_area, mapArea)
             LOADVALF(scale, scale)
@@ -173,6 +174,9 @@ void loadCfg(const std::string &filename) {
     }, &section);
     sCfg.scale = std::clamp(sCfg.scale, 1.f, 4.f);
     if (sCfg.showNormalMonsters) { sCfg.showMonsters = 2; }
+    if (sCfg.lineStyle == 0 && sCfg.fullLine > 0) {
+        sCfg.lineStyle = sCfg.fullLine;
+    }
     if (!sCfg.mapArea.empty()) {
         auto vec = util::splitString(sCfg.mapArea, ',');
         if (vec.size() > 1) {
