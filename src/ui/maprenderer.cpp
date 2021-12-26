@@ -634,12 +634,12 @@ void MapRenderer::updatePlayerPos() {
                     size_t psz = path.size();
                     for (size_t i = 1; i < psz; ++i) {
                         auto[x, y] = path[i - 1];
-                        auto sx = float(x * 5 + x0 + offX - cx);
-                        auto sy = float(y * 5 + y0 + offY - cy);
+                        auto sx = float(x * 5 + 2 + x0 + offX - cx);
+                        auto sy = float(y * 5 + 2 + y0 + offY - cy);
                         x = path[i].first;
                         y = path[i].second;
-                        auto ex = float(x * 5 + x0 + offX - cx);
-                        auto ey = float(y * 5 + y0 + offY - cy);
+                        auto ex = float(x * 5 + 2 + x0 + offX - cx);
+                        auto ey = float(y * 5 + 2 + y0 + offY - cy);
                         framePipeline_.drawLine(sx, sy, ex, ey, 1.5f, c);
                     }
                 }
