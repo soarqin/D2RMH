@@ -9,6 +9,7 @@
 #pragma once
 
 #include "render/renderer.h"
+#include "render/ttf.h"
 #include "render/ttfgl.h"
 #include "render/HandmadeMath.h"
 #include "d2r/processmanager.h"

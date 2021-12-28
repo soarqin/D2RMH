@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "fontrenderimpl.h"
+
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -16,16 +18,6 @@
 namespace render {
 
 class RectPacker;
-
-class TTFRenderImpl {
-public:
-    virtual void *createTexture(int width, int height) = 0;
-    virtual void destroyTexture(void *tex) = 0;
-    virtual void updateTexture(void *tex, int x, int y, int w, int h, const uint8_t *data) = 0;
-    virtual void renderBegin() = 0;
-    virtual void render(void *tex, float x0, float y0, float x1, float y1, int u0, int v0, int u1, int v1, uint32_t color) = 0;
-    virtual void renderEnd() = 0;
-};
 
 class TTF {
 protected:
@@ -46,7 +38,7 @@ protected:
 #endif
     };
 public:
-    explicit TTF(TTFRenderImpl &renderImpl);
+    explicit TTF(FontRenderImpl &renderImpl);
     ~TTF();
 
     void init(int size, uint8_t width = 0);
@@ -116,7 +108,7 @@ protected:
     uint8_t monoWidth_ = 0;
 
 private:
-    TTFRenderImpl &renderImpl_;
+    FontRenderImpl &renderImpl_;
 
     uint32_t altColor_[16] = {};
     std::vector<void*> textures_;

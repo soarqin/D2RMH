@@ -290,7 +290,9 @@ void MapRenderer::update() {
                     case data::TypeChest:
                     case data::TypeShrine:
                     case data::TypeWell: {
-                        float w = std::get<3>(ite->second) * .5f, h = std::get<4>(ite->second) * .5f;
+                        auto sizeMinimal = cfg->objectSizeMinimal;
+                        float w = tp == data::TypePortal ? 4.f : (std::max(sizeMinimal, std::get<3>(ite->second)) * .5f);
+                        float h = tp == data::TypePortal ? 4.f : (std::max(sizeMinimal, std::get<4>(ite->second)) * .5f);
                         squadPip.pushQuad(ptx - w, pty - h, ptx + w, pty + h, objColors_[tp]);
                         if (tp != data::TypeShrine && tp != data::TypeWell) {
                             const auto *lngarr = std::get<2>(ite->second);
@@ -306,7 +308,7 @@ void MapRenderer::update() {
                         }
                         break;
                     }
-                    default:break;
+                    default: break;
                     }
                 }
             }
@@ -760,7 +762,8 @@ void MapRenderer::drawObjects() {
             const auto &obj = p.second;
             auto x = float(obj.x - ctx);
             auto y = float(obj.y - cty);
-            auto dw = obj.w, dh = obj.h;
+            auto sizeMinimal = cfg->objectSizeMinimal * 0.5f;
+            auto dw = std::max(sizeMinimal, obj.w), dh = std::max(sizeMinimal, obj.h);
             dynamicPipeline_.pushQuad(x - dw, y - dh, x + dw, y + dh, objColors_[obj.type]);
             if (obj.name) {
                 auto coord = transform_ * HMM_Vec4(x - dw, y - dh, 0, 1);

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "ttf.h"
+#include "fontrenderimpl.h"
 
 namespace render {
 
@@ -17,7 +17,7 @@ class PipelineTexture2D;
 class Renderer;
 class Texture;
 
-class TTFRenderGL final : public TTFRenderImpl {
+class TTFRenderGL final : public FontRenderImpl {
 public:
     explicit TTFRenderGL(Renderer &renderer);
     explicit TTFRenderGL(Texture &tex);

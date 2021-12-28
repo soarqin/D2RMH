@@ -90,7 +90,7 @@ private:
     std::vector<RectPackData *> rectpackData_;
 };
 
-TTF::TTF(TTFRenderImpl &renderImpl)
+TTF::TTF(FontRenderImpl &renderImpl)
     : renderImpl_(renderImpl), rectpacker_(new RectPacker(RectPackWidthDefault, RectPackWidthDefault)) {
 #ifdef USE_FREETYPE
     FT_Init_FreeType(&ftLib_);
@@ -260,17 +260,17 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
     }
     fd->rpidx = rpidx;
 
-    uint8_t dst[64 * 64];
+    std::vector<uint8_t> dst(dstPitch * fd->h);
 
 #ifdef USE_FREETYPE
-    auto *dstPtr = dst;
+    auto *dstPtr = dst.data();
     for (int k = 0; k < fd->h; ++k) {
         memcpy(dstPtr, srcPtr, fd->w);
         srcPtr += bitmapPitch;
         dstPtr += dstPitch;
     }
 #else
-    stbtt_MakeGlyphBitmapSubpixel(info, dst, fd->w, fd->h, dstPitch, fontScale, fontScale, 0, 0, index);
+    stbtt_MakeGlyphBitmapSubpixel(info, dst.data(), fd->w, fd->h, dstPitch, fontScale, fontScale, 0, 0, index);
 #endif
 
     if (size_t(rpidx) >= textures_.size()) {
@@ -285,15 +285,15 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
             return nullptr;
         }
     }
-    uint32_t dst2[64 * 64];
-    uint8_t *ptr = dst;
-    uint32_t *ptr2 = dst2;
+    std::vector<uint32_t> dst2(dstPitch * fd->h);
+    uint8_t *ptr = dst.data();
+    uint32_t *ptr2 = dst2.data();
     for (int j = fd->h; j; --j) {
         for (int i = dstPitch; i; --i) {
             *ptr2++ = (uint32_t(*ptr++) << 24) | 0xFFFFFFu;
         }
     }
-    renderImpl_.updateTexture(tex, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t *)dst2);
+    renderImpl_.updateTexture(tex, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t *)dst2.data());
     return fd;
 }
 

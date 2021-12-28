@@ -121,6 +121,7 @@ void loadCfg(const std::string &filename) {
             LOADVALN(show_monster_name, showMonsterNames)
             LOADVALN(show_monster_enchant, showMonsterEnchants)
             LOADVALN(show_monster_immune, showMonsterImmunities)
+            LOADVALF(object_size_minimal, objectSizeMinimal)
             break;
         case 2:
             if (false) {}

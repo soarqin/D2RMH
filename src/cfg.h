@@ -72,6 +72,7 @@ struct Cfg {
     int showMonsterNames = 0;
     int showMonsterEnchants = 1;
     int showMonsterImmunities = 1;
+    float objectSizeMinimal = 6;
 
     std::wstring encTxtExtraStrong = L"S";
     std::wstring encTxtExtraFast = L"F";
