@@ -132,6 +132,7 @@ public:
     Pipeline(Renderer &renderer, ShaderProgram *prog, int stri, const VertexAttribPointer *vap);
     virtual ~Pipeline();
     void setViewport(int x, int y, int w, int h);
+    void setScissor(int x, int y, int w, int h);
     void setOrtho(float left, float right, float bottom, float top, float nearf = -1, float far = 1);
     void resetTransform();
     void setTransform(const float *mat);

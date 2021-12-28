@@ -323,6 +323,7 @@ struct PipelineCtx {
     uint32_t uidEBO = 0;
     uint32_t uidFB = 0;
     int viewport[4] = {};
+    int scissor[4] = {};
 
     ShaderProgram *program = nullptr;
     bool freeProgram = false;
@@ -367,6 +368,12 @@ void Pipeline::setViewport(int x, int y, int w, int h) {
     ctx_->viewport[1] = y;
     ctx_->viewport[2] = w;
     ctx_->viewport[3] = h;
+}
+void Pipeline::setScissor(int x, int y, int w, int h) {
+    ctx_->scissor[0] = x;
+    ctx_->scissor[1] = y;
+    ctx_->scissor[2] = w;
+    ctx_->scissor[3] = h;
 }
 void Pipeline::setOrtho(float left, float right, float bottom, float top, float nearf, float farf) {
     ctx_->mvpBase = HMM_Orthographic(left, right, bottom, top, nearf, farf);
@@ -433,6 +440,10 @@ void Pipeline::render() {
         glViewport(0, 0, vw, vh);
     } else {
         glViewport(ctx_->viewport[0], ctx_->viewport[1], ctx_->viewport[2], ctx_->viewport[3]);
+        if (ctx_->scissor[2]) {
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(ctx_->scissor[0], ctx_->scissor[1], ctx_->scissor[2], ctx_->scissor[3]);
+        }
     }
     doRender();
     if (ctx_->renderToTarget) {

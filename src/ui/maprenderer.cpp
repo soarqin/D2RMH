@@ -336,11 +336,6 @@ void MapRenderer::update() {
 
 void MapRenderer::render() {
     if (!enabled_) { return; }
-    auto *ttfPipeline = ttfgl_.pipeline();
-    auto widthf = float(mapViewport_[2]) * .5f;
-    auto heightf = float(mapViewport_[3]) * .5f;
-    ttfPipeline->setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
-    ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
     dynamicTextStrings_.clear();
     dynamicPipeline_.reset();
     messagePipeline_.reset();
@@ -363,10 +358,6 @@ void MapRenderer::render() {
     for (auto[sv, x, y, fsize, color]: textToDraw_) {
         ttf_->render(sv, x, y, false, fsize, color);
     }
-    widthf = float(msgViewport_[2]) * .5f;
-    heightf = float(msgViewport_[3]) * .5f;
-    ttfPipeline->setViewport(msgViewport_[0], msgViewport_[1], msgViewport_[2], msgViewport_[3]);
-    ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
     for (auto[sv, x, y, fsize, color]: msgToDraw_) {
         ttf_->render(sv, x, y, false, fsize, color);
     }
@@ -468,38 +459,53 @@ void MapRenderer::updateWindowPos() {
     auto widthf = float(w) * 0.5f, heightf = float(h) * 0.5f;
 
     switch (cfg->position) {
-    case 0:mapViewport_[0] = 0;
+    case 0:
+        mapViewport_[0] = 0;
         mapViewport_[1] = height - h;
-        mapViewport_[2] = w;
-        mapViewport_[3] = h;
         break;
-    case 1:mapViewport_[0] = width - w;
+    case 1:
+        mapViewport_[0] = width - w;
         mapViewport_[1] = height - h;
-        mapViewport_[2] = w;
-        mapViewport_[3] = h;
         break;
-    default:mapViewport_[0] = (width - w) / 2;
+    default:
+        mapViewport_[0] = (width - w) / 2;
         mapViewport_[1] = (height - h) / 2;
-        mapViewport_[2] = w;
-        mapViewport_[3] = h;
         break;
     }
-    msgViewport_[0] = 0;
-    msgViewport_[1] = 0;
-    msgViewport_[2] = width;
-    msgViewport_[3] = height;
+    mapViewport_[2] = w;
+    mapViewport_[3] = h;
+    if (!cfg->drawOnGameBar && mapViewport_[1] < height / 5) {
+        for (int i = 0; i < 4; i++) {
+            scissor_[i] = mapViewport_[i];
+        }
+        auto delta = height / 5 - scissor_[1];
+        scissor_[1] += delta;
+        scissor_[3] -= delta;
+    } else {
+        scissor_[0] = scissor_[1] = scissor_[2] = scissor_[3] = 0;
+    }
 
     mapPipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
+    mapPipeline_.setScissor(scissor_[0], scissor_[1], scissor_[2], scissor_[3]);
     mapPipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
     framePipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
+    framePipeline_.setScissor(scissor_[0], scissor_[1], scissor_[2], scissor_[3]);
     framePipeline_.reset();
     framePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
     dynamicPipeline_.setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
+    dynamicPipeline_.setScissor(scissor_[0], scissor_[1], scissor_[2], scissor_[3]);
     dynamicPipeline_.reset();
     dynamicPipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
+    auto *ttfPipeline = ttfgl_.pipeline();
+    ttfPipeline->setViewport(mapViewport_[0], mapViewport_[1], mapViewport_[2], mapViewport_[3]);
+    ttfPipeline->setScissor(scissor_[0], scissor_[1], scissor_[2], scissor_[3]);
+    ttfPipeline->setOrtho(-widthf, widthf, heightf, -heightf);
     widthf = float(width) * .5f;
     heightf = float(height) * .5f;
     messagePipeline_.setViewport(0, 0, width, height);
+    if (scissor_[2]) {
+        messagePipeline_.setScissor(0, height - height / 4, width, height);
+    }
     messagePipeline_.reset();
     messagePipeline_.setOrtho(-widthf, widthf, heightf, -heightf);
 }
@@ -815,8 +821,7 @@ void MapRenderer::drawObjects() {
                     default:nx = cx;
                         break;
                     }
-                    messagePipeline_
-                        .pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
+                    messagePipeline_.pushQuad(nx - 1.f, cy - 1.f, nx + 1.f + txtw, cy + 1.f + fontSize2, cfg->msgBgColor);
                     msgToDraw_.emplace_back(sv, nx, cy, fontSize2, item.color);
                     cy = cy + fontSize2 + 2;
                 }

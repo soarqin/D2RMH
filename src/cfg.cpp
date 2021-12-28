@@ -74,6 +74,7 @@ void loadCfg(const std::string &filename) {
             if (false) {}
             LOADVALN(fps, fps)
             LOADVALN(show, show)
+            LOADVALN(draw_on_game_bar, drawOnGameBar)
             LOADVALN(panel_mask, panelMask)
             LOADVALN(full_line, fullLine)
             LOADVALN(line_style, lineStyle)

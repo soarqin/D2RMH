@@ -100,7 +100,7 @@ private:
     std::unique_ptr<render::TTF> ttf_;
     hmm_mat4 transform_ = {};
     int mapViewport_[4] = {};
-    int msgViewport_[4] = {};
+    int scissor_[4] = {};
 
     bool enabled_ = false;
     RECT d2rRect = {};

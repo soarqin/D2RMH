@@ -20,6 +20,7 @@ struct Cfg {
 
     int fps = 25;
     int show = 0;
+    int drawOnGameBar = 1;
     uint32_t panelMask = 0x1FF;
     int fullLine = 0;
     int lineStyle = 0;
