@@ -9,7 +9,7 @@
 #pragma once
 
 #include "render/renderer.h"
-#include "render/ttf.h"
+#include "render/font.h"
 #include "render/ttfgl.h"
 #include "render/HandmadeMath.h"
 #include "d2r/processmanager.h"
@@ -97,7 +97,7 @@ private:
     render::PipelineSquad2D messagePipeline_;
     d2r::ProcessManager d2rProcess_;
     render::TTFRenderGL ttfgl_;
-    std::unique_ptr<render::TTF> ttf_;
+    std::unique_ptr<render::Font> ttf_;
     hmm_mat4 transform_ = {};
     int mapViewport_[4] = {};
     int scissor_[4] = {};

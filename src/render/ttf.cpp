@@ -8,10 +8,6 @@
 
 #include "ttf.h"
 
-#define STB_RECT_PACK_IMPLEMENTATION
-#define STBRP_STATIC
-#include <stb_rect_pack.h>
-
 #ifdef USE_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -25,97 +21,13 @@
 
 namespace render {
 
-enum {
-    RectPackWidthDefault = 1024,
-};
-
-struct RectPackData {
-    explicit RectPackData(int nodeCount) : nodes(new stbrp_node[nodeCount]) {
-    }
-    ~RectPackData() {
-        delete[] nodes;
-    }
-    stbrp_context context = {};
-    stbrp_node *nodes;
-};
-
-class RectPacker final {
-public:
-    explicit RectPacker(int width = RectPackWidthDefault, int height = RectPackWidthDefault)
-        : width_(width), height_(height) {}
-    ~RectPacker() {
-        for (auto *rpd: rectpackData_) {
-            delete rpd;
-        }
-        rectpackData_.clear();
-    }
-    int pack(uint16_t w, uint16_t h, int16_t &x, int16_t &y) {
-        if (rectpackData_.empty()) {
-            newRectPack();
-        }
-        auto sz = int(rectpackData_.size());
-        stbrp_rect rc = {0, w, h};
-        int rpidx = -1;
-        for (int i = 0; i < sz; ++i) {
-            auto &rpd = rectpackData_[i];
-            if (stbrp_pack_rects(&rpd->context, &rc, 1)) {
-                rpidx = i;
-                break;
-            }
-        }
-        if (rpidx < 0) {
-            /* No space to hold the bitmap,
-             * create a new bitmap */
-            newRectPack();
-            auto &rpd = rectpackData_.back();
-            if (stbrp_pack_rects(&rpd->context, &rc, 1)) {
-                rpidx = int(rectpackData_.size()) - 1;
-            }
-        }
-        x = rc.x;
-        y = rc.y;
-        return rpidx;
-    }
-
-private:
-    void newRectPack() {
-        rectpackData_.resize(rectpackData_.size() + 1);
-        auto *&rpd = rectpackData_.back();
-        rpd = new RectPackData(width_);
-        stbrp_init_target(&rpd->context, width_, height_, rpd->nodes, width_);
-    }
-
-private:
-    int width_, height_;
-    std::vector<RectPackData *> rectpackData_;
-};
-
-TTF::TTF(FontRenderImpl &renderImpl)
-    : renderImpl_(renderImpl), rectpacker_(new RectPacker(RectPackWidthDefault, RectPackWidthDefault)) {
+TTF::TTF(FontRenderImpl &renderImpl) : Font(renderImpl) {
 #ifdef USE_FREETYPE
     FT_Init_FreeType(&ftLib_);
 #endif
-    memset(altColor_, 0xFF, sizeof(altColor_));
 }
 
 TTF::~TTF() {
-    deinit();
-#ifdef USE_FREETYPE
-    FT_Done_FreeType(ftLib_);
-#endif
-}
-
-void TTF::init(int size, uint8_t width) {
-    fontSize_ = size;
-    monoWidth_ = width;
-}
-
-void TTF::deinit() {
-    for (auto &tex: textures_) {
-        renderImpl_.destroyTexture(tex);
-    }
-    textures_.clear();
-    fontCache_.clear();
     for (auto &p: fonts_) {
 #ifdef USE_FREETYPE
         FT_Done_Face(p.face);
@@ -125,12 +37,15 @@ void TTF::deinit() {
 #endif
     }
     fonts_.clear();
+#ifdef USE_FREETYPE
+    FT_Done_FreeType(ftLib_);
+#endif
 }
 
-bool TTF::add(const std::string &filename, int index) {
+bool TTF::add(const std::string &filename, int param) {
     FontInfo fi;
 #ifdef USE_FREETYPE
-    if (FT_New_Face(ftLib_, filename.c_str(), index, &fi.face)) {
+    if (FT_New_Face(ftLib_, filename.c_str(), param, &fi.face)) {
         return false;
     }
     fonts_.emplace_back(fi);
@@ -146,60 +61,20 @@ bool TTF::add(const std::string &filename, int index) {
     ifs.read((char *)fi.ttf_buffer.data(), size);
     ifs.close();
     auto *info = new stbtt_fontinfo;
-    stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], index));
+    stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], param));
     fi.font = info;
     fonts_.emplace_back(std::move(fi));
 #endif
     return true;
 }
 
-void TTF::charDimension(uint32_t ch, uint8_t &width, int8_t &t, int8_t &b, int fontSize) {
-    if (fontSize < 0) fontSize = fontSize_;
-    const FontData *fd;
-    uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
-    auto ite = fontCache_.find(key);
-    if (ite == fontCache_.end()) {
-        fd = makeCache(ch, fontSize);
-        if (!fd) {
-            width = t = b = 0;
-            return;
-        }
-    } else {
-        fd = &ite->second;
-        if (fd->advW == 0) {
-            width = t = b = 0;
-            return;
-        }
-    }
-    if (monoWidth_)
-        width = std::max(fd->advW, monoWidth_);
-    else
-        width = fd->advW;
-    t = fd->iy0;
-    b = fd->iy0 + fd->h;
-}
-
-#define RGBA(r, g, b, a) (uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24))
-
-void TTF::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    altColor_[0] = RGBA(r, g, b, a);
-}
-
-void TTF::setAltColor(int index, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    if (index > 0 && index < 16) {
-        altColor_[index] = RGBA(r, g, b, a);
-    }
-}
-
-#undef RGBA
-
-const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
-    if (fontSize < 0) fontSize = fontSize_;
+bool TTF::makeCache(TTF::FontData *fd, uint32_t ch, int fontSize) {
     FontInfo *fi = nullptr;
 #ifndef USE_FREETYPE
     stbtt_fontinfo *info;
     uint32_t index = 0;
 #endif
+
     for (auto &f: fonts_) {
 #ifdef USE_FREETYPE
         auto index = FT_Get_Char_Index(f.face, ch);
@@ -216,11 +91,9 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
         }
 #endif
     }
-    uint64_t key = (uint64_t(fontSize) << 32) | uint64_t(ch);
-    FontData *fd = &fontCache_[key];
     if (fi == nullptr) {
         memset(fd, 0, sizeof(FontData));
-        return nullptr;
+        return false;
     }
 
 #ifdef USE_FREETYPE
@@ -250,16 +123,9 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
     fd->w = w;
     fd->h = h;
 #endif
+    fd->origW = uint8_t(uint32_t(fontSize));
 
     int dstPitch = int((fd->w + 1u) & ~1u);
-    /* Get last rect pack bitmap */
-    auto rpidx = rectpacker_->pack(dstPitch, fd->h, fd->rpx, fd->rpy);
-    if (rpidx < 0) {
-        memset(fd, 0, sizeof(FontData));
-        return nullptr;
-    }
-    fd->rpidx = rpidx;
-
     std::vector<uint8_t> dst(dstPitch * fd->h);
 
 #ifdef USE_FREETYPE
@@ -273,18 +139,6 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
     stbtt_MakeGlyphBitmapSubpixel(info, dst.data(), fd->w, fd->h, dstPitch, fontScale, fontScale, 0, 0, index);
 #endif
 
-    if (size_t(rpidx) >= textures_.size()) {
-        textures_.resize(rpidx + 1, nullptr);
-    }
-    auto *tex = textures_[rpidx];
-    if (tex == nullptr) {
-        tex = renderImpl_.createTexture(RectPackWidthDefault, RectPackWidthDefault);
-        if (tex) {
-            textures_[rpidx] = tex;
-        } else {
-            return nullptr;
-        }
-    }
     std::vector<uint32_t> dst2(dstPitch * fd->h);
     uint8_t *ptr = dst.data();
     uint32_t *ptr2 = dst2.data();
@@ -293,8 +147,11 @@ const TTF::FontData *TTF::makeCache(uint32_t ch, int fontSize) {
             *ptr2++ = (uint32_t(*ptr++) << 24) | 0xFFFFFFu;
         }
     }
-    renderImpl_.updateTexture(tex, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t *)dst2.data());
-    return fd;
+    if (!updateTexture(fd->rpidx, fd->rpx, fd->rpy, dstPitch, fd->h, (const uint8_t *)dst2.data())) {
+        memset(fd, 0, sizeof(FontData));
+        return false;
+    }
+    return true;
 }
 
 }

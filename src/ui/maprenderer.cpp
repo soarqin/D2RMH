@@ -11,8 +11,14 @@
 #include "window.h"
 #include "util/util.h"
 #include "cfg.h"
+#include "render/ttf.h"
+#include "render/d2font.h"
 
 #include "pathfinder.h"
+
+#if defined(_MSC_VER)
+#define strcasecmp _stricmp
+#endif
 
 namespace ui {
 
@@ -918,8 +924,32 @@ void MapRenderer::updatePanelText() {
 }
 
 void MapRenderer::loadFromCfg() {
-    ttf_ = std::make_unique<render::TTF>(ttfgl_);
-    ttf_->add(cfg->fontFilePath);
+    auto pos = cfg->fontFilePath.find_last_of('.');
+    std::string ext;
+    if (pos != std::string::npos) {
+        ext = cfg->fontFilePath.substr(pos);
+    }
+    if (!strcasecmp(ext.c_str(), ".ttf") || !strcasecmp(ext.c_str(), ".ttc")) {
+        ttf_ = std::make_unique<render::TTF>(ttfgl_);
+        ttf_->add(cfg->fontFilePath, 0);
+    } else {
+        ttf_ = std::make_unique<render::D2Font>(ttfgl_);
+        std::string name = cfg->fontFilePath;
+        if (pos != std::string::npos) {
+            name.erase(pos);
+        }
+        pos = cfg->fontFilePath.find_last_of('|');
+        int sz;
+        if (pos == std::string::npos) {
+            sz = cfg->fontSize;
+        } else {
+            sz = int(strtol(cfg->fontFilePath.c_str() + pos + 1, nullptr, 0));
+            if (sz <= 0) {
+                sz = cfg->fontSize;
+            }
+        }
+        ttf_->add(name, sz);
+    }
     lng_ = lngFromString(cfg->language);
     objColors_[data::TypeWayPoint] = cfg->waypointColor;
     objColors_[data::TypePortal] = cfg->portalColor;
