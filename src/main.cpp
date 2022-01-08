@@ -8,6 +8,7 @@
 
 #include "cfg.h"
 
+#include "d2r/storage.h"
 #include "render/renderer.h"
 #include "ui/maprenderer.h"
 #include "ui/window.h"
@@ -28,9 +29,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
     loadCfg();
+    if (!d2r::storage.init()) {
+        MessageBoxW(nullptr, L"Failed to init D2RMH storage!", L"D2RMH", MB_OK | MB_ICONERROR);
+    }
     d2mapapi::PipedChildProcess pcp;
     if (!pcp.start(L"d2mapapi_piped.exe", (wchar_t *)cfg->d2Path.c_str())) {
-        MessageBoxA(nullptr, pcp.errMsg().c_str(), nullptr, 0);
+        MessageBoxA(nullptr, pcp.errMsg().c_str(), nullptr, MB_OK | MB_ICONERROR);
         return -1;
     }
     data::loadData();

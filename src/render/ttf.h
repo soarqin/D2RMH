@@ -16,6 +16,11 @@
 #include <string>
 #include <cstdint>
 
+#ifdef USE_FREETYPE
+typedef struct FT_FaceRec_ *FT_Face;
+typedef struct FT_LibraryRec_ *FT_Library;
+#endif
+
 namespace render {
 
 class TTF: public Font {
@@ -25,8 +30,8 @@ protected:
         FT_Face face = nullptr;
 #else
         void *font = nullptr;
-        std::vector<uint8_t> ttf_buffer;
 #endif
+        std::vector<uint8_t> ttf_buffer;
     };
 public:
     explicit TTF(FontRenderImpl &renderImpl);

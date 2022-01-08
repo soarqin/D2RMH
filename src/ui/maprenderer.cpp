@@ -924,31 +924,52 @@ void MapRenderer::updatePanelText() {
 }
 
 void MapRenderer::loadFromCfg() {
-    auto pos = cfg->fontFilePath.find_last_of('.');
-    std::string ext;
-    if (pos != std::string::npos) {
-        ext = cfg->fontFilePath.substr(pos);
-    }
-    if (!strcasecmp(ext.c_str(), ".ttf") || !strcasecmp(ext.c_str(), ".ttc")) {
+    if (cfg->fontFilePath.empty()) {
         ttf_ = std::make_unique<render::TTF>(ttfgl_);
-        ttf_->add(cfg->fontFilePath, 0);
+        if (!ttf_->add(cfg->fontFilePath, 0)) {
+            ttf_ = std::make_unique<render::D2Font>(ttfgl_);
+            ttf_->add(cfg->fontFilePath, cfg->msgFontSize);
+        }
     } else {
-        ttf_ = std::make_unique<render::D2Font>(ttfgl_);
-        std::string name = cfg->fontFilePath;
+        auto pos = cfg->fontFilePath.find_last_of('.');
+        std::string ext;
         if (pos != std::string::npos) {
-            name.erase(pos);
+            ext = cfg->fontFilePath.substr(pos);
         }
-        pos = cfg->fontFilePath.find_last_of('|');
-        int sz;
-        if (pos == std::string::npos) {
-            sz = cfg->fontSize;
+        if (!strcasecmp(ext.c_str(), ".ttf") || !strcasecmp(ext.c_str(), ".ttc")
+            || !strcasecmp(ext.c_str(), ".otf")) {
+            ttf_ = std::make_unique<render::TTF>(ttfgl_);
+            ttf_->add(cfg->fontFilePath, 0);
         } else {
-            sz = int(strtol(cfg->fontFilePath.c_str() + pos + 1, nullptr, 0));
-            if (sz <= 0) {
-                sz = cfg->fontSize;
+            ttf_ = std::make_unique<render::D2Font>(ttfgl_);
+            std::string name = cfg->fontFilePath;
+            int sz = cfg->msgFontSize;
+            if (pos != std::string::npos) {
+                name.erase(pos);
             }
+            pos = cfg->fontFilePath.find_last_of('|');
+            if (pos != std::string::npos) {
+                sz = int(strtol(cfg->fontFilePath.c_str() + pos + 1, nullptr, 0));
+                if (sz <= 0) {
+                    sz = cfg->msgFontSize;
+                }
+            }
+            /* Available D2 dc6 font sizes in px: 6, 8, 16, 24, 30 and 42 */
+            if (sz > 36) {
+                sz = 42;
+            } else if (sz > 27) {
+                sz = 30;
+            } else if (sz > 20) {
+                sz = 24;
+            } else if (sz > 12) {
+                sz = 16;
+            } else if (sz > 7) {
+                sz = 8;
+            } else {
+                sz = 6;
+            }
+            ttf_->add(name, sz);
         }
-        ttf_->add(name, sz);
     }
     lng_ = lngFromString(cfg->language);
     objColors_[data::TypeWayPoint] = cfg->waypointColor;

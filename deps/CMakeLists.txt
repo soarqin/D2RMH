@@ -1,6 +1,7 @@
 add_subdirectory(glad)
 add_subdirectory(stb)
 add_subdirectory(inih)
+add_subdirectory(CascLib)
 
 find_package(Git REQUIRED QUIET)
 include(ExternalProject)

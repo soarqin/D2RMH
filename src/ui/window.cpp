@@ -176,7 +176,7 @@ Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
     auto inst = HINST_THISCOMPONENT;
     auto icon = LoadIconW(inst, MAKEINTRESOURCEW(1));
 
-    WNDCLASSEX wcx = {};
+    WNDCLASSEXW wcx = {};
 
     wcx.cbSize = sizeof(wcx);
     wcx.style = CS_HREDRAW | CS_VREDRAW;
@@ -185,9 +185,9 @@ Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
     wcx.hIcon = icon;
     wcx.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcx.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    wcx.lpszClassName = "D2RMH";
+    wcx.lpszClassName = L"D2RMH";
     wcx.hIconSm = icon;
-    RegisterClassEx(&wcx);
+    RegisterClassExW(&wcx);
     DWORD exStyle = WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_LAYERED;
     DWORD style = WS_POPUP;
     RECT rc = {x, y, x + width, y + height};

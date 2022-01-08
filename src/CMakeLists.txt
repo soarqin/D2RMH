@@ -1,5 +1,6 @@
 include(GetVersion)
 
+option(USE_FREETYPE "Use FreeType to render TTF fonts" OFF)
 file(GLOB D2RMH_SRC_FILES
     d2r/*.cpp d2r/*.h
     data/*.cpp data/*.h
@@ -19,6 +20,11 @@ add_dependencies(D2RMH D2RMH_RES)
 if(TARGET d2mapapi_piped)
   add_dependencies(D2RMH d2mapapi_piped)
 endif()
+if(USE_FREETYPE)
+  find_package(Freetype REQUIRED)
+  target_compile_definitions(D2RMH PRIVATE USE_FREETYPE)
+  target_link_libraries(D2RMH Freetype::Freetype)
+endif()
 target_include_directories(D2RMH PRIVATE .)
-target_link_libraries(D2RMH glad stb inih sol3 d2mapapi_pipehost dwmapi shlwapi comctl32 winmm)
+target_link_libraries(D2RMH casc glad stb inih sol3 d2mapapi_pipehost dwmapi shlwapi comctl32 winmm)
 set_target_properties(D2RMH PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

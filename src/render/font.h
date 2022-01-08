@@ -16,7 +16,7 @@
 
 namespace render {
 
-struct RectPacker;
+class RectPacker;
 
 class Font {
 protected:

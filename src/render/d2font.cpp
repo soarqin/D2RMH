@@ -1,5 +1,8 @@
 #include "d2font.h"
 
+#include "cfg.h"
+#include "d2r/storage.h"
+
 #include <iostream>
 #include <cstring>
 
@@ -7,6 +10,25 @@ namespace render {
 
 bool D2Font::add(const std::string &filename, int param) {
     originFontSize_ = param;
+    if (filename.empty()) {
+        std::vector<uint8_t> dc6, tbl, pal;
+        char path[256], dc6file[256], tblfile[256];
+        const char *lngDir = "latin2";
+        if (cfg->language == "enUS") {
+            lngDir = "latin";
+        } else if (cfg->language == "jaJP" || cfg->language == "zhTW" || cfg->language == "zhCN") {
+            lngDir = "chi";
+        } else if (cfg->language == "koKR") {
+            lngDir = "kor";
+        }
+        snprintf(path, 256, "data:data/local/font/%s/font%2d", lngDir, param);
+        snprintf(dc6file, 256, "%s.dc6", path);
+        snprintf(tblfile, 256, "%s.tbl", path);
+        d2r::storage.readFile(dc6file, dc6);
+        d2r::storage.readFile(tblfile, tbl);
+        d2r::storage.readFile("data:data/global/palette/fechar/pal.dat", pal);
+        return loadMem(dc6.data(), dc6.size(), tbl.data(), tbl.size(), pal.data(), pal.size());
+    }
     return load(filename + ".dc6", filename + ".tbl", filename + ".pal");
 }
 
@@ -33,60 +55,95 @@ bool D2Font::makeCache(Font::FontData *fd, uint32_t ch, int fontSize) {
 }
 
 bool D2Font::load(const std::string &dc6file, const std::string &tblfile, const std::string &palfile) {
-    if (std::ifstream ifs0(palfile, std::ios::in | std::ios::binary); ifs0.is_open()) {
-        uint8_t n[756];
-        ifs0.read((char *)n, 756);
-        ifs0.close();
-        for (int i = 0; i < 256; i++) {
-            auto idx = i * 3;
-            palette_[i] = 0xFF000000u | (uint32_t(n[idx]) << 16) | (uint32_t(n[idx + 1]) << 8) | uint32_t(n[idx + 2]);
-        }
-    } else {
-        for (uint32_t i = 0; i < 256; i++) {
-            palette_[i] = i << 24 | 0xFFFFFFu;
-        }
-    }
+    std::vector<uint8_t> dc6, tbl;
+    uint8_t pal[768];
 
-    if (std::ifstream ifs1(tblfile, std::ios::in | std::ios::binary); ifs1.is_open()) {
-        ifs1.read((char *)&tblHeader_, sizeof(TblHeader));
-        std::vector<TblCharacter> tblCharacters;
-        tblCharacters.resize(tblHeader_.numChars);
-        ifs1.read((char *)tblCharacters.data(), sizeof(TblCharacter) * tblHeader_.numChars);
-        ifs1.close();
-        for (auto &ch: tblCharacters) {
-            tblCharacters_[ch.code] = ch;
+    if (std::ifstream ifs(dc6file, std::ios::in | std::ios::binary); ifs.is_open()) {
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        dc6.resize(size);
+        ifs.read((char *)dc6.data(), size);
+        ifs.close();
+    } else {
+        return false;
+    }
+    if (std::ifstream ifs(tblfile, std::ios::in | std::ios::binary); ifs.is_open()) {
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        tbl.resize(size);
+        ifs.read((char *)tbl.data(), size);
+        ifs.close();
+    } else {
+        return false;
+    }
+    if (std::ifstream ifs(palfile, std::ios::in | std::ios::binary); ifs.is_open()) {
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        if (size < 768) {
+            ifs.close();
+            return false;
         }
+        ifs.seekg(0, std::ios::beg);
+        ifs.read((char *)pal, 768);
+        ifs.close();
     } else {
         return false;
     }
 
-    dc6fs.open(dc6file, std::ios::in | std::ios::binary);
-    if (dc6fs.is_open()) {
-        dc6fs.read((char *)&dc6Header_, sizeof(DC6Header));
-        auto count = dc6Header_.numDir * dc6Header_.numFrame;
-        dc6OffsetTable.resize(count);
-        dc6fs.read((char *)dc6OffsetTable.data(), sizeof(uint32_t) * count);
-    } else {
+    return loadMem(dc6.data(), dc6.size(), tbl.data(), tbl.size(), pal, 768);
+}
+
+bool D2Font::loadMem(const void *dc6, size_t dc6Size, const void *tbl, size_t tblSize, const void *pal, size_t palSize) {
+    if (palSize < 768) {
         return false;
     }
+    if (tblSize < sizeof(TblHeader)) {
+        return false;
+    }
+    if (dc6Size < sizeof(DC6Header)) {
+        return false;
+    }
+
+    const auto *palData = (const uint8_t *)pal;
+    for (int i = 0; i < 256; i++) {
+        auto idx = i * 3;
+        palette_[i] = 0xFF000000u | (uint32_t(palData[idx]) << 16) | (uint32_t(palData[idx + 1]) << 8) | uint32_t(palData[idx + 2]);
+    }
+
+    memcpy(&tblHeader_, tbl, sizeof(TblHeader));
+    const auto *tblData = (const uint8_t*)tbl + sizeof(TblHeader);
+    tblSize -= sizeof(TblHeader);
+    auto tblCharSize = sizeof(TblCharacter) * tblHeader_.numChars;
+    if (tblCharSize > tblSize) {
+        return false;
+    }
+    const auto *chars = (const TblCharacter*)tblData;
+    for (uint16_t i = 0; i < tblHeader_.numChars; ++i) {
+        tblCharacters_[chars[i].code] = chars[i];
+    }
+
+    dc6Data_.assign((const uint8_t*)dc6, (const uint8_t*)dc6 + dc6Size);
+    dc6Header_ = (const DC6Header*)dc6Data_.data();
+    auto count = dc6Header_->numDir * dc6Header_->numFrame;
+    const auto *dc6Data = (const uint8_t*)dc6Data_.data() + sizeof(DC6Header);
+    dc6Size -= sizeof(DC6Header);
+    auto dc6OffsetTableSize = sizeof(uint32_t) * count;
+    if (dc6Size < dc6OffsetTableSize) {
+        return false;
+    }
+    dc6OffsetTable_ = (const uint32_t*)dc6Data;
     return true;
 }
 
 bool D2Font::read(uint32_t index, DC6FrameHeader &hdr, std::vector<uint32_t> &data) {
-    dc6fs.seekg(dc6OffsetTable[index], std::ios::beg);
-    dc6fs.read((char *)&hdr, sizeof(DC6FrameHeader));
-    if (!dc6fs.good()) {
-        return false;
-    }
+    const auto *ptr = dc6Data_.data() + dc6OffsetTable_[index];
+    memcpy(&hdr, ptr, sizeof(DC6FrameHeader));
+    ptr += sizeof(DC6FrameHeader);
     size_t y = hdr.height - 1;
     size_t x = 0;
-    std::vector<uint8_t> frame(hdr.length);
-    dc6fs.read((char *)frame.data(), hdr.length);
-    if (!dc6fs.good()) {
-        return false;
-    }
     data.resize(hdr.height * hdr.width);
-    auto *ptr = frame.data();
     auto *end = ptr + hdr.length;
     while (ptr < end) {
         auto b = *ptr++;

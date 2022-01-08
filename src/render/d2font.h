@@ -57,7 +57,6 @@ struct DC6FrameHeader {
 class D2Font: public Font {
 public:
     using Font::Font;
-    ~D2Font() override { dc6fs.close(); }
     bool add(const std::string &filename, int param) override;
 
 protected:
@@ -68,6 +67,7 @@ protected:
 
 private:
     bool load(const std::string &dc6file, const std::string &tblfile, const std::string &palfile);
+    bool loadMem(const void *dc6, size_t dc6Size, const void *tbl, size_t tblSize, const void *pal, size_t palSize);
     bool read(uint32_t index, DC6FrameHeader &hdr, std::vector<uint32_t> &data);
 
 private:
@@ -76,9 +76,9 @@ private:
     TblHeader tblHeader_ = {};
     std::array<TblCharacter, 65536> tblCharacters_ = {};
 
-    DC6Header dc6Header_ = {};
-    std::vector<uint32_t> dc6OffsetTable;
-    std::ifstream dc6fs;
+    std::vector<uint8_t> dc6Data_;
+    const DC6Header *dc6Header_ = {};
+    const uint32_t *dc6OffsetTable_;
 
     int originFontSize_ = 0;
 };

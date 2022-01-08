@@ -1,24 +1,23 @@
 @echo off
 
 setlocal
+set BUILD_DIR=msvc2022
+
+setlocal
 set PATH=%MSYS2_BASE_PATH%\mingw64\bin;%PATH%
-cmake -Bbuild/msvc2022/main -G "Visual Studio 17 2022" -A x64 -DUSE_STATIC_CRT=ON .
-cmake --build build/msvc2022/main --config Release --target D2RMH -j
+cmake -Bbuild/%BUILD_DIR%/main -G "Visual Studio 17 2022" -A x64 -DUSE_STATIC_CRT=ON .
+cmake --build build/%BUILD_DIR%/main --config Release --target D2RMH -j
 endlocal
 
 setlocal
 set PATH=%MSYS2_BASE_PATH%\mingw32\bin;%PATH%
-cmake -Bbuild/msvc2022/d2mapapi -G "Visual Studio 17 2022" -A Win32 -DUSE_STATIC_CRT=ON d2mapapi
-cmake --build build/msvc2022/d2mapapi --config Release --target d2mapapi_piped -j
+cmake -Bbuild/%BUILD_DIR%/d2mapapi -G "Visual Studio 17 2022" -A Win32 -DUSE_STATIC_CRT=ON d2mapapi
+cmake --build build/%BUILD_DIR%/d2mapapi --config Release --target d2mapapi_piped -j
 endlocal
 
-cmake -E make_directory build/msvc2022/dist
-cmake -E copy_if_different build\msvc2022\main\bin\Release\D2RMH.exe build\msvc2022\d2mapapi\bin\Release\d2mapapi_piped.exe build\msvc2022\dist\
-cmake -E copy_if_different bin\D2RMH.ini bin\D2RMH_data.ini bin\D2RMH_item.ini build\msvc2022\dist\
-cmake -E copy_directory bin\plugins build\msvc2022\dist\plugins
-cmake -E copy_directory doc build\msvc2022\dist\doc
-cmake -E copy_if_different README.md LICENSE build\msvc2022\dist\
+cmake -E make_directory build/%BUILD_DIR%/dist
+cmake -E copy_if_different build\%BUILD_DIR%\main\bin\Release\D2RMH.exe build\%BUILD_DIR%\d2mapapi\bin\Release\d2mapapi_piped.exe build\%BUILD_DIR%\dist\
 
-pushd build\msvc2022\dist >NUL
-cmake -E tar cf D2RMH-snapshot.zip --format=zip D2RMH.exe d2mapapi_piped.exe D2RMH.ini D2RMH_data.ini D2RMH_item.ini README.md LICENSE doc plugins
-popd >NUL
+call copy_dist.bat
+
+endlocal

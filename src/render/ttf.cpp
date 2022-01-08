@@ -8,6 +8,9 @@
 
 #include "ttf.h"
 
+#include "d2r/storage.h"
+#include "cfg.h"
+
 #ifdef USE_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -33,8 +36,8 @@ TTF::~TTF() {
         FT_Done_Face(p.face);
 #else
         delete static_cast<stbtt_fontinfo *>(p.font);
-        p.ttf_buffer.clear();
 #endif
+        p.ttf_buffer.clear();
     }
     fonts_.clear();
 #ifdef USE_FREETYPE
@@ -44,22 +47,36 @@ TTF::~TTF() {
 
 bool TTF::add(const std::string &filename, int param) {
     FontInfo fi;
+    auto fullpath = filename;
+    if (fullpath.empty()) {
+        const char *fontfile = "formal436bt.ttf";
+        if (cfg->language == "jaJP") {
+            fontfile = "bljap_v8_3.ttf";
+        } else if (cfg->language == "zhTW") {
+            fontfile = "blizzardglobaltcunicode.ttf";
+        } else if (cfg->language == "koKR" || cfg->language == "ruRU" || cfg->language == "zhCN") {
+            fontfile = "blizzardglobal-v5_81.ttf";
+        }
+        fullpath = fontfile;
+    }
+    std::ifstream ifs(fullpath, std::ios::binary | std::ios::in);
+    if (ifs.is_open()) {
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        fi.ttf_buffer.resize(size_t(size));
+        ifs.read((char *)fi.ttf_buffer.data(), size);
+        ifs.close();
+    } else {
+        fullpath = "data:data/hd/ui/fonts/" + fullpath;
+        d2r::storage.readFile(fullpath.c_str(), fi.ttf_buffer);
+    }
 #ifdef USE_FREETYPE
-    if (FT_New_Face(ftLib_, filename.c_str(), param, &fi.face)) {
+    if (FT_New_Memory_Face(ftLib_, (const FT_Byte*)fi.ttf_buffer.data(), fi.ttf_buffer.size(), param, &fi.face)) {
         return false;
     }
-    fonts_.emplace_back(fi);
+    fonts_.emplace_back(std::move(fi));
 #else
-    std::ifstream ifs(filename, std::ios::binary | std::ios::in);
-    if (!ifs.is_open()) {
-        return false;
-    }
-    ifs.seekg(0, std::ios::end);
-    auto size = ifs.tellg();
-    ifs.seekg(0, std::ios::beg);
-    fi.ttf_buffer.resize(size_t(size));
-    ifs.read((char *)fi.ttf_buffer.data(), size);
-    ifs.close();
     auto *info = new stbtt_fontinfo;
     stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], param));
     fi.font = info;
@@ -99,7 +116,9 @@ bool TTF::makeCache(TTF::FontData *fd, uint32_t ch, int fontSize) {
 #ifdef USE_FREETYPE
     unsigned char *srcPtr;
     int bitmapPitch;
-    if (FT_Render_Glyph(fi->face->glyph, FT_RENDER_MODE_NORMAL)) return nullptr;
+    if (FT_Render_Glyph(fi->face->glyph, FT_RENDER_MODE_NORMAL)) {
+        return false;
+    }
     FT_GlyphSlot slot = fi->face->glyph;
     fd->ix0 = slot->bitmap_left;
     fd->iy0 = fontSize * 7 / 8 - slot->bitmap_top;
