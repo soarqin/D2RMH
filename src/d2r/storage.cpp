@@ -31,7 +31,11 @@ d2r::Storage::~Storage() {
 
 bool d2r::Storage::init() {
     HKEY key;
-    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Diablo II Resurrected", 0, KEY_READ, &key) != ERROR_SUCCESS) { return false; }
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE"
+#if defined(_M_AMD64)
+                                          "\\WOW6432Node"
+#endif
+                                          "\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Diablo II Resurrected", 0, KEY_READ, &key) != ERROR_SUCCESS) { return false; }
     wchar_t regpath[MAX_PATH];
     DWORD pathSize = sizeof(regpath);
     bool result = RegQueryValueExW(key, L"InstallSource", nullptr, nullptr, LPBYTE(regpath), &pathSize) == ERROR_SUCCESS;

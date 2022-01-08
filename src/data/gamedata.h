@@ -36,15 +36,32 @@ enum EObjType {
     TypeMax,
 };
 
+enum ELNG {
+    LNG_enUS,
+    LNG_zhTW,
+    LNG_deDE,
+    LNG_esES,
+    LNG_frFR,
+    LNG_itIT,
+    LNG_koKR,
+    LNG_plPL,
+    LNG_esMX,
+    LNG_jaJP,
+    LNG_ptBR,
+    LNG_ruRU,
+    LNG_zhCN,
+    LNG_MAX,
+};
+
 struct Data {
-    using LngString = std::array<std::wstring, 13>;
+    using LngString = std::array<std::wstring, LNG_MAX>;
     std::unordered_map<std::string, LngString> strings;
     std::vector<std::pair<std::string, const LngString*>> levels, shrines, superUniques, items;
     std::vector<std::tuple<std::string, uint8_t, const LngString*>> monsters;
     std::unordered_map<std::string, uint32_t> itemIdByCode;
     std::unordered_map<int, std::tuple<EObjType, std::string, const LngString*, float, float>> objects[2];
     std::unordered_map<int, std::set<int>> guides;
-    std::vector<std::pair<std::string, const LngString*>> mercNames = {};
+    std::vector<LngString> mercNames;
 };
 
 extern void loadData();

@@ -31,6 +31,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     loadCfg();
     if (!d2r::storage.init()) {
         MessageBoxW(nullptr, L"Failed to init D2RMH storage!", L"D2RMH", MB_OK | MB_ICONERROR);
+        return -1;
     }
     d2mapapi::PipedChildProcess pcp;
     if (!pcp.start(L"d2mapapi_piped.exe", (wchar_t *)cfg->d2Path.c_str())) {

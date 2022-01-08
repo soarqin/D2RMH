@@ -12,6 +12,8 @@
 #include <fstream>
 #include <sstream>
 
+namespace data {
+
 bool D2TXT::load(const std::string &filename) {
     std::ifstream ifs(filename);
     if (!ifs.is_open()) { return false; }
@@ -21,7 +23,7 @@ bool D2TXT::load(const std::string &filename) {
 }
 
 bool D2TXT::load(const void *data, size_t size) {
-    std::string_view sv(static_cast<const char*>(data), size);
+    std::string_view sv(static_cast<const char *>(data), size);
     view_istream<char> stm(sv);
     loadInternal(stm);
     return true;
@@ -29,7 +31,7 @@ bool D2TXT::load(const void *data, size_t size) {
 
 void D2TXT::loadInternal(std::istream &stm) {
     bool processedTitle = false;
-    for (std::string line; std::getline(stm, line); ) {
+    for (std::string line; std::getline(stm, line);) {
         std::istringstream stm2(line);
         size_t col = 0;
         if (processedTitle) {
@@ -46,4 +48,6 @@ void D2TXT::loadInternal(std::istream &stm) {
             processedTitle = true;
         }
     }
+}
+
 }

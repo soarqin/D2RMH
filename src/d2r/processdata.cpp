@@ -472,7 +472,7 @@ void ProcessData::readUnitMonster(const UnitAny &unit) {
                 /* show only npcs' name, hide summons' name */
                 if (isNpc == 1) { mon.name = std::get<2>(txtData); }
             } else {
-                mon.name = data::gamedata->mercNames[monData.mercNameId].second;
+                mon.name = &data::gamedata->mercNames[monData.mercNameId];
             }
         }
         return;

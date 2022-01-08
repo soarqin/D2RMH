@@ -14,7 +14,7 @@
 #include <string>
 #include <cstddef>
 
-class MPQ;
+namespace data {
 
 class D2TXT final {
 public:
@@ -50,3 +50,5 @@ private:
     std::unordered_map<std::string, int> colIdxByName_;
     std::vector<std::pair<std::string, int>> values_;
 };
+
+}
