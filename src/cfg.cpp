@@ -12,7 +12,7 @@
 
 #include "ini.h"
 
-#include <fstream>
+#include <windows.h>
 #include <algorithm>
 #include <cstring>
 
@@ -243,5 +243,17 @@ void loadCfg(const std::string &filename) {
          &sCfg.wellColor, &sCfg.uniqueMonsterColor, &sCfg.monsterColor, &sCfg.npcColor, &sCfg.doorColor,
          &sCfg.msgBgColor,}) {
         *color = (((*color >> 24) * sCfg.alpha / 255) << 24) | (*color & 0xFFFFFFu);
+    }
+    if (sCfg.language.empty()) {
+        HKEY key;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"SOFTWARE\\Blizzard Entertainment\\Battle.net\\Launch Options\\OSI", 0, KEY_READ, &key) == ERROR_SUCCESS) {
+            char lang[16];
+            DWORD langSize = 16;
+            bool result = RegQueryValueExA(key, "LOCALE", nullptr, nullptr, LPBYTE(lang), &langSize) == ERROR_SUCCESS;
+            RegCloseKey(key);
+            if (result) {
+                sCfg.language = lang;
+            }
+        }
     }
 }

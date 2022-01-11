@@ -16,7 +16,7 @@ struct Cfg {
     std::string fontFilePath;
     int fontSize = 14;
     int msgFontSize = 24;
-    std::string language = "enUS";
+    std::string language;
 
     int fps = 25;
     int show = 0;
