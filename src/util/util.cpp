@@ -113,6 +113,7 @@ uint32_t mapStringToVKey(const std::string &name, uint32_t &mods) {
         {"HANJA", VK_HANJA},
         {"KANJI", VK_KANJI},
         {"ESCAPE", VK_ESCAPE},
+        {"ESC", VK_ESCAPE},
         {"CONVERT", VK_CONVERT},
         {"NONCONVERT", VK_NONCONVERT},
         {"ACCEPT", VK_ACCEPT},

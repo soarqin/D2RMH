@@ -55,16 +55,16 @@ struct PluginCtx {
 };
 
 Plugin::Plugin(d2r::ProcessManager *process, ui::MapRenderer *renderer) :
-    ctx_(new PluginCtx), d2rProcess_(process), mapRenderer_(renderer) {
+    ctx_(new PluginCtx), d2rProcess_(process), mapRenderer_(renderer), window_(renderer->getRenderer().owner()) {
 }
 
 Plugin::~Plugin() {
-    mapRenderer_->getRenderer().owner()->clearHotkeys();
+    window_->clearHotkeys();
     delete ctx_;
 }
 
 void Plugin::load() {
-    mapRenderer_->getRenderer().owner()->clearHotkeys();
+    window_->clearHotkeys();
     delete ctx_;
     ctx_ = new PluginCtx;
     ctx_->lua = sol::state();
@@ -101,8 +101,7 @@ void Plugin::load() {
         sol::protected_function_result pfr = lua.safe_script(data, &sol::script_pass_on_error);
         if (!pfr.valid()) {
             sol::error err = pfr;
-            mapRenderer_->getRenderer().owner()
-                ->messageBox(util::utf8toucs4(err.what()).c_str(), filename, MB_ICONERROR);
+            window_->messageBox(util::utf8toucs4(err.what()).c_str(), filename, MB_ICONERROR);
         }
     } while (FindNextFileW(find, &ffd));
     FindClose(find);
@@ -180,7 +179,7 @@ void Plugin::addCFunctions() {
         return index;
     };
     auto registerHotkeyForFunc = [this](const std::string &hotkey, int index) {
-        mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, [this, index] {
+        window_->registerHotkey(hotkey, [this, index] {
             auto &on = std::get<3>(ctx_->plugins[index]);
             on = !on;
             const auto &func = std::get<2>(ctx_->plugins[index]);
@@ -208,7 +207,7 @@ void Plugin::addCFunctions() {
                                                registerHotkeyForFunc(hotkey, index);
                                            });
     lua["register_hotkey"] = [this](const std::string &hotkey, const sol::function &func) {
-        mapRenderer_->getRenderer().owner()->registerHotkey(hotkey, func);
+        window_->registerHotkey(hotkey, func);
     };
     lua["get_config"] = [] {
         return (Cfg *)cfg;
@@ -246,7 +245,45 @@ void Plugin::addCFunctions() {
         mapRenderer_->removePluginText(str);
     };
     lua["message_box"] = [this](const std::string &str, uint32_t type) {
-        mapRenderer_->getRenderer().owner()->messageBox(util::utf8toucs4(str).c_str(), L"D2RMH", type);
+        window_->messageBox(util::utf8toucs4(str).c_str(), L"D2RMH", type);
+    };
+    lua["key_press"] = [this](const std::string &str) {
+        auto hwnd = (HWND)d2rProcess_->hwnd();
+        if (!hwnd) { return; }
+        uint32_t mods;
+        auto vkey = util::mapStringToVKey(str, mods);
+        SendMessageA(hwnd, WM_KEYDOWN, vkey, 1);
+        Sleep(5);
+        SendMessageA(hwnd, WM_KEYUP, vkey, 0xC0000001u);
+    };
+    lua["mouse_move"] = [this](int x, int y) {
+        auto hwnd = (HWND)d2rProcess_->hwnd();
+        if (!hwnd) { return; }
+        POINT pt = {x, y};
+        ClientToScreen(hwnd, &pt);
+        SetCursorPos(pt.x, pt.y);
+    };
+    lua["mouse_click"] = [this](int which) {
+        auto hwnd = (HWND)d2rProcess_->hwnd();
+        if (!hwnd) { return; }
+        UINT msg, msg2;
+        switch (which) {
+        case 1:
+            msg = WM_RBUTTONDOWN; msg2 = WM_RBUTTONUP;
+            break;
+        case 2:
+            msg = WM_MBUTTONDOWN; msg2 = WM_MBUTTONUP;
+            break;
+        default:
+            msg = WM_LBUTTONDOWN; msg2 = WM_LBUTTONUP;
+            break;
+        }
+        SendMessageA(hwnd, msg, 0, 0);
+        Sleep(5);
+        SendMessageA(hwnd, msg2, 0, 0);
+    };
+    lua["delay"] = [this](uint32_t millisecs) {
+        Sleep(millisecs);
     };
 }
 

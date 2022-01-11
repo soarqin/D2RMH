@@ -17,6 +17,7 @@ class ProcessManager;
 }
 namespace ui {
 class MapRenderer;
+class Window;
 }
 
 namespace plugin {
@@ -52,6 +53,7 @@ private:
     PluginCtx *ctx_;
     d2r::ProcessManager *d2rProcess_;
     ui::MapRenderer *mapRenderer_;
+    ui::Window *window_;
 };
 
 }

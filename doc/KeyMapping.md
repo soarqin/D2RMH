@@ -72,7 +72,7 @@ Keys:
 | `FINAL`               | IME final mode                           |
 | `HANJA`               | IME Hanja mode                           |
 | `KANJI`               | IME Kanji mode                           |
-| `ESCAPE`              | ESC key                                  |
+| `ESCAPE` `ESC`        | ESC key                                  |
 | `CONVERT`             | IME convert                              |
 | `NONCONVERT`          | IME nonconvert                           |
 | `ACCEPT`              | IME accept                               |
