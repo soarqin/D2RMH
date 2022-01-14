@@ -213,7 +213,7 @@ Window::~Window() {
     delete ctx_;
 }
 
-INT_PTR CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+INT_PTR CALLBACK aboutDialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_CLOSE:
         EndDialog(hWnd, TRUE);
@@ -318,7 +318,7 @@ void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip
 
 void Window::addAboutMenu() {
     addTrayMenuItem(L"About", -1, 0, [] {
-        DialogBox(HINST_THISCOMPONENT, MAKEINTRESOURCE(101), nullptr, dialogProc);
+        DialogBoxW(HINST_THISCOMPONENT, MAKEINTRESOURCEW(101), nullptr, aboutDialogProc);
     });
 }
 

@@ -18,7 +18,7 @@ Diablo II Resurrected 开图工具
   * Windows Defender容易误报，建议禁用或者加入白名单
   * 虽然D2RMH可以通过大多数杀毒软件的检测，但也容易被误报，如果担心预编译文件有问题，那么可以参考下面的`如何编译`部分自行编译
 1. 从 `Releases` 里下载最新发布版，或从 `Actions` 里下载最新的快照编译版(你需要登录GitHub) 
-2. 修改 D2RMH.ini(中文用户可以使用contrib/D2RMH_CN.ini的内容作为默认设置), 设置 `d2_path` 为你的D2 1.13c目录，也可以直接把`D2MRH.exe`和所有`*.ini`放到D2 1.13c目录里去
+2. 将 `D2RMH.ini.template` 复制为 `D2RMH.ini`(中文用户可以使用`contrib/zhCN/D2RMH.ini.template`的内容作为默认设置), 设置 `d2_path` 为你的D2 1.13c目录，也可以直接把`D2MRH.exe`和所有`*.ini`放到D2 1.13c目录里去
 3. 运行 D2RMH.exe
 
 # Screenshots

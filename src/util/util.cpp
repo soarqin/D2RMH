@@ -32,30 +32,85 @@ std::wstring utf8toucs4(const std::string &s) {
             wc |= (s[i + 2] & 0x3F);
             i += 3;
         } else if ((c & 0xF8) == 0xF0) {
+            wc = L'?';
+#if WCHAR_MAX > 0xFFFFU
             wc = (s[i] & 0x7) << 18;
             wc |= (s[i + 1] & 0x3F) << 12;
             wc |= (s[i + 2] & 0x3F) << 6;
             wc |= (s[i + 3] & 0x3F);
+#endif
             i += 4;
         } else if ((c & 0xFC) == 0xF8) {
+            wc = L'?';
+#if WCHAR_MAX > 0xFFFFU
             wc = (s[i] & 0x3) << 24;
             wc |= (s[i] & 0x3F) << 18;
             wc |= (s[i] & 0x3F) << 12;
             wc |= (s[i] & 0x3F) << 6;
             wc |= (s[i] & 0x3F);
+#endif
             i += 5;
         } else if ((c & 0xFE) == 0xFC) {
+            wc = L'?';
+#if WCHAR_MAX > 0xFFFFU
             wc = (s[i] & 0x1) << 30;
             wc |= (s[i] & 0x3F) << 24;
             wc |= (s[i] & 0x3F) << 18;
             wc |= (s[i] & 0x3F) << 12;
             wc |= (s[i] & 0x3F) << 6;
             wc |= (s[i] & 0x3F);
+#endif
             i += 6;
+        } else {
+            break;
         }
         ws += wc;
     }
     return ws;
+}
+
+std::string ucs4toutf8(const std::wstring &us) {
+    std::string s;
+    for (auto c: us) {
+#if WCHAR_MAX > 0xFFFFU
+        if (c > 0x10000U) {
+            if (c > 0x200000U) {
+                if (c > 0x4000000U) {
+                    s += char(0xFCU | ((c >> 30) & 1U));
+                    s += char(0x80U | ((c >> 24) & 0x3FU));
+                    s += char(0x80U | ((c >> 18) & 0x3FU));
+                    s += char(0x80U | ((c >> 12) & 0x3FU));
+                    s += char(0x80U | ((c >> 6) & 0x3FU));
+                    s += char(0x80U | (c & 0x3FU));
+                } else {
+                    s += char(0xF8U | (c >> 24));
+                    s += char(0x80U | ((c >> 18) & 0x3FU));
+                    s += char(0x80U | ((c >> 12) & 0x3FU));
+                    s += char(0x80U | ((c >> 6) & 0x3FU));
+                    s += char(0x80U | (c & 0x3FU));
+                }
+            } else {
+                s += char(0xF0U | (c >> 18));
+                s += char(0x80U | ((c >> 12) & 0x3FU));
+                s += char(0x80U | ((c >> 6) & 0x3FU));
+                s += char(0x80U | (c & 0x3FU));
+            }
+        } else
+#endif
+        if (c > 0x80u) {
+            if (c > 0x800u) {
+                s += char(0xE0U | (c >> 12));
+                s += char(0x80U | ((c >> 6) & 0x3FU));
+                s += char(0x80U | (c & 0x3FU));
+            } else {
+                s += char(0xC0U | (c >> 6));
+                s += char(0x80U | (c & 0x3FU));
+            }
+        } else {
+            s += char(c);
+        }
+    }
+    return s;
 }
 
 std::vector<std::string> splitString(const std::string &str, char c) {

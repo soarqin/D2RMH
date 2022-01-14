@@ -476,7 +476,7 @@ inline void loadD2RData() {
 }
 
 void loadData() {
-    loadD2RData();
+    // loadD2RData();
     int section = -1;
     ini_parse("D2RMH_item.ini", [](void *user, const char *section,
                                    const char *name, const char *value) -> int {
@@ -491,7 +491,8 @@ void loadData() {
             loadItemFilter(name, value);
             break;
         }
-        default:break;
+        default:
+            break;
         }
         return 1;
     }, &section);

@@ -16,6 +16,7 @@ namespace util {
 
 /* String functions */
 std::wstring utf8toucs4(const std::string &s);
+std::string ucs4toutf8(const std::wstring &us);
 std::vector<std::string> splitString(const std::string &str, char c);
 
 /* Time series functions */

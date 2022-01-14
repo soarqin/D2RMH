@@ -18,7 +18,7 @@ Check [ChangeLog](doc/ChangeLog.md)
    * If you are using Windows Defender, disable it or add D2RMH to whitelist to avoid misreporting of malware.
    * D2RMH can pass most Anti-Virus software detections, but not all of them, you can compile it your self if worry about it, check `How to build` section below
 1. Download from `Releases` section, or any snapshot packs from `Actions` section(You need to log-in to GitHub). 
-2. Edit D2RMH.ini, set `d2_path` to path of your Diablo II folder,
+2. Copy `D2RMH.ini.template` as `D2RMH.ini`, set `d2_path` to path of your Diablo II folder,
    or just put extracted `D2RMH.exe` and all `.ini` files to D2 v1.13c folder.
 3. Run D2RMH.exe, enjoy!
 

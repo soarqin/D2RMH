@@ -20,7 +20,7 @@
 #define strcasecmp _stricmp
 #endif
 
-static Cfg sCfg;
+Cfg sCfg;
 const Cfg *cfg = &sCfg;
 
 #define LOADVAL(n, m) else if (!strcmp(name, #n)) { sCfg.m = value; }
@@ -68,7 +68,7 @@ void loadCfg(const std::string &filename) {
             LOADVAL(font_file_path, fontFilePath)
             LOADVALN(font_size, fontSize)
             LOADVALN(msg_font_size, msgFontSize)
-            LOADVAL(language, language)
+            LOADVAL(language, languageOrig)
             break;
         case 1:
             if (false) {}
@@ -244,7 +244,7 @@ void loadCfg(const std::string &filename) {
          &sCfg.msgBgColor,}) {
         *color = (((*color >> 24) * sCfg.alpha / 255) << 24) | (*color & 0xFFFFFFu);
     }
-    if (sCfg.language.empty()) {
+    if (sCfg.languageOrig.empty()) {
         HKEY key;
         if (RegOpenKeyExW(HKEY_CURRENT_USER, L"SOFTWARE\\Blizzard Entertainment\\Battle.net\\Launch Options\\OSI", 0, KEY_READ, &key) == ERROR_SUCCESS) {
             char lang[16];
@@ -255,5 +255,7 @@ void loadCfg(const std::string &filename) {
                 sCfg.language = lang;
             }
         }
+    } else {
+        sCfg.language = sCfg.languageOrig;
     }
 }

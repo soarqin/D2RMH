@@ -11,6 +11,7 @@
 #include "d2r/storage.h"
 #include "render/renderer.h"
 #include "ui/maprenderer.h"
+#include "ui/configdlg.h"
 #include "ui/window.h"
 #include "util/util.h"
 #include "util/os_structs.h"
@@ -28,6 +29,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         MessageBoxW(nullptr, L"A D2RMH instance is already running!", L"D2RMH", MB_OK | MB_ICONERROR);
         return 0;
     }
+    CoInitialize(nullptr);
     loadCfg();
     if (!d2r::storage.init()) {
         MessageBoxW(nullptr, L"Failed to init D2RMH storage!", L"D2RMH", MB_OK | MB_ICONERROR);
@@ -55,7 +57,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                        L"D2RMH is running.\nYou can close it from tray-icon popup menu.",
                        L"D2RMH " VERSION_STRING);
     wnd.addAboutMenu();
-    wnd.addTrayMenuItem(L"Reload Config", -1, 0, [&wnd, &renderer, &map]() {
+    auto reloadConfig = [&wnd, &renderer, &map] {
         loadCfg();
         wnd.reloadConfig();
         if (cfg->fps > 0) {
@@ -64,7 +66,14 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render::Renderer::setSwapInterval(-cfg->fps);
         }
         map.reloadConfig();
+    };
+    wnd.addTrayMenuItem(L"Confiurations", -1, 0, [&wnd, &reloadConfig] {
+        ui::ConfigDlg dlg;
+        if (dlg.run()) {
+            reloadConfig();
+        }
     });
+    wnd.addTrayMenuItem(L"Reload Config", -1, 0, reloadConfig);
     wnd.addTrayMenuItem(L"Quit", -1, 0, [&wnd]() { wnd.quit(); });
     while (wnd.run()) {
         util::updateTime();
@@ -74,5 +83,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         map.render();
         renderer.end();
     }
+    CoUninitialize();
     return 0;
 }

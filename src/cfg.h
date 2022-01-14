@@ -12,11 +12,12 @@
 #include <string>
 
 struct Cfg {
+    Cfg() noexcept = default;
     std::wstring d2Path = L".";
     std::string fontFilePath;
     int fontSize = 14;
     int msgFontSize = 24;
-    std::string language;
+    std::string language, languageOrig;
 
     int fps = 25;
     int show = 0;

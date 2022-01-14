@@ -1,6 +1,7 @@
 @echo off
 
-cmake -E copy_if_different bin\D2RMH.ini bin\D2RMH_gamedata.ini bin\D2RMH_item.ini build\%BUILD_DIR%\dist\
+cmake -E copy_if_different bin\D2RMH.ini build\%BUILD_DIR%\dist\D2RMH.ini.template
+cmake -E copy_if_different bin\D2RMH_gamedata.ini bin\D2RMH_item.ini build\%BUILD_DIR%\dist\
 cmake -E copy_directory bin\plugins build\%BUILD_DIR%\dist\plugins
 cmake -E copy_directory doc build\%BUILD_DIR%\dist\doc
 cmake -E copy_if_different README.md LICENSE build\%BUILD_DIR%\dist\
