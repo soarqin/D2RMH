@@ -67,6 +67,15 @@ MapRenderer::MapRenderer(render::Renderer &renderer, d2mapapi::PipedChildProcess
 }
 
 void MapRenderer::update() {
+    bool lastEnabled = enabled_;
+    doUpdate();
+    if (lastEnabled != enabled_) {
+        renderer_.owner()->show(enabled_);
+        SetForegroundWindow(HWND(d2rProcess_.hwnd()));
+    }
+}
+
+void MapRenderer::doUpdate() {
     d2rProcess_.updateData();
     if (!d2rProcess_.available()) {
         renderer_.owner()->enableHotkeys(false);

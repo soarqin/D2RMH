@@ -31,6 +31,7 @@ public:
     Window(int x, int y, int width, int height);
     ~Window();
 
+    void show(bool on);
     void enableTrayMenu(bool enable,
                         const wchar_t *icon,
                         const wchar_t *tip = nullptr,

@@ -201,7 +201,6 @@ Window::Window(int x, int y, int width, int height): ctx_(new WindowCtx) {
     SetWindowLongPtr(ctx_->hwnd, GWLP_USERDATA, (LONG_PTR)this);
     SetLayeredWindowAttributes(ctx_->hwnd, 0, 0, 0);
     updateFramebufferTransparency(ctx_->hwnd);
-    ShowWindow(ctx_->hwnd, SW_SHOW);
     ctx_->running = true;
 }
 
@@ -272,6 +271,10 @@ INT_PTR CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
 
     return TRUE;
+}
+
+void Window::show(bool on) {
+    ShowWindow(ctx_->hwnd, on ? SW_SHOW : SW_HIDE);
 }
 
 void Window::enableTrayMenu(bool enable, const wchar_t *icon, const wchar_t *tip, const wchar_t *info, const wchar_t *infoTitle) {

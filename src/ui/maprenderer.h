@@ -81,6 +81,7 @@ public:
     void removePluginText(const std::string &key);
 
 private:
+    void doUpdate();
     void updateWindowPos();
     void updatePlayerPos();
     void drawObjects();
