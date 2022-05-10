@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        compiler: ["msys2_mingw", "msvc2019"]
+        compiler: ["msys2_mingw", "msvc2022"]
 
     steps:
       - name: Checkout Repository
