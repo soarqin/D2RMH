@@ -9,13 +9,13 @@ if "%~1" == "" set MSYS2_BASE_PATH=C:\msys64
 
 setlocal
 set PATH=%MSYS2_BASE_PATH%\clang64\bin;%PATH%
-cmake -Bbuild/%BUILD_DIR%/main -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON .
+cmake -Bbuild/%BUILD_DIR%/main -G "MinGW Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON .
 cmake --build build/%BUILD_DIR%/main --target D2RMH -j
 endlocal
 
 setlocal
 set PATH=%MSYS2_BASE_PATH%\clang32\bin;%PATH%
-cmake -Bbuild/%BUILD_DIR%/d2mapapi -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON d2mapapi
+cmake -Bbuild/%BUILD_DIR%/d2mapapi -G "MinGW Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_CRT=ON d2mapapi
 cmake --build build/%BUILD_DIR%/d2mapapi --target d2mapapi_piped -j
 endlocal
 

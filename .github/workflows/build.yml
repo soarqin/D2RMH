@@ -20,6 +20,20 @@ jobs:
         compiler: ["msys2_mingw", "msvc2022"]
 
     steps:
+      - name: Install MSYS2/MinGW
+        if: matrix.compiler == 'msys2_mingw'
+        uses: msys2/setup-msys2@v2
+        with:
+          location: D:\
+          update: true
+          install: >-
+            mingw-w64-x86_64-binutils
+            mingw-w64-i686-binutils
+            mingw-w64-x86_64-gcc
+            mingw-w64-i686-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-i686-make
+
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
@@ -28,7 +42,7 @@ jobs:
       - name: CMake Configure and Build
         shell: cmd
         working-directory: ${{github.workspace}}
-        run: "build_${{matrix.compiler}}.bat"
+        run: build_${{matrix.compiler}}.bat D:\msys64
 
       - uses: actions/upload-artifact@v2
         with:
