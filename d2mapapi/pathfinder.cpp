@@ -16,6 +16,9 @@ namespace d2mapapi {
 std::vector<std::pair<int, int>> pathFindBFS(int startX, int startY, int targetX, int targetY,
                 const uint8_t *mapData, int mapWidth, int mapHeight, bool merge) {
     const int n = mapWidth * mapHeight;
+    if (startX >= mapWidth || startY >= mapHeight || targetX >= mapWidth || targetY >= mapHeight) {
+        return {};
+    }
     const int startPos = startX + startY * mapWidth, targetPos = targetX + targetY * mapWidth;
     std::vector<std::pair<int, int>> p(n, {-1, -1});
     p[startPos].second = 0;
