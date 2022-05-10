@@ -703,8 +703,10 @@ struct RosterUnit {
     uint16_t unk6[3]; // BA
     uint64_t unk7[7]; // C0
     uint8_t unk8[7]; // F8
-    char utf8name[65]; // FF
-    uint64_t unk9; // 0x140
+    char utf8name[49]; // FF
+    uint64_t unk9; // 0x130
+    uint32_t order; // 0x138
+    uint32_t unk10[3]; // 0x13C
     uint64_t nextPtr; // 0x148
 };
 

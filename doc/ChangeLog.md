@@ -1,8 +1,11 @@
+# v0.10.1
+* fix map display after party window opened in multiplayer games
+
 # v0.10.0
 * (#102,#105,#106) update codes to support v1.2.69324
 * (#84) add game room name/password, server region and season patterns to `text_panel_pattern`
 * (#97) don't draw other players not in same ACT
-  * change `full_line` to `line_style` in D2RMH.ini, and you can set it to 2 for displaying walkable path to target through new path finding functions, please not this would increase CPU usage.
+* change `full_line` to `line_style` in D2RMH.ini, and you can set it to 2 for displaying walkable path to target through new path finding functions, please not this would increase CPU usage.
 * refactoring TTF rendering to fix glitches on text display
 * add `object_size_minimal` to D2RMH.ini for minimal size of object quads
 * add `draw_on_game_bar` to D2RMH.ini

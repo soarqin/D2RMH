@@ -361,6 +361,7 @@ Skill *ProcessData::getSkill(uint16_t id) {
 void ProcessData::readRosters() {
     uint64_t addr;
     READ(rosterDataAddr, addr);
+    bool first = true;
     while (addr) {
         RosterUnit mem;
         if (!READ(addr, mem)) { break; }
@@ -369,9 +370,10 @@ void ProcessData::readRosters() {
         p.level = mem.level;
         p.party = mem.partyId;
         memcpy(p.name, mem.name, 16);
-        if (/* Battle.Net */ mem.utf8name[0] || /* Single-player */ (!mem.posX && mem.unk9 == uint64_t(-1))) {
+        if (first) {
             focusedPlayer = mem.unitId;
             currPlayer = &p;
+            first = false;
         } else {
             p.posX = mem.posX;
             p.posY = mem.posY;
