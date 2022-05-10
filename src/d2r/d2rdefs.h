@@ -451,15 +451,15 @@ struct StaticPath {
 };
 
 struct DrlgAct {
-    uint64_t unk0[2];
+    uint64_t unk0[3];
     uint32_t unk1;
     uint32_t seed;
-    /* 0x18 DrlgRoom1 *room1 */
+    /* 0x20 DrlgRoom1 *room1 */
     uint64_t room1Ptr;
     uint32_t actId;
     uint32_t unk2;
     uint64_t unk3[9];
-    /* DrlgMisc *misc */
+    /* 0x78 DrlgMisc *misc */
     uint64_t miscPtr;
 };
 
@@ -573,7 +573,8 @@ struct Skill {
     uint32_t tagets;
     uint32_t targetType;
     uint32_t targetId;
-    uint64_t unk1;
+    uint32_t unk1;
+    uint64_t unk2;
     uint32_t skillLevel;
     uint32_t levelBonus;
     uint32_t quantity;
@@ -669,22 +670,21 @@ struct VectorData {
 };
 
 struct GameInfo {
-    VectorData session;
-    char unk0[0x18];
+    uint64_t unk0[5];
     VectorData gameName;
-    char gameNameBuffer[0x18];
+    char gameNameBuffer[0x40];
     VectorData gamePass;
-    char gamePassBuffer[0x18];
+    char gamePassBuffer[0x40];
     VectorData region;
     char regionBuffer[0x18];
-    uint64_t unk1[31];
-    VectorData gameIP;
-    char gameIPBuffer[0x18];
+    uint64_t unk1[32];
+    VectorData season;
+    char seasonBuffer[0x18];
 };
 
 struct RosterUnit {
     char name[16];
-    uint64_t unk0;
+    uint64_t unk0[7];
     uint32_t unitId;
     uint32_t lifePercent;
     uint32_t kills;
@@ -696,17 +696,16 @@ struct RosterUnit {
     uint32_t posY;
     uint32_t flags; /* 0x01-normal, 0x02-invited */
     uint32_t unk3;
-    uint64_t pvpInfoPtr;
-    uint64_t unk4[6];
-    uint16_t unk5;
-    char name2[16];
-    uint64_t unk6;
-    wchar_t wideName[16];
-    uint16_t unk7[3];
-    uint64_t unk8[8];
-    uint32_t order;
-    uint32_t unk9[3];
-    uint64_t nextPtr;
+    uint64_t pvpInfoPtr; // 70
+    uint64_t unk4[6]; // 78
+    uint16_t unk5; // A8
+    char name2[16]; // AA
+    uint16_t unk6[3]; // BA
+    uint64_t unk7[7]; // C0
+    uint8_t unk8[7]; // F8
+    char utf8name[65]; // FF
+    uint64_t unk9; // 0x140
+    uint64_t nextPtr; // 0x148
 };
 
 #pragma pack(pop)

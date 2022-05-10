@@ -54,7 +54,7 @@ public:
     [[nodiscard]] inline const std::wstring &gameName() const { return currProcess_->gameName; }
     [[nodiscard]] inline const std::wstring &gamePass() const { return currProcess_->gamePass; }
     [[nodiscard]] inline const std::wstring &region() const { return currProcess_->region; }
-    [[nodiscard]] inline const std::wstring &gameIP() const { return currProcess_->gameIP; }
+    [[nodiscard]] inline const std::wstring &season() const { return currProcess_->season; }
 
     void reloadConfig() { loadFromCfg(); currProcess_ = nullptr; }
 

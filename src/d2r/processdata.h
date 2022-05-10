@@ -55,6 +55,8 @@ public:
     uint64_t isExpansionAddr = 0;
     uint64_t rosterDataAddr = 0;
     uint64_t gameInfoAddr = 0;
+    uint64_t mapSeedAddr = 0;
+    uint32_t currSeed = 0;
 
     uint8_t mapEnabled = 0;
     uint32_t panelEnabled = 0;
@@ -62,7 +64,7 @@ public:
     uint32_t focusedPlayer = 0;
     const MapPlayer *currPlayer = nullptr;
 
-    std::wstring gameName, gamePass, region, gameIP;
+    std::wstring gameName, gamePass, region, season;
 
     uint32_t realTombLevelId = 0;
     uint32_t superUniqueTombLevelId = 0;

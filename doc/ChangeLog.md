@@ -1,3 +1,20 @@
+# v0.10.0
+* (#102,#105,#106) update codes to support v1.2.69324
+* (#84) add game room name/password, server region and season patterns to `text_panel_pattern`
+* (#97) don't draw other players not in same ACT
+  * change `full_line` to `line_style` in D2RMH.ini, and you can set it to 2 for displaying walkable path to target through new path finding functions, please not this would increase CPU usage.
+* refactoring TTF rendering to fix glitches on text display
+* add `object_size_minimal` to D2RMH.ini for minimal size of object quads
+* add `draw_on_game_bar` to D2RMH.ini
+* load all data from D2R Casc Storage directly now, so `gendata` is removed
+* add support to read D2/D2R's TBL/DC6 font, as well as refactoring TTF rendering to suite fonts with fixed pixel size
+  * add support to load fonts from D2R Casc Storage, and is the default option now
+* read language of D2R from registry if `language` is left empty in D2RMH.ini
+* add keyboard/mouse input and delay functions to plugin system
+* hide overlay window while game is not running
+* (d2mapapi_mod) add support for D2Legacy client v1.11a
+* (d2mapapi_mod) add simple BFS path finding
+
 # v0.9.4
 * fix support for D2R 1.1.67554
 

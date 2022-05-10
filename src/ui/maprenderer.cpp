@@ -921,8 +921,8 @@ void MapRenderer::updatePanelText() {
                     target += d2rProcess_.gamePass();
                 } else if (sv == L"region") {
                     target += d2rProcess_.region();
-                } else if (sv == L"serverip") {
-                    target += d2rProcess_.gameIP();
+                } else if (sv == L"season") {
+                    target += d2rProcess_.season();
                 }
             } else {
                 target += pat[pos];
