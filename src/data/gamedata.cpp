@@ -186,6 +186,10 @@ inline void loadTxt(D2TXT &txt, d2r::Storage &storage, const char *filename) {
 
 template<typename T>
 inline Data::LngString *moveStrings(std::unordered_map<T, Data::LngString> &to, std::unordered_map<T, Data::LngString> &from, const T &key) {
+    auto dstIte = to.find(key);
+    if (dstIte != to.end()) {
+        return &dstIte->second;
+    }
     auto ite = from.find(key);
     if (ite == from.end()) {
         return nullptr;
@@ -286,9 +290,9 @@ inline void loadD2RData() {
     loadJsonLng(names, d2r::storage, "data:data/local/lng/strings/shrines.json");
     loadJsonLng(names, d2r::storage, "data:data/local/lng/strings/ui.json");
     loadJsonLngById(mercNames, d2r::storage, "data:data/local/lng/strings/mercenaries.json");
-    sgamedata.strings.erase("dummy");
-    sgamedata.strings.erase("Dummy");
-    sgamedata.strings.erase("unused");
+    names.erase("dummy");
+    names.erase("Dummy");
+    names.erase("unused");
 
     D2TXT levelTxt, objTxt, monTxt, shrineTxt, superuTxt;
     D2TXT itemTxt[3];
@@ -464,7 +468,7 @@ inline void loadD2RData() {
             } else if (s[0] == '+') {
                 sgamedata.guides[id].insert(0x10000 | strtoul(s.data() + 1, nullptr, 0));
             } else if (s[0] >= '0' && s[0] <= '9'){
-                sgamedata.guides[id].insert(strtoul(s.data() + 1, nullptr, 0));
+                sgamedata.guides[id].insert(strtoul(s.data(), nullptr, 0));
             }
             auto ite2 = levelIdByName.find(util::utf8toucs4(s));
             if (ite2 == levelIdByName.end()) {

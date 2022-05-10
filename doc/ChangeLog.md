@@ -1,3 +1,8 @@
+# v0.10.2
+* do not show names of dummy objects
+* fix localized string loading, to fix a bug that some objects are not shown
+* fix a bug that some guide-line config entries are not correctly read
+
 # v0.10.1
 * fix map display after party window opened in multiplayer games
 
