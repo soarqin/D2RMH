@@ -279,13 +279,13 @@ inline size_t searchMem(const uint8_t *mem, size_t sz, const uint8_t *search, co
 void ProcessData::updateOffset() {
     auto *mem = new(std::nothrow) uint8_t[size_t(baseSize)];
     if (mem && READN(baseAddr, mem, uint32_t(baseSize))) {
-        const uint8_t search0[] = {0x48, 0x8D, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x48, 0xC1, 0xE0, 0x0A, 0x48, 0x03, 0xC1, 0xC3, 0xCC};
-        const uint8_t mask0[] = {0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        const uint8_t search0[] = {0x48, 0x03, 0xC7, 0x49, 0x8B, 0x8C, 0xC6 };
+        const uint8_t mask0[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
         auto off = searchMem(mem, size_t(baseSize), search0, mask0, sizeof(search0));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(baseAddr + off + 3, rel)) {
-                hashTableBaseAddr = baseAddr + off + 7 + rel;
+            if (READ(baseAddr + off + 7, rel)) {
+                hashTableBaseAddr = baseAddr + rel;
             }
         }
 
