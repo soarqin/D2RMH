@@ -289,13 +289,13 @@ void ProcessData::updateOffset() {
             }
         }
 
-        const uint8_t search1[] = {0x45, 0x8B, 0xD7, 0x4C, 0x8D, 0x05, 0, 0, 0, 0};
-        const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
+        const uint8_t search1[] = {0x48, 0x89, 0x45, 0xB7, 0x4C, 0x8D, 0x35, 0, 0, 0, 0 };
+        const uint8_t mask1[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
         off = searchMem(mem, size_t(baseSize), search1, mask1, sizeof(search1));
         if (off != size_t(-1)) {
             int32_t rel;
-            if (READ(baseAddr + off + 6, rel)) {
-                uiBaseAddr = baseAddr + off + 10 + rel;
+            if (READ(baseAddr + off + 7, rel)) {
+                uiBaseAddr = baseAddr + off + 11 + rel;
             }
         }
 
